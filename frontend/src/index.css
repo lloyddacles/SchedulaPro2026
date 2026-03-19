@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased text-gray-900 bg-gray-50 dark:bg-slate-900 dark:text-white transition-colors duration-200;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white bg-opacity-70 dark:bg-slate-800 dark:bg-opacity-70 backdrop-blur-lg border border-white/20 dark:border-white/5 shadow-xl;
+  }
+}
+
+.dark .fc-theme-standard td, .dark .fc-theme-standard th { border-color: #334155 !important; }
+.dark .fc-col-header-cell-cushion, .dark .fc-timegrid-slot-label-cushion { color: #cbd5e1 !important; }
+.dark .fc-highlight { background: rgba(59, 130, 246, 0.1) !important; }
