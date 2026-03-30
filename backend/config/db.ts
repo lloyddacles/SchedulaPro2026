@@ -14,6 +14,7 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME || 'faculty_scheduling',
   port: Number(process.env.DB_PORT) || 3306,
   ssl: sslConfig,
+  connectTimeout: 20000,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0

@@ -16,10 +16,8 @@ async function seed() {
           user: process.env.DB_USER || 'root',
           password: process.env.DB_PASSWORD || '',
           ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+          connectTimeout: 20000,
         };
-
-    const hostLog = process.env.DATABASE_URL ? 'URI' : (process.env.DB_HOST || 'localhost');
-    console.log(`Attempting connection to: ${hostLog} (SSL: ${process.env.DB_SSL})`);
 
     connection = await mysql.createConnection(connectionConfig);
 
