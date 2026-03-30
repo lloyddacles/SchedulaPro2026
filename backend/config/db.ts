@@ -9,10 +9,10 @@ const sslConfig = process.env.DB_SSL === 'true'
 
 const pool = mysql.createPool({
   host: (process.env.DB_HOST || 'localhost').trim(),
+  port: Number(process.env.DB_PORT || 3306),
   user: (process.env.DB_USER || 'root').trim(),
   password: (process.env.DB_PASSWORD || '').trim(),
   database: (process.env.DB_NAME || 'faculty_scheduling').trim(),
-  port: Number(process.env.DB_PORT) || 3306,
   ssl: sslConfig,
   connectTimeout: 20000,
   waitForConnections: true,
