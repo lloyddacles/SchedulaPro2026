@@ -9,11 +9,14 @@ export async function seed() {
   console.log('Starting TOTAL database restoration and seed...');
   let connection;
   try {
+    const rawHost = (process.env.DB_HOST || 'localhost').trim();
+    const hostParts = rawHost.split(':');
+
     const connectionConfig = process.env.DATABASE_URL 
       ? process.env.DATABASE_URL 
       : {
-          host: (process.env.DB_HOST || 'localhost').trim(),
-          port: Number(process.env.DB_PORT || 3306),
+          host: hostParts[0],
+          port: hostParts[1] ? Number(hostParts[1]) : Number(process.env.DB_PORT || 3306),
           user: (process.env.DB_USER || 'root').trim(),
           password: (process.env.DB_PASSWORD || '').trim(),
           ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
