@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import pool from '../config/db.js';
 import { logAudit } from '../utils/auditLogger.js';
 import { authenticateToken, authorizeRoles } from '../utils/auth.js';
+import { validate, campusSchema } from '../middleware/validator.js';
 
 const router = express.Router();
 
@@ -19,7 +20,7 @@ router.get('/', async (req: any, res: Response) => {
 });
 
 // Create campus
-router.post('/', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.post('/', authorizeRoles('admin', 'program_head'), validate(campusSchema), async (req: any, res: Response) => {
   const { name, code } = req.body;
   try {
     const [result]: any = await pool.query(
@@ -35,7 +36,7 @@ router.post('/', authorizeRoles('admin', 'program_head'), async (req: any, res: 
 });
 
 // Update campus
-router.put('/:id', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.put('/:id', authorizeRoles('admin', 'program_head'), validate(campusSchema), async (req: any, res: Response) => {
   const { name, code } = req.body;
   try {
     await pool.query(

@@ -2,8 +2,12 @@ import express, { Request, Response } from 'express';
 import pool from '../config/db.js';
 import { sendEmail } from '../utils/mailer.js';
 import { notifyFaculty } from '../utils/notify.js';
+import { authenticateToken } from '../utils/auth.js';
+import { validate, scheduleRequestSchema } from '../middleware/validator.js';
 
 const router = express.Router();
+
+router.use(authenticateToken); // Ensure all routes are protected
 
 router.get('/', async (req: Request, res: Response) => {
   try {
@@ -22,7 +26,7 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', validate(scheduleRequestSchema), async (req: Request, res: Response) => {
   const { faculty_id, schedule_id, request_type, reason } = req.body;
   try {
     await pool.query(

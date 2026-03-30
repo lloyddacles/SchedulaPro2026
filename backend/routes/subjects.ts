@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import pool from '../config/db.js';
 import { logAudit } from '../utils/auditLogger.js';
 import { authenticateToken, authorizeRoles } from '../utils/auth.js';
+import { validate, subjectSchema } from '../middleware/validator.js';
 
 const router = express.Router();
 
@@ -34,7 +35,7 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.post('/', authorizeRoles('admin', 'program_head'), validate(subjectSchema), async (req: any, res: Response) => {
   const { subject_code, subject_name, units, required_hours, room_type, program_id, year_level } = req.body;
   try {
     const [result]: any = await pool.query(
@@ -57,7 +58,7 @@ router.post('/', authorizeRoles('admin', 'program_head'), async (req: any, res: 
   }
 });
 
-router.put('/:id', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.put('/:id', authorizeRoles('admin', 'program_head'), validate(subjectSchema), async (req: any, res: Response) => {
   const { subject_code, subject_name, units, required_hours, room_type, program_id, year_level } = req.body;
   try {
     await pool.query(

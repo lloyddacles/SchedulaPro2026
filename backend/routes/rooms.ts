@@ -1,9 +1,12 @@
 import express, { Request, Response } from 'express';
 import pool from '../config/db.js';
 import { logAudit } from '../utils/auditLogger.js';
-import { authorizeRoles } from '../utils/auth.js';
+import { authorizeRoles, authenticateToken } from '../utils/auth.js';
+import { validate, roomSchema } from '../middleware/validator.js';
 
 const router = express.Router();
+
+router.use(authenticateToken);
 
 router.get('/', async (req: any, res: Response) => {
   const isArchived = req.query.archived === 'true' ? 1 : 0;
@@ -35,7 +38,7 @@ router.get('/', async (req: any, res: Response) => {
   }
 });
 
-router.post('/', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.post('/', authorizeRoles('admin', 'program_head'), validate(roomSchema), async (req: any, res: Response) => {
   const { name, type, capacity, campus_id, status } = req.body;
   try {
     const [result]: any = await pool.query(
@@ -50,7 +53,7 @@ router.post('/', authorizeRoles('admin', 'program_head'), async (req: any, res: 
   }
 });
 
-router.put('/:id', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.put('/:id', authorizeRoles('admin', 'program_head'), validate(roomSchema), async (req: any, res: Response) => {
   const { name, type, capacity, campus_id, status } = req.body;
   try {
     await pool.query(

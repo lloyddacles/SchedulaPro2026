@@ -4,10 +4,11 @@ import jwt from 'jsonwebtoken';
 import pool from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { authenticateToken } from '../utils/auth.js';
+import { validate, loginSchema, changePasswordSchema } from '../middleware/validator.js';
 
 const router = express.Router();
 
-router.post('/login', async (req: Request, res: Response, next: express.NextFunction) => {
+router.post('/login', validate(loginSchema), async (req: Request, res: Response, next: express.NextFunction) => {
   const { username, password } = req.body;
   try {
     const [rows]: [any[], any] = await pool.query('SELECT * FROM users WHERE username = ?', [username]);
@@ -34,11 +35,8 @@ router.post('/login', async (req: Request, res: Response, next: express.NextFunc
   }
 });
 
-router.put('/change-password', authenticateToken, async (req: any, res: Response, next: express.NextFunction) => {
+router.put('/change-password', authenticateToken, validate(changePasswordSchema), async (req: any, res: Response, next: express.NextFunction) => {
   const { currentPassword, newPassword } = req.body;
-  if (!currentPassword || !newPassword) {
-    return next(new ApiError(400, 'Both current and new passwords are required', 'VALIDATION_ERROR'));
-  }
 
   try {
     const [rows]: [any[], any] = await pool.query('SELECT password_hash FROM users WHERE id = ?', [req.user.id]);

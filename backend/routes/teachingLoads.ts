@@ -5,6 +5,7 @@ import { sendEmail } from '../utils/mailer.js';
 import { logAudit } from '../utils/auditLogger.js';
 import { notifyRole, notifyFaculty } from '../utils/notify.js';
 import { authenticateToken, authorizeRoles } from '../utils/auth.js';
+import { validate, teachingLoadSchema } from '../middleware/validator.js';
 
 const router = express.Router();
 
@@ -55,14 +56,10 @@ router.get('/', async (req: Request, res: Response, next: express.NextFunction) 
 });
 
 // ── POST create bulk teaching loads (always starts as 'draft') ────────────────
-router.post('/', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response, next: express.NextFunction) => {
+router.post('/', authorizeRoles('admin', 'program_head', 'program_assistant'), validate(teachingLoadSchema), async (req: any, res: Response, next: express.NextFunction) => {
   const { faculty_id, co_faculty_id_1, co_faculty_id_2, subject_ids, term_id, section_id } = req.body;
   const targetTermId = term_id || 1;
   const targetSectionId = section_id || 1;
-
-  if (!subject_ids || subject_ids.length === 0) {
-    return next(new ApiError(400, 'No subjects provided', 'VALIDATION_ERROR'));
-  }
 
   const connection = await pool.getConnection();
   try {

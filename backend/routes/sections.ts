@@ -1,9 +1,12 @@
 import express, { Request, Response } from 'express';
 import pool from '../config/db.js';
 import { logAudit } from '../utils/auditLogger.js';
-import { authorizeRoles } from '../utils/auth.js';
+import { authorizeRoles, authenticateToken } from '../utils/auth.js';
+import { validate, sectionSchema } from '../middleware/validator.js';
 
 const router = express.Router();
+
+router.use(authenticateToken);
 
 router.get('/', async (req: any, res: Response) => {
   try {
@@ -47,7 +50,7 @@ router.get('/advisory', async (req: any, res: Response) => {
   }
 });
 
-router.post('/', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.post('/', authorizeRoles('admin', 'program_head'), validate(sectionSchema), async (req: any, res: Response) => {
   try {
     const { program_id, year_level, name, adviser_id, campus_id } = req.body;
     const [result]: any = await pool.query(
@@ -71,7 +74,7 @@ router.delete('/:id', authorizeRoles('admin', 'program_head'), async (req: any, 
   }
 });
 
-router.put('/:id', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.put('/:id', authorizeRoles('admin', 'program_head'), validate(sectionSchema), async (req: any, res: Response) => {
   try {
     const { program_id, year_level, name, adviser_id, campus_id } = req.body;
     await pool.query(

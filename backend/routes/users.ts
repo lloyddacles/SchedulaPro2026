@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import pool from '../config/db.js';
 import { logAudit } from '../utils/auditLogger.js';
 import { authenticateToken, authorizeRoles } from '../utils/auth.js';
+import { validate, userSchema } from '../middleware/validator.js';
 
 const router = express.Router();
 
@@ -23,7 +24,7 @@ router.get('/', async (req: any, res: Response) => {
   }
 });
 
-router.post('/', authorizeRoles('admin'), async (req: any, res: Response) => {
+router.post('/', authorizeRoles('admin'), validate(userSchema), async (req: any, res: Response) => {
   const { username, password, role, faculty_id } = req.body;
   try {
     const salt = await bcrypt.genSalt(10);
@@ -40,7 +41,7 @@ router.post('/', authorizeRoles('admin'), async (req: any, res: Response) => {
   }
 });
 
-router.put('/:id', authorizeRoles('admin'), async (req: any, res: Response) => {
+router.put('/:id', authorizeRoles('admin'), validate(userSchema), async (req: any, res: Response) => {
   const { username, role, faculty_id, password } = req.body;
   try {
     let query = 'UPDATE users SET username = ?, role = ?, faculty_id = ?';

@@ -2,6 +2,7 @@ import express, { Response } from 'express';
 import pool from '../config/db.js';
 import { logAudit } from '../utils/auditLogger.js';
 import { authenticateToken, authorizeRoles } from '../utils/auth.js';
+import { validate, termSchema } from '../middleware/validator.js';
 
 const router = express.Router();
 
@@ -16,7 +17,7 @@ router.get('/', async (req: any, res: Response) => {
   }
 });
 
-router.post('/', authorizeRoles('admin'), async (req: any, res: Response) => {
+router.post('/', authorizeRoles('admin'), validate(termSchema), async (req: any, res: Response) => {
   const { name, is_active } = req.body;
   try {
     const [result]: any = await pool.query(
@@ -30,7 +31,7 @@ router.post('/', authorizeRoles('admin'), async (req: any, res: Response) => {
   }
 });
 
-router.put('/:id', authorizeRoles('admin'), async (req: any, res: Response) => {
+router.put('/:id', authorizeRoles('admin'), validate(termSchema), async (req: any, res: Response) => {
   const { name, is_active } = req.body;
   try {
     await pool.query(

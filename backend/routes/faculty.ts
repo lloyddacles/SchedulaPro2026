@@ -3,6 +3,7 @@ import pool from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { logAudit } from '../utils/auditLogger.js';
 import { authenticateToken, authorizeRoles } from '../utils/auth.js';
+import { validate, facultySchema } from '../middleware/validator.js';
 
 const router = express.Router();
 
@@ -40,9 +41,8 @@ router.get('/', async (req: Request, res: Response, next: express.NextFunction) 
   }
 });
 
-router.post('/', authorizeRoles('admin', 'program_head'), async (req: any, res: Response, next: express.NextFunction) => {
+router.post('/', authorizeRoles('admin', 'program_head'), validate(facultySchema), async (req: any, res: Response, next: express.NextFunction) => {
   const { full_name, program_id, campus_id, employment_type, max_teaching_hours, specializations, department } = req.body;
-  if (!full_name) return next(new ApiError(400, 'Full name is required', 'VALIDATION_ERROR'));
 
   const connection = await pool.getConnection();
   try {
@@ -70,7 +70,7 @@ router.post('/', authorizeRoles('admin', 'program_head'), async (req: any, res: 
   }
 });
 
-router.put('/:id', authorizeRoles('admin', 'program_head'), async (req: any, res: Response, next: express.NextFunction) => {
+router.put('/:id', authorizeRoles('admin', 'program_head'), validate(facultySchema), async (req: any, res: Response, next: express.NextFunction) => {
   const { full_name, program_id, campus_id, employment_type, max_teaching_hours, specializations, department } = req.body;
   const facultyId = req.params.id;
   const connection = await pool.getConnection();
