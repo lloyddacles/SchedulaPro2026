@@ -1,15 +1,27 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api';
-import { CheckCircle, XCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, AlertCircle, RefreshCw, MapPin } from 'lucide-react';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function Requests() {
   const queryClient = useQueryClient();
 
+  const [selectedCampus, setSelectedCampus] = React.useState('');
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = React.useState(false);
+  const [confirmConfig, setConfirmConfig] = React.useState({ title: '', message: '', type: '', onConfirm: () => {} });
+
+  const { data: campuses = [] } = useQuery({ 
+    queryKey: ['campuses'], 
+    queryFn: async () => (await api.get('/campuses')).data 
+  });
+
   const { data: requests = [], isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ['requests'],
+    queryKey: ['requests', selectedCampus],
     queryFn: async () => {
-      const res = await api.get('/requests');
+      let url = '/requests';
+      if (selectedCampus) url += `?campus_id=${selectedCampus}`;
+      const res = await api.get(url);
       return res.data;
     }
   });
@@ -33,9 +45,24 @@ export default function Requests() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white font-display">Faculty Change Requests</h1>
           <p className="mt-1 text-gray-500 dark:text-slate-400 font-semibold">Manage staging queue for Drop and Substitute Swap transactions.</p>
         </div>
-        <button onClick={() => refetch()} disabled={isRefetching} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 font-bold border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-xl transition-all shadow-sm">
-           <RefreshCw className={`w-4 h-4 ${isRefetching ? 'animate-spin' : ''}`} /> Sync Queues
-        </button>
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700/50 rounded-xl px-4 py-1.5 shadow-sm">
+            <MapPin className="w-4 h-4 text-gray-400" />
+            <select 
+              value={selectedCampus} 
+              onChange={(e) => setSelectedCampus(e.target.value)}
+              className="bg-transparent border-none text-sm font-bold text-gray-700 dark:text-white outline-none focus:ring-0 cursor-pointer min-w-[140px]"
+            >
+              <option value="">All Locations</option>
+              {campuses.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+          <button onClick={() => refetch()} disabled={isRefetching} className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 font-bold border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-xl transition-all shadow-sm">
+             <RefreshCw className={`w-4 h-4 ${isRefetching ? 'animate-spin' : ''}`} /> Sync Queues
+          </button>
+        </div>
       </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-xl border border-gray-100 dark:border-slate-700/50 overflow-hidden">
@@ -68,7 +95,7 @@ export default function Requests() {
                     <td className="px-6 py-5">
                       <div className="font-black text-gray-800 dark:text-slate-200 flex items-center gap-2">
                          {req.subject_code} 
-                         {req.section_id !== 1 && <span className="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 font-black px-1.5 py-0.5 rounded text-[10px] uppercase">COHORT BOUND</span>}
+                         {req.section_id !== 1 && <span className="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 font-black px-1.5 py-0.5 rounded text-[10px] uppercase">SECTION BOUND</span>}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-slate-400 font-bold mt-1 bg-gray-100/80 dark:bg-slate-700/50 px-2 py-0.5 rounded inline-block">
                          {req.day_of_week} {req.start_time.substring(0,5)} - {req.end_time.substring(0,5)} <span className="opacity-50 mx-1">|</span> Rm {req.room}
@@ -97,11 +124,27 @@ export default function Requests() {
                     </td>
                     <td className="px-6 py-5 text-right w-[140px]">
                       {req.status === 'PENDING' ? (
-                        <div className="flex justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => { if(window.confirm('Executing this will forcefully DELETE the live Schedule block mathematically vacating the slot system-wide. Proceed?')) approveMutation.mutate(req.id); }} className="p-2 border border-emerald-200 dark:border-emerald-700/50 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-500 dark:hover:bg-emerald-600 hover:text-white dark:hover:text-white rounded-xl shadow-sm transition-all hover:scale-110" title="Force Execution (Approve)">
+                        <div className="flex justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-sm">
+                          <button onClick={() => { 
+                            setConfirmConfig({
+                              title: 'Approve Request?',
+                              message: `Executing this will forcefully DELETE the live Schedule block for ${req.subject_code}, mathematically vacating the slot system-wide. This action is irreversible once finalized.`,
+                              type: 'success',
+                              onConfirm: () => approveMutation.mutate(req.id)
+                            });
+                            setIsConfirmModalOpen(true);
+                          }} className="p-2 border border-emerald-200 dark:border-emerald-700/50 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-500 dark:hover:bg-emerald-600 hover:text-white dark:hover:text-white rounded-xl shadow-sm transition-all hover:scale-110" title="Force Execution (Approve)">
                             <CheckCircle className="w-4 h-4"/>
                           </button>
-                          <button onClick={() => { if(window.confirm('Reject this transaction configuration?')) rejectMutation.mutate(req.id); }} className="p-2 border border-red-200 dark:border-red-700/50 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 hover:bg-red-500 dark:hover:bg-red-600 hover:text-white dark:hover:text-white rounded-xl shadow-sm transition-all hover:scale-110" title="Deny Transaction (Reject)">
+                          <button onClick={() => { 
+                            setConfirmConfig({
+                              title: 'Reject Request?',
+                              message: `Deny this transaction configuration. The faculty schedule for ${req.subject_code} will remain unchanged, and the request will be moved to the resolved queue.`,
+                              type: 'danger',
+                              onConfirm: () => rejectMutation.mutate(req.id)
+                            });
+                            setIsConfirmModalOpen(true);
+                          }} className="p-2 border border-red-200 dark:border-red-700/50 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 hover:bg-red-500 dark:hover:bg-red-600 hover:text-white dark:hover:text-white rounded-xl shadow-sm transition-all hover:scale-110" title="Deny Transaction (Reject)">
                             <XCircle className="w-4 h-4"/>
                           </button>
                         </div>
@@ -116,6 +159,15 @@ export default function Requests() {
           </div>
         )}
       </div>
+
+      <ConfirmModal 
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+      />
     </div>
   );
 }

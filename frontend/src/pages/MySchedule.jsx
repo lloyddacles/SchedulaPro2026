@@ -1,62 +1,183 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
-import { Calendar, Printer, X, ShieldAlert, Sparkles, AlertCircle } from 'lucide-react';
+import useScheduleStore from '../store/useScheduleStore';
+import { 
+  Calendar, Printer, X, ShieldAlert, Sparkles, AlertCircle, 
+  TrendingUp, Users, Clock, MapPin, CheckCircle2, RefreshCw 
+} from 'lucide-react';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
+import { generateProfessionalPDF } from '../utils/pdfGenerator';
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const WorkloadDetails = ({ workload, percent }) => {
+  if (!workload) return null;
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 print:hidden">
+      <div className="glass p-6 rounded-[2rem] border border-white/40 shadow-lg bg-gradient-to-br from-brand-50 to-white dark:from-slate-800 dark:to-slate-900">
+        <div className="flex justify-between items-start mb-4">
+          <div className="p-3 bg-brand-500/10 rounded-2xl">
+            <Clock className="w-6 h-6 text-brand-600 dark:text-brand-400" />
+          </div>
+          <span className="text-[10px] font-black text-brand-600/50 uppercase tracking-widest">Active Load</span>
+        </div>
+        <div className="text-3xl font-black text-slate-900 dark:text-white mb-1 font-display tracking-tight">
+          {workload.current_load}<span className="text-sm font-bold text-slate-400 ml-2">/ {workload.max_units}</span>
+        </div>
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Assigned Teaching Hours</p>
+      </div>
+
+      <div className="glass p-6 rounded-[2rem] border border-white/40 shadow-lg bg-gradient-to-br from-indigo-50 to-white dark:from-slate-800 dark:to-slate-900 md:col-span-2">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-indigo-500/10 rounded-2xl">
+              <TrendingUp className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <span className="text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider">Utilization Progress</span>
+          </div>
+          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+            percent > 100 ? 'bg-red-50 text-red-600 border-red-100 dark:bg-red-900/20' : 
+            percent > 80 ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/20' : 
+            'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20'
+          }`}>
+            {percent > 100 ? 'Overloaded' : percent > 80 ? 'Near Capacity' : 'Optimal Load'}
+          </span>
+        </div>
+        <div className="h-4 w-full bg-slate-200/50 dark:bg-slate-700/50 rounded-full overflow-hidden relative">
+           <div 
+             style={{ width: `${percent}%` }} 
+             className={`h-full rounded-full transition-all duration-1000 shadow-[0_0_12px_rgba(59,130,246,0.3)] ${
+               percent > 100 ? 'bg-red-500' : percent > 80 ? 'bg-amber-500' : 'bg-brand-500'
+             }`} 
+           />
+        </div>
+        <div className="flex justify-between mt-3 px-1">
+           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">0% Availability Used</span>
+           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{percent.toFixed(1)}% Capacity Occupied</span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function MySchedule() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedSch, setSelectedSch] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  const initialView = searchParams.get('view') === 'advisory' ? 'advisory' : 'personal';
+
   const [reqType, setReqType] = useState('DROP');
   const [reason, setReason] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   
-  const { data: schedules = [], isLoading } = useQuery({ 
-    queryKey: ['my-schedules', user?.faculty_id], 
-    queryFn: async () => {
-      const res = await api.get('/schedules', { params: { faculty_id: user?.faculty_id } });
-      return res.data;
-    },
+  // Advisory View states
+  const [viewType, setViewType] = useState(initialView); // 'personal' | 'advisory'
+  const [selectedAdvisoryId, setSelectedAdvisoryId] = useState(null);
+  
+  const { activeTermId, socket, isConnected, terms } = useScheduleStore();
+
+  const { data: advisorySections = [] } = useQuery({
+    queryKey: ['my-advisory-sections'],
+    queryFn: async () => (await api.get('/sections/advisory')).data,
     enabled: !!user?.faculty_id
   });
 
-  const handlePrint = () => window.print();
+  // Set default advisory section once loaded
+  useEffect(() => {
+    if (advisorySections.length > 0 && !selectedAdvisoryId) {
+      setSelectedAdvisoryId(advisorySections[0].id);
+    }
+  }, [advisorySections, selectedAdvisoryId]);
 
-  const getHexColor = (str) => {
-    const colors = ['#f43f5e', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#eab308'];
-    let hash = 0;
-    if (str) { for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash); }
-    return colors[Math.abs(hash) % colors.length];
+  const { data: schedules = [], isLoading } = useQuery({ 
+    queryKey: ['my-schedules', user?.faculty_id, activeTermId, viewType, selectedAdvisoryId], 
+    queryFn: async () => {
+      const params = { term_id: activeTermId };
+      if (viewType === 'personal') {
+        params.faculty_id = user?.faculty_id;
+      } else {
+        params.section_id = selectedAdvisoryId;
+      }
+      
+      const res = await api.get('/schedules', { params });
+      return res.data;
+    },
+    enabled: !!activeTermId && (viewType === 'personal' ? !!user?.faculty_id : !!selectedAdvisoryId)
+  });
+
+  const { data: workloads = [] } = useQuery({
+    queryKey: ['my-workload', activeTermId],
+    queryFn: async () => (await api.get('/reports/faculty-workloads', { params: { term_id: activeTermId }})).data,
+    enabled: !!activeTermId
+  });
+
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+    const handleUpdate = () => queryClient.invalidateQueries(['my-schedules']);
+    socket.on('schedule_updated', handleUpdate);
+    return () => socket.off('schedule_updated', handleUpdate);
+  }, [socket, isConnected, queryClient]);
+
+  const myWorkload = workloads.find(w => w.id === user?.faculty_id);
+  const utilizedPercent = myWorkload && myWorkload.max_units > 0 
+    ? Math.min((myWorkload.current_load / myWorkload.max_units) * 100, 100) 
+    : 0;
+
+  const handlePrint = () => {
+    let termName = terms.find(t => t.id === activeTermId)?.name || 'Active Term';
+    if (!termName.includes('A.Y.') && !termName.includes('202')) {
+        termName = `${termName} A.Y. 2026-2027`;
+    }
+    
+    const campusName = myWorkload?.campus_name || 'Main Campus';
+    const institutionName = useScheduleStore.getState().systemSettings.institution_name || 'Institution';
+    
+    let title = `Schedule for ${user?.full_name || 'Instructor'}`;
+    if (viewType === 'advisory') {
+        const sect = advisorySections.find(s => s.id === selectedAdvisoryId);
+        title = `Class Schedule: ${sect ? `${sect.program_code} ${sect.year_level}${sect.name}` : 'Advisory Class'}`;
+    }
+
+    generateProfessionalPDF(schedules, title, termName, campusName, institutionName);
+  };
+
+  const getProgramColor = (programCode) => {
+    const code = (programCode || '').toUpperCase();
+    if (code.includes('BSTM')) return { bg: '#7c3aed', border: '#6d28d9' };
+    if (code.includes('BSAIS') || code.includes('BSA')) return { bg: '#eab308', border: '#ca8a04' };
+    if (code.includes('BSIS')) return { bg: '#1e3a8a', border: '#1e40af' };
+    if (code.includes('BSE')) return { bg: '#7f1d1d', border: '#991b1b' };
+    if (code.includes('BSCRIM')) return { bg: '#f97316', border: '#ea580c' };
+    return { bg: '#10b981', border: '#059669' };
   };
 
   const dayMap = { 'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6 };
   
-  const fcEvents = schedules.map(sch => ({
-       id: sch.id.toString(),
-       title: `${sch.subject_code}\n${sch.subject_name}\nRoom: ${sch.room}`,
-       daysOfWeek: [dayMap[sch.day_of_week]],
-       startTime: sch.start_time,
-       endTime: sch.end_time,
-       backgroundColor: getHexColor(sch.subject_code),
-       borderColor: getHexColor(sch.subject_code),
-       extendedProps: { raw: sch }
-  }));
+  const fcEvents = schedules.map(sch => {
+    const colors = getProgramColor(sch.program_code);
+    return {
+      id: sch.id.toString(),
+      title: sch.subject_code,
+      daysOfWeek: [dayMap[sch.day_of_week]],
+      startTime: sch.start_time,
+      endTime: sch.end_time,
+      backgroundColor: colors.bg,
+      borderColor: colors.border,
+      extendedProps: { raw: sch }
+    };
+  });
 
   const submitMutation = useMutation({
     mutationFn: (payload) => api.post('/requests', payload),
     onSuccess: () => {
       setIsModalOpen(false);
-      alert("Swap/Drop configuration successfully dispatched to the Administrator Queue.");
+      alert("Change request successfully dispatched to the Administrator Queue.");
     },
-    onError: (err) => {
-      setErrorMsg(err.response?.data?.message || "Failed dependency mapping.");
-    }
+    onError: (err) => setErrorMsg(err.response?.data?.message || "Failed to submit request.")
   });
 
   const handleEventClick = (info) => {
@@ -68,32 +189,113 @@ export default function MySchedule() {
   };
 
   const handleCommitRequest = () => {
-    if (!reason.trim()) { setErrorMsg('Explicit justification parameters required.'); return; }
-    submitMutation.mutate({ schedule_id: selectedSch.id, faculty_id: selectedSch.faculty_id, request_type: reqType, reason_text: reason });
+    if (!reason.trim()) { setErrorMsg('Detailed justification parameter required.'); return; }
+    submitMutation.mutate({ 
+      schedule_id: selectedSch.id, 
+      faculty_id: user.faculty_id, 
+      request_type: reqType, 
+      reason_text: reason 
+    });
+  };
+
+  const renderEventContent = (eventInfo) => {
+    const sch = eventInfo.event.extendedProps.raw;
+    return (
+      <div className="flex flex-col h-full w-full p-1 text-center justify-center gap-0.5 overflow-hidden">
+        <div className="font-black text-[10px] uppercase leading-none">{sch.subject_code}</div>
+        <div className="font-bold text-[8px] opacity-90 truncate">{sch.program_code}-{sch.year_level}{sch.section_name}</div>
+        <div className="flex items-center justify-center gap-1 text-[8px] font-black bg-black/10 rounded mt-1">
+          <MapPin className="w-2 h-2" /> {sch.room}
+        </div>
+      </div>
+    );
   };
 
   return (
-    <div className="space-y-6 pb-10 print:p-0 print:space-y-0 print:block">
+    <div className="space-y-6 pb-20 print:p-0 print:space-y-0 print:block">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white font-display">My Schedule</h1>
-          <p className="mt-1 text-gray-500 dark:text-slate-400">Your assigned teaching hours and classroom locations.</p>
+          <h1 className="text-4xl font-black text-slate-900 dark:text-white font-display tracking-tight">Active Schedule</h1>
+          <p className="mt-1 text-slate-500 font-medium">Official institutional load and venue assignments.</p>
         </div>
-        <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 border border-gray-200 dark:border-slate-700 rounded-xl font-semibold shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition">
-          <Printer className="w-5 h-5" /> Print
-        </button>
+        <div className="flex items-center gap-3">
+          {advisorySections.length > 0 && (
+            <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+               <button 
+                onClick={() => setViewType('personal')}
+                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewType === 'personal' ? 'bg-white dark:bg-slate-700 text-brand-600 shadow-sm' : 'text-slate-400'}`}
+               >
+                 My Load
+               </button>
+               <button 
+                onClick={() => setViewType('advisory')}
+                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewType === 'advisory' ? 'bg-white dark:bg-slate-700 text-brand-600 shadow-sm' : 'text-slate-400'}`}
+               >
+                 Advisory
+               </button>
+            </div>
+          )}
+          <button onClick={handlePrint} className="flex items-center gap-2 px-6 py-2.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-2xl font-bold shadow-sm hover:bg-slate-50 transition-all">
+            <Printer className="w-5 h-5" /> Print Copy
+          </button>
+        </div>
       </div>
 
-      <div className="glass rounded-[2rem] shadow-xl border border-white/40 overflow-hidden print:shadow-none print:border-none print:bg-white print:rounded-none">
+      {viewType === 'personal' ? (
+        <WorkloadDetails workload={myWorkload} percent={utilizedPercent} />
+      ) : (
+        <div className="glass p-6 rounded-[2.5rem] border border-white/40 shadow-lg bg-indigo-50/30 dark:bg-slate-800/30 mb-8 animate-fade-in">
+           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                 <div className="p-4 bg-indigo-600 text-white rounded-3xl shadow-lg shadow-indigo-500/20">
+                    <Users className="w-7 h-7" />
+                 </div>
+                 <div>
+                    <p className="text-[10px] font-black text-indigo-600/50 uppercase tracking-widest leading-none mb-1">Current Advisory Context</p>
+                    <h2 className="text-2xl font-black text-slate-900 dark:text-white font-display">
+                       {advisorySections.find(s => s.id === selectedAdvisoryId)?.program_code} {advisorySections.find(s => s.id === selectedAdvisoryId)?.year_level}{advisorySections.find(s => s.id === selectedAdvisoryId)?.name}
+                    </h2>
+                 </div>
+              </div>
+              
+              {advisorySections.length > 1 && (
+                <div className="flex items-center gap-3">
+                   <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Select Section:</span>
+                   <select 
+                    value={selectedAdvisoryId} 
+                    onChange={(e) => setSelectedAdvisoryId(Number(e.target.value))}
+                    className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 dark:text-white outline-none focus:ring-4 focus:ring-brand-500/10 min-w-[150px]"
+                   >
+                     {advisorySections.map(s => (
+                       <option key={s.id} value={s.id}>{s.name} ({s.program_code})</option>
+                     ))}
+                   </select>
+                </div>
+              )}
+           </div>
+        </div>
+      )}
+
+      <div className="flex items-center gap-3 px-5 py-4 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-[1.5rem] text-sm text-blue-700 dark:text-blue-400 print:hidden shadow-sm">
+        <ShieldAlert className="w-5 h-5 flex-shrink-0" />
+        <span className="font-medium"><strong>Verified Blocks Only.</strong> Assignments still pending administrative review are hidden until approved by the Program Head.</span>
+      </div>
+
+      <div className="glass rounded-[2.5rem] shadow-xl border border-white/40 overflow-hidden print:hidden">
         {isLoading ? (
-           <div className="flex justify-center items-center h-40"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 dark:border-brand-500"></div></div>
+           <div className="flex justify-center items-center h-40"><RefreshCw className="animate-spin h-8 w-8 text-brand-600" /></div>
         ) : (
-          <div className="bg-white dark:bg-slate-900 p-4 print:p-0 transition-colors duration-200">
+          <div className="bg-slate-900 rounded-[2.5rem] p-6 relative overflow-hidden group">
+             {/* Background Glow matching Master Schedule */}
+             <div className="absolute top-0 left-1/4 w-1/2 h-1 bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+
              <style>{`
-               .fc-theme-standard td, .fc-theme-standard th { border-color: #f3f4f6; }
-               .fc-timegrid-slot-label-cushion { font-size: 11px; font-weight: 600; color: #6b7280; }
-               .fc-col-header-cell-cushion { font-size: 12px; font-weight: 700; color: #374151; padding: 8px 0; }
-               .fc-event-main { padding: 4px; font-size: 11px; font-weight: 600; line-height: 1.4; }
+               .fc-theme-standard td, .fc-theme-standard th { border-color: #334155; }
+               .fc-timegrid-slot-label-cushion { font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
+               .fc-col-header-cell-cushion { font-size: 11px; font-weight: 900; color: #f8fafc; padding: 12px 0; text-transform: uppercase; letter-spacing: 0.05em; }
+               .fc-event { border-radius: 8px !important; border: none !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+               .fc-timegrid-slot { height: 3.5rem !important; }
+               .fc-scrollgrid { border: none !important; }
              `}</style>
              <FullCalendar
                 plugins={[timeGridPlugin]}
@@ -105,11 +307,13 @@ export default function MySchedule() {
                 slotMaxTime="21:00:00"
                 allDaySlot={false}
                 dayHeaderFormat={{ weekday: 'long' }}
+                slotLabelFormat={{ hour: 'numeric', minute: '2-digit', meridiem: 'short' }}
+                eventTimeFormat={{ hour: 'numeric', minute: '2-digit', meridiem: 'short' }}
                 events={fcEvents}
                 eventClick={handleEventClick}
+                eventContent={renderEventContent}
                 editable={false}
-                height="800px"
-                expandRows={true}
+                height="auto"
                 slotDuration="00:30:00"
              />
           </div>
@@ -117,49 +321,42 @@ export default function MySchedule() {
       </div>
 
       {isModalOpen && selectedSch && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 dark:bg-black/60 backdrop-blur-md animate-fade-in print:hidden">
-           <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden transform transition-all flex flex-col">
-              <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-700/50 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900/50">
-                 <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3 tracking-tight">
-                    <ShieldAlert className="w-6 h-6 text-brand-500" />
-                    Official Change Request
-                 </h3>
-                 <button onClick={() => setIsModalOpen(false)} className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"><X className="w-6 h-6" /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in print:hidden">
+           <div className="bg-white dark:bg-slate-800 rounded-[3rem] shadow-2xl w-full max-w-lg overflow-hidden transform transition-all border border-white/20">
+              <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+                 <h3 className="text-2xl font-black text-slate-900 dark:text-white font-display">Change Request</h3>
+                 <button onClick={() => setIsModalOpen(false)} className="p-2 bg-slate-100 dark:bg-slate-700 text-slate-400 rounded-xl hover:text-slate-600 transition-colors"><X className="w-6 h-6" /></button>
               </div>
-              <div className="p-6 space-y-5">
+              <div className="p-8 space-y-6">
                  {errorMsg && (
-                   <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm border border-red-100 flex items-center gap-2">
+                   <div className="p-4 bg-red-50 text-red-700 rounded-2xl text-sm border border-red-100 flex items-center gap-2">
                      <AlertCircle className="w-5 h-5 flex-shrink-0" /> <span className="font-bold">{errorMsg}</span>
                    </div>
                  )}
-                 <div className="p-4 bg-gray-50 dark:bg-slate-700/50 rounded-xl border border-gray-100 dark:border-slate-600/50 shadow-sm relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-brand-500"></div>
-                    <p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-widest">{selectedSch.section_id !== 1 ? `${selectedSch.program_code}-${selectedSch.year_level}${selectedSch.section_name}` : 'Unassigned Cohort'}</p>
-                    <h4 className="text-xl font-black text-gray-900 dark:text-white mt-1">{selectedSch.subject_code}</h4>
-                    <p className="text-sm font-semibold text-gray-600 dark:text-slate-300 truncate">{selectedSch.day_of_week} ({selectedSch.start_time} - {selectedSch.end_time})</p>
+                 <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-[2rem] border border-slate-100 dark:border-slate-700 relative overflow-hidden shadow-inner">
+                    <div className="absolute top-0 left-0 w-2 h-full bg-brand-500"></div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Target Load</p>
+                    <h4 className="text-3xl font-black text-slate-900 dark:text-white font-display italic tracking-tight mb-2 underline">{selectedSch.subject_code}</h4>
+                    <div className="flex flex-wrap gap-4 mt-4">
+                       <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wide"><MapPin className="w-4 h-4" /> {selectedSch.room}</span>
+                       <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wide"><Calendar className="w-4 h-4" /> {selectedSch.day_of_week}</span>
+                    </div>
                  </div>
                  
-                 <div>
-                    <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-2">Request Type</label>
-                    <div className="flex gap-4">
-                       <label className={`flex-1 border-2 p-3 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all font-bold ${reqType === 'DROP' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400 shadow-[0_0_0_4px_rgba(59,130,246,0.1)]' : 'border-gray-200 dark:border-slate-600 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700'}`}>
-                          <input type="radio" value="DROP" checked={reqType === 'DROP'} onChange={(e)=>setReqType(e.target.value)} className="hidden"/> Drop Load
-                       </label>
-                       <label className={`flex-1 border-2 p-3 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all font-bold ${reqType === 'SWAP' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400 shadow-[0_0_0_4px_rgba(59,130,246,0.1)]' : 'border-gray-200 dark:border-slate-600 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700'}`}>
-                          <input type="radio" value="SWAP" checked={reqType === 'SWAP'} onChange={(e)=>setReqType(e.target.value)} className="hidden"/> Substitute Swap
-                       </label>
-                    </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <button onClick={()=>setReqType('DROP')} className={`py-4 rounded-2xl font-black uppercase tracking-widest text-xs border-2 transition-all ${reqType === 'DROP' ? 'bg-brand-600 text-white border-brand-600 shadow-xl shadow-brand-500/20' : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-700'}`}>Drop Load</button>
+                    <button onClick={()=>setReqType('SWAP')} className={`py-4 rounded-2xl font-black uppercase tracking-widest text-xs border-2 transition-all ${reqType === 'SWAP' ? 'bg-brand-600 text-white border-brand-600 shadow-xl shadow-brand-500/20' : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-700'}`}>Sub Swap</button>
                  </div>
 
                  <div>
-                    <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-2">Detailed Justification</label>
-                    <textarea value={reason} onChange={(e)=>setReason(e.target.value)} className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl p-4 min-h-[120px] bg-gray-50 dark:bg-slate-700 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:ring-brand-500 focus:border-brand-500 outline-none font-medium text-sm transition-all shadow-sm" placeholder="Enter explicit constraints requiring this structural modification..."></textarea>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Request Justification</label>
+                    <textarea value={reason} onChange={(e)=>setReason(e.target.value)} className="w-full border-2 border-slate-100 dark:border-slate-700 rounded-[1.5rem] p-5 min-h-[140px] bg-slate-50 dark:bg-slate-900 dark:text-white outline-none focus:border-brand-500 font-bold text-sm transition-all" placeholder="Enter explicit constraints requiring this structural modification..."></textarea>
                  </div>
               </div>
-              <div className="px-6 py-4 border-t border-gray-100 dark:border-slate-700/50 bg-gray-50 dark:bg-slate-900/50 flex justify-end gap-3 flex-wrap">
-                 <button onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 font-bold text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors shadow-sm w-full sm:w-auto">Cancel Interaction</button>
-                 <button onClick={handleCommitRequest} disabled={submitMutation.isPending} className="flex justify-center items-center gap-2 px-6 py-2.5 font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-lg transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 w-full sm:w-auto">
-                    {submitMutation.isPending ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <><Sparkles className="w-5 h-5"/> Submit Dispatch Ticket</>}
+              <div className="px-8 py-6 border-t border-slate-100 dark:border-slate-700/50 flex gap-4">
+                 <button onClick={() => setIsModalOpen(false)} className="flex-1 py-4 font-black text-slate-400 tracking-widest uppercase text-xs hover:text-slate-600 transition-colors">Abort</button>
+                 <button onClick={handleCommitRequest} disabled={submitMutation.isPending} className="flex-3 py-4 bg-brand-600 text-white rounded-2xl font-black tracking-widest uppercase text-xs shadow-xl shadow-brand-500/30 hover:bg-brand-700 transition-all flex justify-center items-center gap-2">
+                    {submitMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4" /> Dispatch Ticket</>}
                  </button>
               </div>
            </div>

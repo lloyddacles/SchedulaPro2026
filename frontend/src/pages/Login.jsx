@@ -40,7 +40,7 @@ export default function Login() {
         </div>
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-gray-900 mb-2 font-display">Welcome Back</h1>
-          <p className="text-gray-500 font-medium">Sign in to FacultyScheduler</p>
+          <p className="text-gray-500 font-medium">Faculty Teaching Load Scheduling System</p>
         </div>
 
         {error && (
@@ -91,7 +91,19 @@ export default function Login() {
             ) : 'Sign in to Portal'}
           </button>
         </form>
+
+        {/* Ownership credit */}
+        <div className="mt-8 pt-6 border-t border-gray-200/60 text-center">
+          <p className="text-xs text-gray-400 font-medium">Developed &amp; owned by</p>
+          <p className="text-sm font-bold text-gray-600 mt-0.5">Mr. Lloyd Christopher F. Dacles, MIS</p>
+          <p className="text-xs text-brand-500 font-semibold tracking-widest uppercase mt-0.5">LDRaidmax</p>
+        </div>
       </div>
+
+      {/* Bottom copyright */}
+      <p className="absolute bottom-6 text-xs text-gray-400 font-medium z-10">
+        &copy; {new Date().getFullYear()} LDRaidmax · All rights reserved
+      </p>
     </div>
   );
 }

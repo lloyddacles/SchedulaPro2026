@@ -1,6 +1,6 @@
-const mysql = require('mysql2/promise');
-const bcrypt = require('bcrypt');
-const dotenv = require('dotenv');
+import mysql from 'mysql2/promise';
+import bcrypt from 'bcrypt';
+import dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -9,16 +9,26 @@ async function seed() {
   let connection;
   try {
     // Connect without database first to create it if it doesn't exist
-    connection = await mysql.createConnection({
-      host: process.env.DB_HOST || 'localhost',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || '',
-    });
+    const connectionConfig = process.env.DATABASE_URL 
+      ? process.env.DATABASE_URL 
+      : {
+          host: process.env.DB_HOST || 'localhost',
+          user: process.env.DB_USER || 'root',
+          password: process.env.DB_PASSWORD || '',
+          ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+        };
+
+    connection = await mysql.createConnection(connectionConfig);
 
     const dbName = process.env.DB_NAME || 'faculty_scheduling';
-    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
+    
+    // On Aiven/Cloud, don't try to create 'defaultdb', just use it.
+    if (dbName !== 'defaultdb') {
+      await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
+    }
+    
     await connection.query(`USE \`${dbName}\``);
-    console.log(`Database '${dbName}' ensured.`);
+    console.log(`Using database '${dbName}'.`);
 
     // Create Tables
     await connection.query(`

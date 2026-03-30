@@ -1,0 +1,488 @@
+/**
+ * ScheduleService.ts
+ * 
+ * Centralizes the complex algorithmic logic for the Faculty Teaching Load Scheduling System.
+ * Handles auto-generation, time-math, and institutional constraints (Lunch Gaps, Room Priorities).
+ */
+
+export interface ScheduleBlock {
+  start: number;
+  end: number;
+}
+
+export interface TeachingLoad {
+  teaching_load_id: number;
+  faculty_id: number;
+  co_faculty_id_1: number | null;
+  co_faculty_id_2: number | null;
+  section_id: number;
+  campus_id: number;
+  required_hours: number;
+  room_type: string;
+  subject_code: string;
+  program_code: string;
+}
+
+export interface Room {
+  id: number;
+  name: string;
+  type: string;
+  capacity: number;
+  campus_id: number;
+}
+
+export interface FacultyUnavailability {
+  faculty_id: number;
+  day_of_week: string;
+  start_time: string;
+  end_time: string;
+}
+
+export interface Schedule {
+  teaching_load_id: number;
+  faculty_id: number;
+  co_faculty_id_1: number | null;
+  co_faculty_id_2: number | null;
+  section_id: number;
+  day_of_week: string;
+  start_time: string;
+  end_time: string;
+  room: string;
+}
+
+export interface AutoScheduleResult {
+  scheduled: number;
+  failed: number;
+  failures: { subject: string; reason: string }[];
+  newlyMapped: Schedule[];
+}
+
+export interface ValidationParams {
+  teachingLoadId: number;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  room: string;
+  termId: number;
+  excludeScheduleId?: number | null;
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  message?: string;
+  details?: string;
+  warning?: string;  // Non-fatal advisory (e.g. cross-campus booking)
+}
+
+export class ScheduleService {
+  /**
+   * Helper: Parse "HH:mm:ss" or "HH:mm" to decimal hours (e.g., "07:30:00" -> 7.5)
+   */
+  static parseTime(t: string): number {
+    if (!t) return 0;
+    const [h, m] = t.split(':').map(Number);
+    return h + (m || 0) / 60;
+  }
+
+  /**
+   * Helper: Format decimal hours back to "HH:mm:ss"
+   */
+  static formatTime(decimalHours: number): string {
+    const h = Math.floor(decimalHours);
+    const m = Math.round((decimalHours - h) * 60);
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:00`;
+  }
+
+  /**
+   * Helper: Automated lunch gap verification
+   */
+  static hasLunchGap(currentBlocks: ScheduleBlock[], newS: number, newE: number): boolean {
+    const blocks: ScheduleBlock[] = [...currentBlocks, { start: newS, end: newE }];
+    const L_START = 11.5; // 11:30 AM
+    const L_END = 14.5;   // 02:30 PM
+    const REQ_GAP = 1.0;  // 1 hour
+    
+    blocks.sort((a, b) => a.start - b.start);
+    
+    let lastEnd = L_START;
+    for (const b of blocks) {
+      if (b.end <= L_START) continue;
+      if (b.start >= L_END) break;
+      
+      const gapStart = Math.max(lastEnd, L_START);
+      const gapEnd = Math.min(b.start, L_END);
+      if (gapEnd - gapStart >= REQ_GAP - 0.01) return true;
+      
+      lastEnd = Math.max(lastEnd, b.end);
+    }
+    
+    return (L_END - Math.max(lastEnd, L_START) >= REQ_GAP - 0.01);
+  }
+
+  /**
+   * Unified Placement Validation:
+   * Checks for Faculty overlaps, Section overlaps, Room overlaps, Campus mismatch, Blackouts, and Lunch Gap.
+   */
+  static async validatePlacement(poolOrConn: any, params: ValidationParams): Promise<ValidationResult> {
+    const { teachingLoadId, dayOfWeek, startTime, endTime, room, termId, excludeScheduleId } = params;
+    const sAttempt = this.parseTime(startTime);
+    const eAttempt = this.parseTime(endTime);
+
+    // 1. Fetch core entities involved
+    const [tlRows]: [any[], any] = await poolOrConn.query(
+      'SELECT faculty_id, co_faculty_id_1, co_faculty_id_2, section_id, term_id FROM teaching_loads WHERE id = ?', 
+      [teachingLoadId]
+    );
+    if (tlRows.length === 0) return { valid: false, message: 'Teaching load not found' };
+    
+    const { faculty_id: fId, co_faculty_id_1: c1Id, co_faculty_id_2: c2Id, section_id: sectionId, term_id: dbTermId } = tlRows[0];
+    const targetTermId = termId || dbTermId;
+    const targetFacultyIds = [fId, c1Id, c2Id].filter(Boolean);
+    const facPlaceholders = targetFacultyIds.length > 0 ? targetFacultyIds.map(() => '?').join(',') : 'NULL';
+
+    // 2. Room & Section Integrity Checks
+    const [roomCheck]: [any[], any] = await poolOrConn.query('SELECT campus_id, capacity, is_archived FROM rooms WHERE name = ?', [room]);
+    const [secCheck]: [any[], any] = await poolOrConn.query('SELECT campus_id, student_count FROM sections WHERE id = ?', [sectionId]);
+    
+    if (roomCheck.length === 0 || roomCheck[0].is_archived) {
+      return { valid: false, message: 'Invalid Room', details: 'The room does not exist or is archived.' };
+    }
+
+    const roomCapacity = roomCheck[0].capacity || 0;
+    const sectionSize = secCheck.length > 0 ? (secCheck[0].student_count || 0) : 30;
+
+    // Only enforce capacity breach if it's a REAL section (ID != 1)
+    if (sectionId !== 1 && sectionSize > roomCapacity) {
+      return { 
+        valid: false, 
+        message: 'Capacity Breach', 
+        details: `Room ${room} (Cap: ${roomCapacity}) cannot accommodate ${sectionSize} students from this section.` 
+      };
+    }
+
+    // Campus cross-check: soft warning only — faculty may legitimately teach at a different campus
+    // (e.g. Main Campus instructor assigned to SHS/Bay 2 subjects).
+    // We intentionally do NOT block this — it is flagged as a non-fatal advisory.
+    const campusMismatch = secCheck.length > 0 && roomCheck[0].campus_id !== secCheck[0].campus_id;
+
+    // 3. Structural Overlaps (Faculty & Section)
+    let queryConflicts = `
+      SELECT sch.*, s.subject_code, sec.name as section_name, p.code as program_code,
+             tl.faculty_id as c_f, tl.co_faculty_id_1 as c_c1, tl.co_faculty_id_2 as c_c2
+      FROM schedules sch
+      JOIN teaching_loads tl ON sch.teaching_load_id = tl.id
+      JOIN subjects s ON tl.subject_id = s.id
+      JOIN sections sec ON tl.section_id = sec.id
+      JOIN programs p ON sec.program_id = p.id
+      WHERE (
+          (tl.faculty_id IN (${facPlaceholders}) OR tl.co_faculty_id_1 IN (${facPlaceholders}) OR tl.co_faculty_id_2 IN (${facPlaceholders}))
+          OR (tl.section_id = ? AND tl.section_id != 1)
+        )
+        AND tl.term_id = ? AND tl.status != 'archived' AND sch.day_of_week = ?
+        AND sch.start_time < ? AND sch.end_time > ?
+    `;
+    const facParams = targetFacultyIds.length > 0 ? targetFacultyIds : [];
+    const paramsConflicts: any[] = [...facParams, ...facParams, ...facParams, sectionId, termId, dayOfWeek, endTime, startTime];
+    if (excludeScheduleId) { queryConflicts += ' AND sch.id != ?'; paramsConflicts.push(excludeScheduleId); }
+
+    const [conflicts]: [any[], any] = await poolOrConn.query(queryConflicts, paramsConflicts);
+    if (conflicts.length > 0) {
+      const c = conflicts[0];
+      const conflictFacs = [c.c_f, c.c_c1, c.c_c2].filter(Boolean);
+      const isFacConflict = targetFacultyIds.some(tf => conflictFacs.includes(tf));
+      return { 
+        valid: false, 
+        message: isFacConflict ? 'Faculty Conflict' : 'Cohort Conflict',
+        details: isFacConflict 
+          ? `Collision with ${c.subject_code} (${c.start_time.slice(0,5)}-${c.end_time.slice(0,5)}) on an instructor.`
+          : `Students in ${c.program_code}-${c.section_name} are already booked for ${c.subject_code}.`
+      };
+    }
+
+    // 4. Room Double-Booking
+    let queryRoom = `
+      SELECT sch.*, s.subject_code FROM schedules sch
+      JOIN teaching_loads tl ON sch.teaching_load_id = tl.id JOIN subjects s ON tl.subject_id = s.id
+      WHERE sch.room = ? AND tl.term_id = ? AND tl.status != 'archived' AND sch.day_of_week = ? AND sch.start_time < ? AND sch.end_time > ?
+    `;
+    const paramsRoom = [room, targetTermId, dayOfWeek, endTime, startTime];
+    if (excludeScheduleId) { queryRoom += ' AND sch.id != ?'; paramsRoom.push(excludeScheduleId); }
+
+    const [roomConflicts]: [any[], any] = await poolOrConn.query(queryRoom, paramsRoom);
+    if (roomConflicts.length > 0) {
+      const c = roomConflicts[0];
+      return { valid: false, message: 'Room Double-Booking', details: `Room ${room} is occupied by ${c.subject_code} (${c.start_time.slice(0,5)}-${c.end_time.slice(0,5)}).` };
+    }
+
+    // 5. Faculty Blackouts & Multi-Campus Travel
+    if (targetFacultyIds.length > 0) {
+      const queryBlackouts = `
+        SELECT * FROM faculty_unavailability 
+        WHERE faculty_id IN (${facPlaceholders}) AND day_of_week = ? AND (start_time < ? AND end_time > ?)
+      `;
+      const [blockouts]: [any[], any] = await poolOrConn.query(queryBlackouts, [...targetFacultyIds, dayOfWeek, endTime, startTime]);
+      if (blockouts.length > 0) {
+        return { valid: false, message: 'Faculty Unavailability', details: `An instructor is explicitly blocked: ${blockouts[0].reason || 'No reason provided'}.` };
+      }
+
+      // Multi-campus travel check: Fetch ALL schedules for these faculty on this day
+      const queryDaySchedules = `
+        SELECT sch.start_time, sch.end_time, r.campus_id, r.name as room_name
+        FROM schedules sch
+        JOIN teaching_loads tl ON sch.teaching_load_id = tl.id
+        JOIN rooms r ON sch.room = r.name
+        WHERE (tl.faculty_id IN (${facPlaceholders}) OR tl.co_faculty_id_1 IN (${facPlaceholders}) OR tl.co_faculty_id_2 IN (${facPlaceholders}))
+          AND sch.day_of_week = ? AND tl.term_id = ? AND tl.status != 'archived'
+      `;
+      const [daySchedules]: [any[], any] = await poolOrConn.query(queryDaySchedules, [...targetFacultyIds, ...targetFacultyIds, ...targetFacultyIds, dayOfWeek, targetTermId]);
+      
+      const TRAVEL_BUFFER = 1.0; // 1 hour required to travel between campuses
+      const currentCampusId = roomCheck[0].campus_id;
+
+      for (const ds of daySchedules) {
+        if (excludeScheduleId && ds.id === excludeScheduleId) continue;
+        if (ds.campus_id === currentCampusId) continue; // Same campus, buffer not strictly enforced here (lunch gap handles it)
+
+        const dsS = this.parseTime(ds.start_time);
+        const dsE = this.parseTime(ds.end_time);
+
+        // Check if the gap between ds and new placement is < 1 hour
+        const gapBefore = sAttempt - dsE;
+        const gapAfter = dsS - eAttempt;
+
+        if ((gapBefore >= 0 && gapBefore < TRAVEL_BUFFER) || (gapAfter >= 0 && gapAfter < TRAVEL_BUFFER)) {
+            return { 
+              valid: false, 
+              message: 'Travel Conflict', 
+              details: `Instructor needs 1 hour to travel from ${ds.room_name} (Other Campus) to ${room}.` 
+            };
+        }
+      }
+    }
+
+    // 6. Lunch Gap — only validate if the proposed class touches the lunch window (11:30 AM – 2:30 PM).
+    // A class entirely before 11:30 AM or entirely after 2:30 PM cannot affect the lunch break.
+    const L_START = 11.5; // 11:30 AM
+    const L_END = 14.5;   // 02:30 PM
+    const proposedOverlapsLunchWindow = sAttempt < L_END && eAttempt > L_START;
+    if (proposedOverlapsLunchWindow) {
+      const gapOk = await this.validateManualSlot(poolOrConn, { 
+        facultyIds: targetFacultyIds as number[], sectionId: sectionId as number, dayOfWeek, termId: targetTermId, startTime, endTime, excludeScheduleId 
+      });
+      if (!gapOk) {
+        return { valid: false, message: 'Flexible Lunch Required', details: 'No contiguous 1-hour break between 11:30 AM and 2:30 PM is available for this instructor/section on this day.' };
+      }
+    }
+
+    return { 
+      valid: true,
+      warning: campusMismatch ? 'Cross-Campus Booking: The room is on a different campus than the section. Booking is allowed.' : undefined
+    };
+  }
+
+  /**
+   * ConflictManager: Optimized lookup for busy intervals.
+   */
+  private static createConflictManager(initialSchedules: Schedule[], blackouts: FacultyUnavailability[]) {
+    const facultyBusy = new Map<string, ScheduleBlock[]>();
+    const roomBusy = new Map<string, ScheduleBlock[]>();
+    const sectionBusy = new Map<string, ScheduleBlock[]>();
+
+    const addBlock = (map: Map<string, ScheduleBlock[]>, key: string, start: number, end: number) => {
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push({ start, end });
+    };
+
+    for (const sch of initialSchedules) {
+      const s = this.parseTime(sch.start_time);
+      const e = this.parseTime(sch.end_time);
+      const fIds = [sch.faculty_id, sch.co_faculty_id_1, sch.co_faculty_id_2].filter(Boolean) as number[];
+      
+      fIds.forEach(id => addBlock(facultyBusy, `${id}:${sch.day_of_week}`, s, e));
+      addBlock(roomBusy, `${sch.room}:${sch.day_of_week}`, s, e);
+      if (sch.section_id !== 1) addBlock(sectionBusy, `${sch.section_id}:${sch.day_of_week}`, s, e);
+    }
+
+    for (const b of blackouts) {
+      addBlock(facultyBusy, `${b.faculty_id}:${b.day_of_week}`, this.parseTime(b.start_time), this.parseTime(b.end_time));
+    }
+
+    return {
+      isConflict: (day: string, s: number, e: number, facIds: number[], room: string, secId: number): boolean => {
+        // Check Faculty
+        for (const fId of facIds) {
+          const blocks = facultyBusy.get(`${fId}:${day}`) || [];
+          if (blocks.some(b => b.start < e && b.end > s)) return true;
+        }
+        // Check Room
+        const rBlocks = roomBusy.get(`${room}:${day}`) || [];
+        if (rBlocks.some(b => b.start < e && b.end > s)) return true;
+        // Check Section
+        if (secId !== 1) {
+          const sBlocks = sectionBusy.get(`${secId}:${day}`) || [];
+          if (sBlocks.some(b => b.start < e && b.end > s)) return true;
+        }
+        return false;
+      },
+      addSchedule: (sch: Schedule) => {
+        const s = this.parseTime(sch.start_time);
+        const e = this.parseTime(sch.end_time);
+        const fIds = [sch.faculty_id, sch.co_faculty_id_1, sch.co_faculty_id_2].filter(Boolean) as number[];
+        fIds.forEach(id => addBlock(facultyBusy, `${id}:${sch.day_of_week}`, s, e));
+        addBlock(roomBusy, `${sch.room}:${sch.day_of_week}`, s, e);
+        if (sch.section_id !== 1) addBlock(sectionBusy, `${sch.section_id}:${sch.day_of_week}`, s, e);
+      },
+      getRelatedBlocks: (day: string, facIds: number[], secId: number): ScheduleBlock[] => {
+        const all: ScheduleBlock[] = [];
+        facIds.forEach(id => all.push(...(facultyBusy.get(`${id}:${day}`) || [])));
+        if (secId !== 1) all.push(...(sectionBusy.get(`${secId}:${day}`) || []));
+        return all;
+      }
+    };
+  }
+
+  /**
+   * Internal Helper: Check lunch gaps by fetching all related blocks for a day.
+   */
+  static async validateManualSlot(poolOrConn: any, params: { 
+    facultyIds: number[], sectionId: number, dayOfWeek: string, termId: number, startTime: string, endTime: string, excludeScheduleId?: number | null 
+  }): Promise<boolean> {
+    const { facultyIds, sectionId, dayOfWeek, termId, startTime, endTime, excludeScheduleId } = params;
+    const facPlaceholders = facultyIds.length > 0 ? facultyIds.map(() => '?').join(',') : 'NULL';
+    
+    let queryRelated = `
+        SELECT sch.id, sch.start_time, sch.end_time FROM schedules sch
+        JOIN teaching_loads tl ON sch.teaching_load_id = tl.id
+        WHERE tl.term_id = ? AND tl.status != 'archived' AND sch.day_of_week = ?
+        AND (tl.faculty_id IN (${facPlaceholders}) OR tl.co_faculty_id_1 IN (${facPlaceholders}) OR tl.co_faculty_id_2 IN (${facPlaceholders}) OR tl.section_id = ?)
+    `;
+    const sqlParamsRelated = [termId, dayOfWeek, ...facultyIds, ...facultyIds, ...facultyIds, sectionId];
+    if (excludeScheduleId) { queryRelated += ' AND sch.id != ?'; sqlParamsRelated.push(excludeScheduleId); }
+    const [related] = await poolOrConn.query(queryRelated, sqlParamsRelated) as [{ start_time: string, end_time: string }[], any];
+
+    const currentBlocks: ScheduleBlock[] = related.map(r => ({ start: this.parseTime(r.start_time), end: this.parseTime(r.end_time) }));
+    if (facultyIds.length > 0) {
+      const [unavail] = await poolOrConn.query(`SELECT start_time, end_time FROM faculty_unavailability WHERE faculty_id IN (${facPlaceholders}) AND day_of_week = ?`, [...facultyIds, dayOfWeek]) as [{ start_time: string, end_time: string }[], any];
+      unavail.forEach(u => currentBlocks.push({ start: this.parseTime(u.start_time), end: this.parseTime(u.end_time) }));
+    }
+    return this.hasLunchGap(currentBlocks, this.parseTime(startTime), this.parseTime(endTime));
+  }
+
+  /**
+   * Core Algorithm: Auto-generate schedules based on multi-pass priorities
+   */
+  static async autoGenerate(poolOrConn: any, term_id: number, campus_id?: number): Promise<AutoScheduleResult> {
+    // 1. Fetch unassigned loads with program codes
+    const queryLoads = `
+      SELECT tl.id as teaching_load_id, tl.faculty_id, tl.co_faculty_id_1, tl.co_faculty_id_2, tl.section_id, 
+             sec.campus_id, s.required_hours, s.room_type, s.subject_code, p.code as program_code
+      FROM teaching_loads tl
+      JOIN subjects s ON tl.subject_id = s.id
+      JOIN sections sec ON tl.section_id = sec.id
+      JOIN programs p ON sec.program_id = p.id
+      WHERE tl.term_id = ? AND tl.status = 'approved'
+        AND tl.id NOT IN (SELECT teaching_load_id FROM schedules)
+        ${campus_id ? 'AND sec.campus_id = ?' : ''}
+      ORDER BY s.required_hours DESC, tl.id ASC
+    `;
+    const loadParams = campus_id ? [term_id, campus_id] : [term_id];
+    const [unassignedLoads] = await poolOrConn.query(queryLoads, loadParams) as [TeachingLoad[], any];
+
+    if (unassignedLoads.length === 0) return { scheduled: 0, failed: 0, failures: [], newlyMapped: [] };
+
+    // 2. Fetch all active rooms for the campus(es)
+    const [rooms] = await poolOrConn.query(`
+      SELECT r.name, r.type, r.capacity, r.campus_id 
+      FROM rooms r 
+      WHERE r.is_archived = FALSE 
+      ${campus_id ? 'AND r.campus_id = ?' : ''}
+      ORDER BY r.capacity DESC
+    `, campus_id ? [campus_id] : []) as [Room[], any];
+
+    // 3. Fetch existing schedules for conflict checks
+    const [existingSchedules] = await poolOrConn.query(`
+      SELECT sch.day_of_week, sch.start_time, sch.end_time, sch.room, 
+             tl.faculty_id, tl.co_faculty_id_1, tl.co_faculty_id_2, tl.section_id
+      FROM schedules sch
+      JOIN teaching_loads tl ON sch.teaching_load_id = tl.id
+      WHERE tl.term_id = ? AND tl.status != 'archived'
+    `, [term_id]) as [Schedule[], any];
+
+    // 4. Fetch faculty blackouts
+    const [blackouts] = await poolOrConn.query(`SELECT faculty_id, day_of_week, start_time, end_time FROM faculty_unavailability`) as [FacultyUnavailability[], any];
+
+    const cm = this.createConflictManager(existingSchedules, blackouts);
+
+    const PASSES = [
+      { days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], sMin: 7.5, eMax: 18.0 },
+      { days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], sMin: 7.0, eMax: 22.0 },
+      { days: ['Saturday'], sMin: 7.5, eMax: 18.0 },
+      { days: ['Saturday'], sMin: 7.0, eMax: 22.0 }
+    ];
+
+    let newlyMapped: Schedule[] = [];
+    let failures: { subject: string; reason: string }[] = [];
+
+    for (const load of unassignedLoads) {
+      let isPlaced = false;
+      const durationHours = Number(load.required_hours) || 1;
+      const COMPUTER_PROGRAMS = ['BSIS', 'TVL-ICT', 'BSAIS'];
+      const isComputerSubject = COMPUTER_PROGRAMS.includes(load.program_code);
+      const loadFacs = [load.faculty_id, load.co_faculty_id_1, load.co_faculty_id_2].filter((id): id is number => id !== null);
+
+      // Filter and Sort rooms based on prioritization logic
+      let roomsForLoad = rooms.filter(r => (load.room_type === 'Any' || !load.room_type || r.type === load.room_type) && r.campus_id === load.campus_id);
+      roomsForLoad.sort((a, b) => {
+        if (isComputerSubject) {
+          if (a.type === 'Laboratory' && b.type !== 'Laboratory') return -1;
+          if (a.type !== 'Laboratory' && b.type === 'Laboratory') return 1;
+        } else {
+          if (a.type === 'Lecture' && b.type !== 'Lecture') return -1;
+          if (a.type !== 'Lecture' && b.type === 'Lecture') return 1;
+        }
+        return 0;
+      });
+
+      passLoop: for (const pass of PASSES) {
+        for (const day of pass.days) {
+          for (let timeCode = pass.sMin; timeCode <= pass.eMax - durationHours; timeCode += 0.5) {
+            const sAttempt = timeCode;
+            const eAttempt = timeCode + durationHours;
+
+            for (const room of roomsForLoad) {
+              // 1. Check Conflicts (Faculty, Room, Section) via cm
+              if (cm.isConflict(day, sAttempt, eAttempt, loadFacs, room.name, load.section_id)) continue;
+
+              // 2. Lunch Gap Check
+              const currentDayBlocks = cm.getRelatedBlocks(day, loadFacs, load.section_id);
+              if (!ScheduleService.hasLunchGap(currentDayBlocks, sAttempt, eAttempt)) continue;
+
+              // Success!
+              const newSch: Schedule = {
+                teaching_load_id: load.teaching_load_id,
+                faculty_id: load.faculty_id,
+                co_faculty_id_1: load.co_faculty_id_1,
+                co_faculty_id_2: load.co_faculty_id_2,
+                section_id: load.section_id,
+                day_of_week: day,
+                start_time: ScheduleService.formatTime(sAttempt),
+                end_time: ScheduleService.formatTime(eAttempt),
+                room: room.name
+              };
+              newlyMapped.push(newSch);
+              cm.addSchedule(newSch);
+              isPlaced = true;
+              break passLoop;
+            }
+          }
+        }
+      }
+
+      if (!isPlaced) {
+        failures.push({ subject: load.subject_code, reason: `No free block found respecting room type and priorities.` });
+      }
+    }
+
+    return { scheduled: newlyMapped.length, failed: failures.length, failures, newlyMapped };
+  }
+}

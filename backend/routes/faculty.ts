@@ -1,0 +1,131 @@
+import express, { Request, Response } from 'express';
+import pool from '../config/db.js';
+import { ApiError } from '../utils/ApiError.js';
+import { logAudit } from '../utils/auditLogger.js';
+import { authenticateToken, authorizeRoles } from '../utils/auth.js';
+
+const router = express.Router();
+
+router.use(authenticateToken);
+
+router.get('/', async (req: Request, res: Response, next: express.NextFunction) => {
+  const isArchived = req.query.archived === 'true' ? 1 : 0;
+  const { campus_id, term_id } = req.query;
+  try {
+    let query = `
+      SELECT f.*, p.code as program_code, p.name as program_name, c.name as campus_name,
+             (SELECT JSON_ARRAYAGG(subject_id) FROM faculty_specializations WHERE faculty_id = f.id) as specializations_array,
+             (SELECT COALESCE(SUM(s.required_hours), 0) 
+              FROM teaching_loads tl 
+              JOIN subjects s ON tl.subject_id = s.id 
+              WHERE tl.faculty_id = f.id AND tl.status != 'archived'
+              ${term_id ? 'AND tl.term_id = ?' : ''}) as current_load
+      FROM faculty f
+      LEFT JOIN programs p ON f.program_id = p.id
+      LEFT JOIN campuses c ON f.campus_id = c.id
+      WHERE f.is_archived = ?
+    `;
+    const params: any[] = term_id ? [term_id, isArchived] : [isArchived];
+    
+    if (campus_id) {
+      query += ' AND f.campus_id = ?';
+      params.push(campus_id);
+    }
+    
+    query += ' ORDER BY f.full_name ASC';
+    const [rows] = await pool.query(query, params);
+    res.json(rows);
+  } catch (error: any) {
+    next(error);
+  }
+});
+
+router.post('/', authorizeRoles('admin', 'program_head'), async (req: any, res: Response, next: express.NextFunction) => {
+  const { full_name, program_id, campus_id, employment_type, max_teaching_hours, specializations, department } = req.body;
+  if (!full_name) return next(new ApiError(400, 'Full name is required', 'VALIDATION_ERROR'));
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [result]: any = await connection.query(
+      'INSERT INTO faculty (full_name, program_id, campus_id, employment_type, max_teaching_hours, department) VALUES (?, ?, ?, ?, ?, ?)',
+      [full_name, program_id || 1, campus_id || null, employment_type || 'Regular', max_teaching_hours || 24, department || 'General Education']
+    );
+    const facultyId = result.insertId;
+
+    if (specializations && Array.isArray(specializations)) {
+      for (const subId of specializations) {
+        await connection.query('INSERT INTO faculty_specializations (faculty_id, subject_id) VALUES (?, ?)', [facultyId, subId]);
+      }
+    }
+
+    await connection.commit();
+    await logAudit('CREATE', 'Faculty', facultyId, { full_name }, req.user.username);
+    res.status(201).json({ id: facultyId, message: 'Faculty created successfully' });
+  } catch (error: any) {
+    await connection.rollback();
+    next(error);
+  } finally {
+    connection.release();
+  }
+});
+
+router.put('/:id', authorizeRoles('admin', 'program_head'), async (req: any, res: Response, next: express.NextFunction) => {
+  const { full_name, program_id, campus_id, employment_type, max_teaching_hours, specializations, department } = req.body;
+  const facultyId = req.params.id;
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [updResult]: any = await connection.query(
+      'UPDATE faculty SET full_name = ?, program_id = ?, campus_id = ?, employment_type = ?, max_teaching_hours = ?, department = ? WHERE id = ?',
+      [full_name, program_id, campus_id || null, employment_type, max_teaching_hours, department, facultyId]
+    );
+
+    if (updResult.affectedRows === 0) throw new ApiError(404, 'Faculty not found', 'NOT_FOUND');
+
+    // Update specializations
+    await connection.query('DELETE FROM faculty_specializations WHERE faculty_id = ?', [facultyId]);
+    if (specializations && Array.isArray(specializations)) {
+      for (const subId of specializations) {
+        await connection.query('INSERT INTO faculty_specializations (faculty_id, subject_id) VALUES (?, ?)', [facultyId, subId]);
+      }
+    }
+
+    await connection.commit();
+    await logAudit('UPDATE', 'Faculty', req.params.id as string, { full_name }, req.user.username);
+    res.json({ message: 'Faculty updated successfully' });
+  } catch (error: any) {
+    await connection.rollback();
+    next(error);
+  } finally {
+    connection.release();
+  }
+});
+
+router.delete('/:id', authorizeRoles('admin', 'program_head'), async (req: any, res: Response, next: express.NextFunction) => {
+  try {
+    const [[fac]]: [any[], any] = await pool.query('SELECT full_name FROM faculty WHERE id = ?', [req.params.id]);
+    if (!fac) throw new ApiError(404, 'Faculty not found', 'NOT_FOUND');
+    
+    await pool.query('UPDATE faculty SET is_archived = TRUE WHERE id = ?', [req.params.id]);
+    await logAudit('ARCHIVE', 'Faculty', req.params.id as string, { full_name: fac.full_name }, req.user.username);
+    
+    res.json({ message: 'Faculty archived successfully' });
+  } catch (error: any) {
+    next(error);
+  }
+});
+
+router.put('/:id/restore', authorizeRoles('admin', 'program_head'), async (req: any, res: Response, next: express.NextFunction) => {
+  try {
+    const [result]: any = await pool.query('UPDATE faculty SET is_archived = FALSE WHERE id = ?', [req.params.id]);
+    if (result.affectedRows === 0) throw new ApiError(404, 'Faculty not found', 'NOT_FOUND');
+
+    await logAudit('RESTORE', 'Faculty', req.params.id as string, {}, req.user.username);
+    res.json({ message: 'Faculty restored successfully' });
+  } catch (error: any) {
+    next(error);
+  }
+});
+
+export default router;

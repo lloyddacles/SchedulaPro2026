@@ -1,0 +1,87 @@
+import { create } from 'zustand';
+import api from '../api';
+import { io } from 'socket.io-client';
+
+const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const socket = io(socketUrl, {
+  withCredentials: true,
+  autoConnect: true,
+});
+
+/**
+ * Global Zustand store for managing scheduling system state.
+ * Consolidates Term, Socket, and UI state into a single reactive hub.
+ */
+const useScheduleStore = create((set, get) => ({
+  // --- Term State ---
+  terms: [],
+  activeTermId: null,
+  isTermsLoading: false,
+
+  fetchTerms: async () => {
+    set({ isTermsLoading: true });
+    try {
+      const res = await api.get('/terms');
+      const terms = res.data;
+      const activeTerm = terms.find(t => t.is_active) || terms[0];
+      set({ terms, activeTermId: activeTerm?.id || null, isTermsLoading: false });
+    } catch (error) {
+      console.error('Failed to fetch terms:', error);
+      set({ isTermsLoading: false });
+    }
+  },
+
+  setActiveTermId: (id) => set({ activeTermId: id }),
+
+  // --- Campus State ---
+  campuses: [],
+  selectedCampusId: null,
+  fetchCampuses: async () => {
+    try {
+      const res = await api.get('/campuses');
+      set({ campuses: res.data });
+    } catch (error) {
+      console.error('Failed to fetch campuses:', error);
+    }
+  },
+  setSelectedCampusId: (id) => set({ selectedCampusId: id }),
+
+  // --- Socket / Notification State ---
+  socket: socket,
+  isConnected: false,
+  unreadNotifications: 0,
+  setUnreadNotifications: (count) => set({ unreadNotifications: count }),
+  incrementNotifications: () => set((state) => ({ unreadNotifications: state.unreadNotifications + 1 })),
+  initializeSocket: () => {
+    if (socket.connected) set({ isConnected: true });
+    socket.on('connect', () => set({ isConnected: true }));
+    socket.on('disconnect', () => set({ isConnected: false }));
+  },
+
+  // --- UI State ---
+  isSidebarOpen: true,
+  toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
+  isGlobalLoading: false,
+  setGlobalLoading: (bool) => set({ isGlobalLoading: bool }),
+
+  // --- System Settings / Branding ---
+  systemSettings: {
+    app_name: 'FacultySync',
+    institution_name: 'CARD-MRI Development Institute, Inc.',
+    logo_url: '',
+  },
+  fetchSettings: async () => {
+    try {
+      const res = await api.get('/settings');
+      set({ systemSettings: res.data });
+    } catch (error) {
+      console.error('Failed to fetch system settings:', error);
+    }
+  },
+  updateSettings: (settings) => set((state) => ({ systemSettings: { ...state.systemSettings, ...settings } })),
+}));
+
+// Initialize socket listeners
+useScheduleStore.getState().initializeSocket();
+
+export default useScheduleStore;

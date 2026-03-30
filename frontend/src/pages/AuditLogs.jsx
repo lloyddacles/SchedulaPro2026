@@ -18,36 +18,48 @@ export default function AuditLogs() {
   const logs = data?.logs || [];
   
   const filteredLogs = logs.filter(l => 
-    l.action.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    l.entity_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    l.details.toLowerCase().includes(searchTerm.toLowerCase())
+    (l.action || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (l.entity_type || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (l.details || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (l.user_name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div className="space-y-6 pb-10">
-      <div className="flex justify-between items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white font-display flex items-center gap-3">
             System Audit Trail
           </h1>
-          <p className="mt-1 text-gray-500 dark:text-slate-400">Review historical administrative operations tracking absolute truth mutations.</p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-emerald-100 dark:border-emerald-800/30">
+               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Monitoring
+            </span>
+            <p className="text-sm text-gray-500 dark:text-slate-400">Verifiable trace of all administrative operations.</p>
+          </div>
         </div>
-        <div className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 dark:bg-slate-700 text-white rounded-xl shadow-md">
-          <TerminalSquare className="w-5 h-5 text-emerald-400" /> <span className="font-mono text-sm tracking-widest">{data?.total || 0} RECORDS</span>
+        <div className="flex items-center gap-2 px-5 py-3 bg-slate-900 dark:bg-slate-800 text-white rounded-2xl shadow-xl shadow-slate-900/10 border border-slate-800 dark:border-slate-700">
+          <TerminalSquare className="w-5 h-5 text-emerald-400" /> 
+          <span className="font-mono text-xs font-black tracking-[0.2em]">{data?.total || 0} RECORDS</span>
         </div>
       </div>
 
-      <div className="glass rounded-[2rem] shadow-xl border border-white/40 dark:border-slate-700/50 overflow-hidden relative">
-        <div className="p-6 border-b border-gray-100 dark:border-slate-700/50 bg-white/50 dark:bg-slate-900/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h3 className="font-bold flex items-center gap-2 text-gray-800 dark:text-slate-200"><Shield className="w-5 h-5 text-indigo-500 dark:text-indigo-400"/> Operational Log Array</h3>
-          <div className="relative w-full sm:w-72">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400 dark:text-slate-500" />
+      <div className="glass rounded-[2.5rem] shadow-2xl border border-white/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 overflow-hidden relative">
+        <div className="p-8 border-b border-gray-100 dark:border-slate-700/50 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          <div className="space-y-1">
+            <h3 className="font-black flex items-center gap-2 text-gray-900 dark:text-white uppercase tracking-tight text-lg">
+              <Shield className="w-6 h-6 text-brand-500"/> Operational Log Array
+            </h3>
+            <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">Immutable Transaction History</p>
+          </div>
+          <div className="relative w-full lg:w-96 group">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400 group-focus-within:text-brand-500 transition-colors" />
             </div>
             <input
               type="text"
-              placeholder="Search actions or entities..."
-              className="block w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-slate-600 rounded-xl leading-5 bg-white/80 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-mono"
+              placeholder="Search actions, entities, or operators..."
+              className="block w-full pl-11 pr-4 py-3 border border-gray-200 dark:border-slate-700 rounded-2xl bg-white/80 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all text-sm font-medium shadow-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -77,9 +89,10 @@ export default function AuditLogs() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 rounded text-xs font-bold ${
-                        log.action === 'CREATE' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-400' :
-                        log.action === 'UPDATE' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400' :
-                        log.action === 'DELETE' ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400' :
+                        log.action.includes('CREATE') ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-400' :
+                        log.action.includes('UPDATE') ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400' :
+                        log.action.includes('DELETE') || log.action === 'REJECT' ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400' :
+                        log.action === 'APPROVE' || log.action === 'RESTORE' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400' :
                         'bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-300'
                       }`}>
                         {log.action}
@@ -90,12 +103,24 @@ export default function AuditLogs() {
                         <HardDrive className="w-4 h-4" /> {log.entity_type} {log.entity_id ? `#${log.entity_id}` : ''}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white font-semibold flex items-center gap-2">
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white font-semibold">
                        {log.user_name}
                     </td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-slate-300 w-full">
-                       <div className="bg-gray-50 dark:bg-slate-900 p-2 rounded text-[11px] overflow-hidden truncate max-w-lg border border-gray-100 dark:border-slate-700 group-hover:whitespace-normal group-hover:transition-all">
-                          {log.details}
+                    <td className="px-6 py-4 text-gray-600 dark:text-slate-300 w-full min-w-[300px]">
+                       <div className="bg-gray-50 dark:bg-slate-900 p-2 rounded text-[11px] font-mono border border-gray-100 dark:border-slate-700 max-h-20 overflow-y-auto">
+                          {(() => {
+                            try {
+                              const parsed = JSON.parse(log.details);
+                              return Object.entries(parsed).map(([k, v]) => (
+                                <div key={k} className="flex gap-2">
+                                  <span className="text-gray-400 uppercase text-[9px] font-black">{k}:</span>
+                                  <span className="truncate">{String(v)}</span>
+                                </div>
+                              ));
+                            } catch (e) {
+                              return log.details;
+                            }
+                          })()}
                        </div>
                     </td>
                   </tr>

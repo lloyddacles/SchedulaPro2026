@@ -6,14 +6,134 @@
   body {
     @apply antialiased text-gray-900 bg-gray-50 dark:bg-slate-900 dark:text-white transition-colors duration-200;
   }
-}
 
-@layer utilities {
-  .glass {
-    @apply bg-white bg-opacity-70 dark:bg-slate-800 dark:bg-opacity-70 backdrop-blur-lg border border-white/20 dark:border-white/5 shadow-xl;
+  /* Prevent horizontal overflow globally */
+  * {
+    min-width: 0;
   }
 }
 
-.dark .fc-theme-standard td, .dark .fc-theme-standard th { border-color: #334155 !important; }
-.dark .fc-col-header-cell-cushion, .dark .fc-timegrid-slot-label-cushion { color: #cbd5e1 !important; }
-.dark .fc-highlight { background: rgba(59, 130, 246, 0.1) !important; }
+@layer components {
+  /* Glassmorphism card */
+  .glass {
+    @apply bg-white bg-opacity-70 dark:bg-slate-800 dark:bg-opacity-70 backdrop-blur-lg border border-white/20 dark:border-white/5 shadow-xl;
+  }
+
+  /* Responsive table wrapper — use instead of raw overflow-x-auto */
+  .table-responsive {
+    @apply overflow-x-auto -mx-4 sm:mx-0;
+  }
+
+  /* Table cells that should truncate on small screens but fully visible on large */
+  .cell-wrap {
+    @apply whitespace-normal break-words;
+  }
+
+  /* Page header that stacks on mobile */
+  .page-header {
+    @apply flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4;
+  }
+
+  /* Card panel with consistent responsive padding */
+  .panel {
+    @apply glass rounded-[2rem] shadow-xl border border-white/40 dark:border-slate-700/50 overflow-hidden;
+  }
+}
+
+@layer utilities {
+  /* Animation */
+  .animate-fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.97); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+}
+
+/* FullCalendar dark mode fixes */
+.dark .fc-theme-standard td,
+.dark .fc-theme-standard th {
+  border-color: #334155 !important;
+}
+.dark .fc-col-header-cell-cushion,
+.dark .fc-timegrid-slot-label-cushion {
+  color: #cbd5e1 !important;
+}
+.dark .fc-highlight {
+  background: rgba(59, 130, 246, 0.1) !important;
+}
+
+/* ── Ghost Mode Drag-and-Drop Feedback ── */
+.fc-event-dragging {
+  opacity: 0.9 !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
+  transform: scale(1.02);
+  transition: transform 0.1s ease, background-color 0.1s ease, border-color 0.1s ease !important;
+}
+
+/* Invalid Drop Target (Conflict) */
+.fc-event-dragging.fc-not-allowed, 
+.fc-event-dragging.fc-not-allowed * {
+  background-color: rgba(239, 68, 68, 0.9) !important; /* Red 500 */
+  border-color: rgb(220, 38, 38) !important;
+  color: white !important;
+}
+
+/* Valid Drop Target */
+.fc-event-dragging:not(.fc-not-allowed),
+.fc-event-dragging:not(.fc-not-allowed) * {
+  background-color: rgba(34, 197, 94, 0.9) !important; /* Green 500 */
+  border-color: rgb(22, 163, 74) !important;
+  color: white !important;
+}
+/* Mobile: ensure page content areas don't overflow */
+@media (max-width: 640px) {
+  /* Tables: allow horizontal scrolling within a card */
+  table {
+    min-width: 600px;
+  }
+
+  /* Long text in table cells: truncate with ellipsis */
+  td, th {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Modal fixes on small screens */
+  .rounded-\[2rem\] {
+    border-radius: 1rem !important;
+  }
+}
+
+@media print {
+  @page {
+    size: letter landscape;
+    margin: 10mm;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .print-hidden, .fc-header-toolbar, .fc-footer-toolbar, button, footer, header {
+    display: none !important;
+  }
+
+  /* Ensure FullCalendar fits the page */
+  .fc {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+  
+  .glass {
+    background: white !important;
+    backdrop-filter: none !important;
+    border: 1px solid #eee !important;
+    box-shadow: none !important;
+  }
+}
