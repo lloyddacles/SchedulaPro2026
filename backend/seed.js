@@ -27,11 +27,11 @@ export async function seed() {
 
     const dbName = (process.env.DB_NAME || 'faculty_scheduling').trim();
     
-    // On Aiven/Cloud, don't try to create 'defaultdb', just use it.
+    // Always select the database
     if (dbName !== 'defaultdb') {
       await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
-      await connection.query(`USE \`${dbName}\``);
     }
+    await connection.query(`USE \`${dbName}\``);
     
     console.log(`Using database '${dbName}'. Rebuilding institutional schema...`);
 
