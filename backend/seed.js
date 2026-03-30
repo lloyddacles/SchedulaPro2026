@@ -18,6 +18,9 @@ async function seed() {
           ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
         };
 
+    const hostLog = process.env.DATABASE_URL ? 'URI' : (process.env.DB_HOST || 'localhost');
+    console.log(`Attempting connection to: ${hostLog} (SSL: ${process.env.DB_SSL})`);
+
     connection = await mysql.createConnection(connectionConfig);
 
     const dbName = process.env.DB_NAME || 'faculty_scheduling';
