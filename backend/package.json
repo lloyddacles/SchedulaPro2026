@@ -7,10 +7,11 @@
   "scripts": {
     "start": "tsx server.ts",
     "dev": "tsx watch server.ts",
-    "test": "jest",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
-    "seed": "node seed.js"
+    "seed": "node seed.js",
+    "migrate:live": "node scripts/migrate_data.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

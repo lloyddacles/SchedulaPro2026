@@ -63,6 +63,7 @@ export async function seed() {
         code VARCHAR(20) NOT NULL UNIQUE,
         name VARCHAR(150) NOT NULL,
         type ENUM('College', 'SHS', 'JHS', 'Other') DEFAULT 'College',
+        is_archived BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -74,6 +75,7 @@ export async function seed() {
         year_level INT NOT NULL,
         name VARCHAR(50) NOT NULL,
         campus_id INT DEFAULT NULL,
+        is_archived BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (program_id) REFERENCES programs(id) ON DELETE CASCADE
       )
@@ -108,6 +110,7 @@ export async function seed() {
         max_teaching_hours INT NOT NULL,
         program_id INT DEFAULT NULL,
         campus_id INT DEFAULT NULL,
+        is_archived BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -120,6 +123,7 @@ export async function seed() {
         units INT NOT NULL,
         required_hours INT NOT NULL,
         room_type ENUM('Lecture', 'Laboratory', 'Field', 'Any') NOT NULL DEFAULT 'Any',
+        is_archived BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
