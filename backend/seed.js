@@ -35,6 +35,17 @@ export async function seed() {
     
     console.log(`Using database '${dbName}'. Rebuilding institutional schema...`);
 
+    // --- 0. CLEAN SLATE (Ensures schema sync) ---
+    console.log('🧹 Clearing old table structures...');
+    const tablesToDrop = [
+      'schedule_requests', 'schedules', 'teaching_loads', 'faculty_unavailability',
+      'notifications', 'audit_logs', 'sections', 'faculty', 'rooms', 
+      'subjects', 'programs', 'campuses', 'users', 'system_settings', 'terms'
+    ];
+    for (const table of tablesToDrop) {
+      await connection.query(`DROP TABLE IF EXISTS \`${table}\``);
+    }
+
     // --- 1. CORE TABLES ---
     await connection.query(`
       CREATE TABLE IF NOT EXISTS users (
