@@ -81,6 +81,20 @@ app.use((req: any, res: Response, next: NextFunction) => {
 
 // Public Routes
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+
+import { seed } from './seed.js';
+app.get('/api/setup', async (req, res) => {
+  if (req.query.secret !== 'setup123') {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+  try {
+    const result = await seed();
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/settings', settingsRoutes); // Public GET for branding, protected PUT for admin
 

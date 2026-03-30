@@ -1,14 +1,14 @@
 import mysql from 'mysql2/promise';
 import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
 
-async function seed() {
+export async function seed() {
   console.log('Starting database setup and seed...');
   let connection;
   try {
-    // Connect without database first to create it if it doesn't exist
     const connectionConfig = process.env.DATABASE_URL 
       ? process.env.DATABASE_URL 
       : {
@@ -21,14 +21,13 @@ async function seed() {
 
     connection = await mysql.createConnection(connectionConfig);
 
-    const dbName = process.env.DB_NAME || 'faculty_scheduling';
+    const dbName = (process.env.DB_NAME || 'faculty_scheduling').trim();
     
-    // On Aiven/Cloud, don't try to create 'defaultdb', just use it.
     if (dbName !== 'defaultdb') {
       await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
+      await connection.query(`USE \`${dbName}\``);
     }
     
-    await connection.query(`USE \`${dbName}\``);
     console.log(`Using database '${dbName}'.`);
 
     // Create Tables
@@ -123,8 +122,10 @@ async function seed() {
     }
 
     console.log('Seeding completed successfully!');
+    return { success: true, message: 'Database seeded successfully!' };
   } catch (error) {
     console.error('Error seeding database:', error);
+    throw error;
   } finally {
     if (connection) {
       await connection.end();
@@ -132,4 +133,10 @@ async function seed() {
   }
 }
 
-seed();
+const isMain = process.argv[1] && (process.argv[1] === fileURLToPath(import.meta.url) || process.argv[1].endsWith('seed.js'));
+if (isMain) {
+  seed().catch(err => {
+    console.error('Seeding failed:', err);
+    process.exit(1);
+  });
+}
