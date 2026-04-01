@@ -253,10 +253,10 @@ export async function seed() {
       await connection.query(`INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)`, ['admin', hash, 'admin']);
     }
 
-    await connection.query('INSERT IGNORE INTO terms (id, name, is_active) VALUES (1, "1st Semester 2026", true)');
-    await connection.query('INSERT IGNORE INTO campuses (id, name, code) VALUES (1, "Main Campus", "MAIN")');
-    await connection.query('INSERT IGNORE INTO programs (id, code, name) VALUES (1, "BSA", "Bachelor of Science in Accountancy")');
-    await connection.query('INSERT IGNORE INTO system_settings (\`key\`, \`value\`) VALUES ("app_name", "SchedulaPro"), ("institution_name", "Golden Minds Colleges")');
+    await connection.query('INSERT IGNORE INTO terms (id, name, is_active) VALUES (1, \'1st Semester 2026\', true)');
+    await connection.query('INSERT IGNORE INTO campuses (id, name, code) VALUES (1, \'Main Campus\', \'MAIN\')');
+    await connection.query('INSERT IGNORE INTO programs (id, code, name) VALUES (1, \'BSA\', \'Bachelor of Science in Accountancy\')');
+    await connection.query('INSERT IGNORE INTO system_settings (`key`, `value`) VALUES (\'app_name\', \'SchedulaPro\'), (\'institution_name\', \'Golden Minds Colleges\')');
 
     console.log('🎉 Super-Seed completed successfully!');
     return { success: true, message: 'All tables restored and dummy data seeded!' };
