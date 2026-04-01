@@ -95,7 +95,7 @@ export default function Requests() {
                     <td className="px-6 py-5">
                       <div className="font-black text-gray-800 dark:text-slate-200 flex items-center gap-2">
                          {req.subject_code} 
-                         {req.section_id !== 1 && <span className="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 font-black px-1.5 py-0.5 rounded text-[10px] uppercase">SECTION BOUND</span>}
+                         {<span className="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 font-black px-1.5 py-0.5 rounded text-[10px] uppercase">SECTION BOUND</span>}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-slate-400 font-bold mt-1 bg-gray-100/80 dark:bg-slate-700/50 px-2 py-0.5 rounded inline-block">
                          {req.day_of_week} {req.start_time.substring(0,5)} - {req.end_time.substring(0,5)} <span className="opacity-50 mx-1">|</span> Rm {req.room}

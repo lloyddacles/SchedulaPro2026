@@ -191,7 +191,7 @@ export default function Schedules() {
       const loadFacs = [load.faculty_id, load.co_faculty_id_1, load.co_faculty_id_2].filter(Boolean);
       const schFacsIds = [sch.faculty_id, sch.co_faculty_id_1, sch.co_faculty_id_2].filter(Boolean);
       const isSameFaculty = loadFacs.some(tf => schFacsIds.includes(tf));
-      const isSameSection = sch.section_id !== 1 && sch.section_id === load.section_id;
+      const isSameSection = sch.section_id === load.section_id;
       const isSameRoom = roomName && sch.room.toLowerCase() === roomName.toLowerCase();
 
       return isSameFaculty || isSameSection || isSameRoom;
@@ -575,7 +575,7 @@ export default function Schedules() {
             <select value={selectedSectionId} onChange={e => { setSelectedSectionId(e.target.value); setSelectedFacultyId(''); setSelectedRoomName(''); }} className="bg-transparent border-none text-emerald-700 dark:text-emerald-400 font-bold text-sm focus:ring-0 outline-none w-32 truncate">
               <option value="">Master View</option>
               {sections
-                .filter(s => s.id !== 1 && (selectedProgramId ? s.program_id === Number(selectedProgramId) : true) && (selectedCampusId ? s.campus_id === Number(selectedCampusId) : true))
+                .filter(s => (selectedProgramId ? s.program_id === Number(selectedProgramId) : true) && (selectedCampusId ? s.campus_id === Number(selectedCampusId) : true))
                 .map(s => (<option key={s.id} value={s.id}>{s.program_code}-{s.year_level}{s.name}</option>))}
             </select>
           </div>

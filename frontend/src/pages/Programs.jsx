@@ -121,7 +121,7 @@ export default function Programs() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                      {p.id !== 1 && !showArchived && (
+                      {!showArchived && (
                         <div className="flex items-center justify-end gap-3">
                           <button onClick={() => openEditModal(p)} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
                             <Edit2 className="w-5 h-5 inline" />
@@ -139,7 +139,7 @@ export default function Programs() {
                           </button>
                         </div>
                       )}
-                      {p.id !== 1 && showArchived && (
+                      {showArchived && (
                         <button onClick={() => { 
                             setConfirmConfig({
                               title: 'Restore Program?',

@@ -385,7 +385,7 @@ export default function Subjects() {
                       <label className="block text-[11px] font-bold text-gray-600 dark:text-slate-400 mb-1">Target Program</label>
                       <select className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-brand-500 bg-white dark:bg-slate-900 dark:text-white text-sm" value={formData.program_id} onChange={e => setFormData({...formData, program_id: e.target.value})}>
                         <option value="1">General (All Programs)</option>
-                        {programs.filter(p => p.id !== 1).map(p => <option key={p.id} value={p.id}>{p.code}</option>)}
+                        {programs.map(p => <option key={p.id} value={p.id}>{p.code}</option>)}
                       </select>
                     </div>
                     <div>

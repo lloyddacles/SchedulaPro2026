@@ -466,7 +466,7 @@ export default function Faculty() {
                       <label className="block text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2">Base Program</label>
                       <select required className="w-full border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3 bg-gray-50 dark:bg-slate-800 text-xs font-bold transition-all h-[52px]" value={formData.program_id} onChange={e => setFormData({...formData, program_id: Number(e.target.value)})}>
                         <option value="1">General Education</option>
-                        {programs.filter(p => p.id !== 1).map(p => <option key={p.id} value={p.id}>{p.code} - {p.name}</option>)}
+                        {programs.map(p => <option key={p.id} value={p.id}>{p.code} - {p.name}</option>)}
                       </select>
                     </div>
                     <div>

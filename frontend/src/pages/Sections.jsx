@@ -281,7 +281,7 @@ export default function Sections() {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                            {sec.id !== 1 && !showArchived && (
+                            {!showArchived && (
                               <div className="flex items-center justify-end gap-3">
                                 <button onClick={() => handleEdit(sec)} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors" title="Edit Section">
                                   <Edit2 className="w-5 h-5" />
@@ -299,7 +299,7 @@ export default function Sections() {
                                 </button>
                               </div>
                             )}
-                            {sec.id !== 1 && showArchived && (
+                            {showArchived && (
                               <button onClick={() => { 
                                 setConfirmConfig({
                                   title: 'Restore Section?',
@@ -351,7 +351,7 @@ export default function Sections() {
                   required
                 >
                   <option value="">-- Choose Curriculum --</option>
-                  {programs.filter(p => p.id !== 1).map(p => (
+                  {programs.map(p => (
                     <option key={p.id} value={p.id}>{p.code} - {p.name}</option>
                   ))}
                 </select>
@@ -404,7 +404,7 @@ export default function Sections() {
                     onChange={e => setFormData({...formData, adviser_id: e.target.value})}
                   >
                     <option value="">-- Unassigned --</option>
-                    {facultyList.filter(f => f.id !== 1).map(f => (
+                    {facultyList.map(f => (
                       <option key={f.id} value={f.id}>
                         {f.full_name} ({f.employment_type})
                       </option>
