@@ -46,7 +46,6 @@ export async function seed() {
     for (const table of tablesToDrop) {
       await connection.query(`DROP TABLE IF EXISTS \`${table}\``);
     }
-    await connection.query('SET FOREIGN_KEY_CHECKS = 1');
 
     // --- 1. CORE TABLES ---
     await connection.query(`
@@ -95,10 +94,13 @@ export async function seed() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         full_name VARCHAR(255) NOT NULL,
         department VARCHAR(255) NOT NULL,
+        employment_type VARCHAR(50) DEFAULT 'Regular',
         max_teaching_hours INT NOT NULL DEFAULT 24,
         is_archived BOOLEAN DEFAULT FALSE,
+        program_id INT NOT NULL DEFAULT 1,
         campus_id INT DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (program_id) REFERENCES programs(id) ON DELETE CASCADE,
         FOREIGN KEY (campus_id) REFERENCES campuses(id) ON DELETE SET NULL
       )
     `);
@@ -110,9 +112,12 @@ export async function seed() {
         subject_name VARCHAR(255) NOT NULL,
         units INT NOT NULL,
         required_hours INT NOT NULL,
+        year_level INT DEFAULT NULL,
         room_type ENUM('Lecture', 'Laboratory', 'Field', 'Any') NOT NULL DEFAULT 'Any',
         is_archived BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        program_id INT NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (program_id) REFERENCES programs(id) ON DELETE CASCADE
       )
     `);
 
@@ -169,9 +174,8 @@ export async function seed() {
         day_of_week ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday') NOT NULL,
         start_time TIME NOT NULL,
         end_time TIME NOT NULL,
-        room_id INT NOT NULL,
-        FOREIGN KEY (teaching_load_id) REFERENCES teaching_loads(id) ON DELETE CASCADE,
-        FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE
+        room VARCHAR(255) NOT NULL,
+        FOREIGN KEY (teaching_load_id) REFERENCES teaching_loads(id) ON DELETE CASCADE
       )
     `);
 
@@ -260,6 +264,7 @@ export async function seed() {
     await connection.query('INSERT IGNORE INTO programs (id, code, name) VALUES (1, \'BSA\', \'Bachelor of Science in Accountancy\')');
     await connection.query('INSERT IGNORE INTO system_settings (`key`, `value`) VALUES (\'app_name\', \'SchedulaPro\'), (\'institution_name\', \'Golden Minds Colleges\')');
 
+    await connection.query('SET FOREIGN_KEY_CHECKS = 1');
     console.log('🎉 Super-Seed completed successfully!');
     return { success: true, message: 'All tables restored and dummy data seeded!' };
   } catch (error) {
