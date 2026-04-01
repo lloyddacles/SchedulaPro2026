@@ -37,14 +37,16 @@ export async function seed() {
 
     // --- 0. CLEAN SLATE (Ensures schema sync) ---
     console.log('🧹 Clearing old table structures...');
+    await connection.query('SET FOREIGN_KEY_CHECKS = 0');
     const tablesToDrop = [
-      'schedule_requests', 'schedules', 'teaching_loads', 'faculty_unavailability',
-      'notifications', 'audit_logs', 'sections', 'faculty', 'rooms', 
-      'subjects', 'programs', 'campuses', 'users', 'system_settings', 'terms'
+      'faculty_specializations', 'schedule_requests', 'schedules', 'teaching_loads', 
+      'faculty_unavailability', 'notifications', 'audit_logs', 'sections', 'faculty', 
+      'rooms', 'subjects', 'programs', 'campuses', 'users', 'system_settings', 'terms'
     ];
     for (const table of tablesToDrop) {
       await connection.query(`DROP TABLE IF EXISTS \`${table}\``);
     }
+    await connection.query('SET FOREIGN_KEY_CHECKS = 1');
 
     // --- 1. CORE TABLES ---
     await connection.query(`
