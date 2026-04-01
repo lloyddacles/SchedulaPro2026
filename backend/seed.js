@@ -80,30 +80,6 @@ export async function seed() {
     `);
 
     await connection.query(`
-      CREATE TABLE IF NOT EXISTS sections (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        program_id INT NOT NULL,
-        year_level INT NOT NULL,
-        name VARCHAR(50) NOT NULL,
-        campus_id INT DEFAULT NULL,
-        is_archived BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (program_id) REFERENCES programs(id) ON DELETE CASCADE
-      )
-    `);
-
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS rooms (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(50) NOT NULL UNIQUE,
-        type ENUM('Lecture', 'Laboratory', 'Field') NOT NULL DEFAULT 'Lecture',
-        capacity INT DEFAULT 40,
-        campus_id INT DEFAULT NULL,
-        notes TEXT
-      )
-    `);
-
-    await connection.query(`
       CREATE TABLE IF NOT EXISTS terms (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(100) NOT NULL UNIQUE,
@@ -117,12 +93,11 @@ export async function seed() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         full_name VARCHAR(255) NOT NULL,
         department VARCHAR(255) NOT NULL,
-        specialization VARCHAR(255),
-        max_teaching_hours INT NOT NULL,
-        program_id INT DEFAULT NULL,
-        campus_id INT DEFAULT NULL,
+        max_teaching_hours INT NOT NULL DEFAULT 24,
         is_archived BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        campus_id INT DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (campus_id) REFERENCES campuses(id) ON DELETE SET NULL
       )
     `);
 
@@ -140,15 +115,48 @@ export async function seed() {
     `);
 
     await connection.query(`
+      CREATE TABLE IF NOT EXISTS sections (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        program_id INT NOT NULL,
+        year_level INT NOT NULL,
+        name VARCHAR(50) NOT NULL,
+        adviser_id INT DEFAULT NULL,
+        is_archived BOOLEAN DEFAULT FALSE,
+        campus_id INT DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (program_id) REFERENCES programs(id) ON DELETE CASCADE,
+        FOREIGN KEY (adviser_id) REFERENCES faculty(id) ON DELETE SET NULL,
+        FOREIGN KEY (campus_id) REFERENCES campuses(id) ON DELETE SET NULL
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS rooms (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(50) NOT NULL UNIQUE,
+        type ENUM('Lecture', 'Laboratory') NOT NULL DEFAULT 'Lecture',
+        capacity INT DEFAULT 40,
+        campus_id INT DEFAULT NULL,
+        is_archived BOOLEAN DEFAULT FALSE,
+        status VARCHAR(20) DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (campus_id) REFERENCES campuses(id) ON DELETE SET NULL
+      )
+    `);
+
+    await connection.query(`
       CREATE TABLE IF NOT EXISTS teaching_loads (
         id INT AUTO_INCREMENT PRIMARY KEY,
         faculty_id INT NOT NULL,
         subject_id INT NOT NULL,
-        section_id INT NOT NULL DEFAULT 1,
-        term_id INT NOT NULL DEFAULT 1,
+        term_id INT NOT NULL,
+        section_id INT NOT NULL,
+        status ENUM('draft', 'pending', 'approved', 'archived', 'rejected') DEFAULT 'draft',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (faculty_id) REFERENCES faculty(id) ON DELETE CASCADE,
-        FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
+        FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+        FOREIGN KEY (term_id) REFERENCES terms(id) ON DELETE CASCADE,
+        FOREIGN KEY (section_id) REFERENCES sections(id) ON DELETE CASCADE
       )
     `);
 
@@ -159,8 +167,19 @@ export async function seed() {
         day_of_week ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday') NOT NULL,
         start_time TIME NOT NULL,
         end_time TIME NOT NULL,
-        room VARCHAR(255) NOT NULL,
-        FOREIGN KEY (teaching_load_id) REFERENCES teaching_loads(id) ON DELETE CASCADE
+        room_id INT NOT NULL,
+        FOREIGN KEY (teaching_load_id) REFERENCES teaching_loads(id) ON DELETE CASCADE,
+        FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS faculty_specializations (
+        faculty_id INT NOT NULL,
+        subject_id INT NOT NULL,
+        PRIMARY KEY (faculty_id, subject_id),
+        FOREIGN KEY (faculty_id) REFERENCES faculty(id) ON DELETE CASCADE,
+        FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
       )
     `);
 
@@ -213,41 +232,30 @@ export async function seed() {
     await connection.query(`
       CREATE TABLE IF NOT EXISTS schedule_requests (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        schedule_id INT NOT NULL,
+        teaching_load_id INT NOT NULL,
         faculty_id INT NOT NULL,
         request_type ENUM('DROP', 'SWAP') NOT NULL,
         reason_text TEXT NOT NULL,
         status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON DELETE CASCADE,
+        FOREIGN KEY (teaching_load_id) REFERENCES teaching_loads(id) ON DELETE CASCADE,
         FOREIGN KEY (faculty_id) REFERENCES faculty(id) ON DELETE CASCADE
       )
     `);
 
-    console.log('✅ All 15+ institutional tables verified/created successfully.');
+    console.log('✅ All institutional tables synchronized and verified.');
 
     // --- 3. SEEDING DEFAULTS ---
-    // 1. Admin user
+    console.log('🌱 Adding bootstrap records...');
     const [rows] = await connection.query(`SELECT * FROM users WHERE username = 'admin'`);
     if (rows.length === 0) {
       const hash = await bcrypt.hash('admin123', 10);
       await connection.query(`INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)`, ['admin', hash, 'admin']);
-      console.log('Admin user created.');
     }
 
-    // 2. Default Term
     await connection.query('INSERT IGNORE INTO terms (id, name, is_active) VALUES (1, "1st Semester 2026", true)');
-
-    // 3. Default Campus
     await connection.query('INSERT IGNORE INTO campuses (id, name, code) VALUES (1, "Main Campus", "MAIN")');
-
-    // 4. Default Program
     await connection.query('INSERT IGNORE INTO programs (id, code, name) VALUES (1, "BSA", "Bachelor of Science in Accountancy")');
-
-    // 5. Default Section
-    await connection.query('INSERT IGNORE INTO sections (id, program_id, year_level, name, campus_id) VALUES (1, 1, 1, "Section 1A", 1)');
-
-    // 6. Default Settings
     await connection.query('INSERT IGNORE INTO system_settings (\`key\`, \`value\`) VALUES ("app_name", "SchedulaPro"), ("institution_name", "Golden Minds Colleges")');
 
     console.log('🎉 Super-Seed completed successfully!');
