@@ -74,7 +74,7 @@ export default function Programs() {
       <div className="flex justify-between items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white font-display flex items-center gap-3">
-            Academic Programs
+            Academic Programs [UNLOCKED]
           </h1>
           <p className="mt-1 text-gray-500 dark:text-slate-400">Manage institutional college degrees, strands, and curricular paths.</p>
         </div>
