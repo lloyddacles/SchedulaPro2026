@@ -155,15 +155,25 @@ export async function seed() {
       CREATE TABLE IF NOT EXISTS teaching_loads (
         id INT AUTO_INCREMENT PRIMARY KEY,
         faculty_id INT NOT NULL,
+        co_faculty_id_1 INT DEFAULT NULL,
+        co_faculty_id_2 INT DEFAULT NULL,
+        co_faculty_id_3 INT DEFAULT NULL,
         subject_id INT NOT NULL,
         term_id INT NOT NULL,
         section_id INT NOT NULL,
-        status ENUM('draft', 'pending', 'approved', 'archived', 'rejected') DEFAULT 'draft',
+        status ENUM('draft', 'pending_review', 'approved', 'archived', 'rejected') DEFAULT 'draft',
+        reviewed_by INT DEFAULT NULL,
+        reviewed_at TIMESTAMP NULL DEFAULT NULL,
+        review_notes TEXT DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (faculty_id) REFERENCES faculty(id) ON DELETE CASCADE,
+        FOREIGN KEY (co_faculty_id_1) REFERENCES faculty(id) ON DELETE SET NULL,
+        FOREIGN KEY (co_faculty_id_2) REFERENCES faculty(id) ON DELETE SET NULL,
+        FOREIGN KEY (co_faculty_id_3) REFERENCES faculty(id) ON DELETE SET NULL,
         FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
         FOREIGN KEY (term_id) REFERENCES terms(id) ON DELETE CASCADE,
-        FOREIGN KEY (section_id) REFERENCES sections(id) ON DELETE CASCADE
+        FOREIGN KEY (section_id) REFERENCES sections(id) ON DELETE CASCADE,
+        FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
       )
     `);
 
