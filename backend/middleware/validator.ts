@@ -83,7 +83,7 @@ export const sectionSchema = z.object({
 
 export const roomSchema = z.object({
   name: z.string().min(1, "Room name is required"),
-  type: z.enum(['Lecture', 'Laboratory', 'Field']).default('Lecture'),
+  type: z.enum(['Lecture', 'Computer Lab', 'Science Lab', 'Kitchen', 'Court', 'Engineering Lab', 'Laboratory', 'Field']).default('Lecture'),
   capacity: z.coerce.number().int().min(1).default(40),
   campus_id: nullableId,
   notes: z.string().optional(),
@@ -125,7 +125,7 @@ export const subjectSchema = z.object({
   subject_name: z.string().min(2, "Subject name is required"),
   units: z.coerce.number().int().min(0),
   required_hours: z.coerce.number().int().min(0),
-  room_type: z.enum(['Lecture', 'Laboratory', 'Field', 'Any']).default('Any'),
+  room_type: z.enum(['Lecture', 'Computer Lab', 'Science Lab', 'Kitchen', 'Court', 'Engineering Lab', 'Laboratory', 'Field', 'Any']).default('Any'),
   program_id: nullableId,
   year_level: z.coerce.number().int().min(1).max(10).nullable().optional()
 });
