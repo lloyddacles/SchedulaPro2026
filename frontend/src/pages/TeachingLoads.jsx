@@ -632,6 +632,7 @@ export default function TeachingLoads() {
                   value={formData.section_id}
                   onChange={e => setFormData({ ...formData, section_id: e.target.value })}
                 >
+                  <option value="">-- Select Target Section --</option>
                   {Object.entries(groupedSectionsForDropdown).sort((a,b) => a[0].localeCompare(b[0])).map(([programKey, progSecs]) => (
                     <optgroup key={programKey} label={programKey}>
                       {progSecs.map(s => (
