@@ -52,13 +52,13 @@ router.get('/advisory', async (req: any, res: Response) => {
 
 router.post('/', authorizeRoles('admin', 'program_head'), validate(sectionSchema), async (req: any, res: Response) => {
   try {
-    const { program_id, year_level, name, adviser_id, campus_id } = req.body;
+    const { program_id, year_level, name, student_count, adviser_id, campus_id } = req.body;
     const [result]: any = await pool.query(
-      'INSERT INTO sections (program_id, year_level, name, adviser_id, campus_id) VALUES (?, ?, ?, ?, ?)',
-      [program_id, year_level, name, adviser_id || null, campus_id || null]
+      'INSERT INTO sections (program_id, year_level, name, student_count, adviser_id, campus_id) VALUES (?, ?, ?, ?, ?, ?)',
+      [program_id, year_level, name, student_count || 30, adviser_id || null, campus_id || null]
     );
-    await logAudit('CREATE', 'Section', result.insertId, { name, year_level }, req.user.username);
-    res.status(201).json({ id: result.insertId, program_id, year_level, name, adviser_id, campus_id });
+    await logAudit('CREATE', 'Section', result.insertId, { name, year_level, student_count }, req.user.username);
+    res.status(201).json({ id: result.insertId, program_id, year_level, name, student_count, adviser_id, campus_id });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -76,12 +76,12 @@ router.delete('/:id', authorizeRoles('admin', 'program_head'), async (req: any, 
 
 router.put('/:id', authorizeRoles('admin', 'program_head'), validate(sectionSchema), async (req: any, res: Response) => {
   try {
-    const { program_id, year_level, name, adviser_id, campus_id } = req.body;
+    const { program_id, year_level, name, student_count, adviser_id, campus_id } = req.body;
     await pool.query(
-      'UPDATE sections SET program_id = ?, year_level = ?, name = ?, adviser_id = ?, campus_id = ? WHERE id = ?',
-      [program_id, year_level, name, adviser_id || null, campus_id || null, req.params.id]
+      'UPDATE sections SET program_id = ?, year_level = ?, name = ?, student_count = ?, adviser_id = ?, campus_id = ? WHERE id = ?',
+      [program_id, year_level, name, student_count || 30, adviser_id || null, campus_id || null, req.params.id]
     );
-    await logAudit('UPDATE', 'Section', req.params.id as string, { name }, req.user.username);
+    await logAudit('UPDATE', 'Section', req.params.id as string, { name, student_count }, req.user.username);
     res.json({ message: 'Section successfully tracked and updated.' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });

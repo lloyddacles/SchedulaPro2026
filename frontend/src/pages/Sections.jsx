@@ -12,7 +12,7 @@ export default function Sections() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState('');
-  const [formData, setFormData] = useState({ program_id: '', year_level: '1', name: 'A', adviser_id: '', campus_id: '' });
+  const [formData, setFormData] = useState({ program_id: '', year_level: '1', name: 'A', student_count: '30', adviser_id: '', campus_id: '' });
   const [error, setError] = useState('');
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', type: '', onConfirm: () => {} });
@@ -73,7 +73,7 @@ export default function Sections() {
     setIsModalOpen(false);
     setIsEditing(false);
     setEditingId(null);
-    setFormData({ program_id: '', year_level: '1', name: 'A', adviser_id: '', campus_id: '' });
+    setFormData({ program_id: '', year_level: '1', name: 'A', student_count: '30', adviser_id: '', campus_id: '' });
     setError('');
   };
 
@@ -83,7 +83,8 @@ export default function Sections() {
       year_level: sec.year_level,
       name: sec.name,
       adviser_id: sec.adviser_id || '',
-      campus_id: sec.campus_id || ''
+      campus_id: sec.campus_id || '',
+      student_count: sec.student_count || '30'
     });
     setEditingId(sec.id);
     setIsEditing(true);
@@ -251,6 +252,7 @@ export default function Sections() {
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Year Level</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Section Name</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Block Adviser</th>
+                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Size</th>
                         <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Full Identifier</th>
                         <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Actions</th>
                       </tr>
@@ -274,6 +276,9 @@ export default function Sections() {
                                  <ShieldAlert className="w-3.5 h-3.5" /> Fast-Track Assignment
                               </span>
                             )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center font-bold text-gray-700 dark:text-slate-300">
+                            {sec.student_count || 30} <span className="text-[10px] text-gray-400 uppercase">Pax</span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 text-sm font-bold rounded-lg border border-emerald-200 dark:border-emerald-800">
@@ -379,6 +384,18 @@ export default function Sections() {
                     required
                   />
                 </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Approx. Student Count (Pax)</label>
+                <input 
+                  type="number" 
+                  min="1"
+                  className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-brand-50 dark:bg-slate-900 text-brand-900 dark:text-brand-400 border-brand-200 font-bold"
+                  value={formData.student_count}
+                  onChange={e => setFormData({...formData, student_count: e.target.value})}
+                  required
+                />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
