@@ -248,14 +248,14 @@ export async function seed() {
     await connection.query(`
       CREATE TABLE IF NOT EXISTS schedule_requests (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        teaching_load_id INT NOT NULL,
         faculty_id INT NOT NULL,
+        schedule_id INT NOT NULL,
         request_type ENUM('DROP', 'SWAP') NOT NULL,
-        reason_text TEXT NOT NULL,
+        reason TEXT NOT NULL,
         status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (teaching_load_id) REFERENCES teaching_loads(id) ON DELETE CASCADE,
-        FOREIGN KEY (faculty_id) REFERENCES faculty(id) ON DELETE CASCADE
+        FOREIGN KEY (faculty_id) REFERENCES faculty(id) ON DELETE CASCADE,
+        FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON DELETE CASCADE
       )
     `);
 
