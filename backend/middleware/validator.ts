@@ -29,6 +29,20 @@ export const validate = (schema: z.ZodSchema) => (req: Request, res: Response, n
   }
 };
 
+// ── VALIDATION HELPERS ──────────────────────────────────────────────────────
+
+// Helper to handle empty strings, nulls, or undefined values for optional IDs
+// Frontend dropdowns often send "" for 'Unassigned', which coerce.number() makes 0.
+const nullableId = z.preprocess(
+  (val) => (val === "" || val === null || val === undefined ? null : val),
+  z.coerce.number().int().positive().nullable()
+).optional();
+
+const requiredId = z.preprocess(
+  (val) => (val === "" || val === null || val === undefined ? undefined : val),
+  z.coerce.number().int().positive()
+);
+
 // ── INSTITUTIONAL SCHEMAS ───────────────────────────────────────────────────
 
 export const campusSchema = z.object({
@@ -50,7 +64,7 @@ export const userSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters").optional(),
   role: z.enum(['admin', 'viewer', 'program_head', 'faculty']).default('faculty'),
-  faculty_id: z.coerce.number().int().positive().nullable().optional()
+  faculty_id: nullableId
 });
 
 export const programSchema = z.object({
@@ -60,18 +74,18 @@ export const programSchema = z.object({
 });
 
 export const sectionSchema = z.object({
-  program_id: z.coerce.number().int().positive(),
+  program_id: requiredId,
   year_level: z.coerce.number().int().min(1).max(10),
   name: z.string().min(1, "Section name is required"),
-  campus_id: z.coerce.number().int().positive().nullable().optional(),
-  adviser_id: z.coerce.number().int().positive().nullable().optional()
+  campus_id: nullableId,
+  adviser_id: nullableId
 });
 
 export const roomSchema = z.object({
   name: z.string().min(1, "Room name is required"),
   type: z.enum(['Lecture', 'Laboratory', 'Field']).default('Lecture'),
   capacity: z.coerce.number().int().min(1).default(40),
-  campus_id: z.coerce.number().int().positive().nullable().optional(),
+  campus_id: nullableId,
   notes: z.string().optional(),
   status: z.string().default('active')
 });
@@ -81,27 +95,27 @@ export const facultySchema = z.object({
   department: z.string().min(2, "Department is required"),
   specialization: z.string().optional(),
   max_teaching_hours: z.coerce.number().int().min(0).default(24),
-  program_id: z.coerce.number().int().positive().nullable().optional(),
-  campus_id: z.coerce.number().int().positive().nullable().optional(),
+  program_id: nullableId,
+  campus_id: nullableId,
   employment_type: z.enum(['Regular', 'Part-time', 'Contractual']).default('Regular'),
   specializations: z.array(z.coerce.number().int().positive()).optional()
 });
 
 export const teachingLoadSchema = z.object({
-  faculty_id: z.coerce.number().int().positive(),
-  subject_id: z.coerce.number().int().positive().optional(),
+  faculty_id: requiredId,
+  subject_id: nullableId,
   subject_ids: z.array(z.coerce.number().int().positive()).optional(),
   term_id: z.coerce.number().int().positive().optional().default(1),
   section_id: z.coerce.number().int().positive().optional().default(1),
-  co_faculty_id_1: z.coerce.number().int().positive().nullable().optional(),
-  co_faculty_id_2: z.coerce.number().int().positive().nullable().optional(),
-  co_faculty_id_3: z.coerce.number().int().positive().nullable().optional(),
+  co_faculty_id_1: nullableId,
+  co_faculty_id_2: nullableId,
+  co_faculty_id_3: nullableId,
   status: z.enum(['draft', 'pending_review', 'approved', 'archived', 'rejected']).default('draft')
 });
 
 export const scheduleRequestSchema = z.object({
-  faculty_id: z.coerce.number().int().positive(),
-  schedule_id: z.coerce.number().int().positive(),
+  faculty_id: requiredId,
+  schedule_id: requiredId,
   request_type: z.enum(['CHANGE_ROOM', 'CHANGE_TIME', 'OTHER']),
   reason: z.string().min(5, "Reason must be at least 5 characters")
 });
@@ -112,7 +126,7 @@ export const subjectSchema = z.object({
   units: z.coerce.number().int().min(0),
   required_hours: z.coerce.number().int().min(0),
   room_type: z.enum(['Lecture', 'Laboratory', 'Field', 'Any']).default('Any'),
-  program_id: z.coerce.number().int().positive().nullable().optional(),
+  program_id: nullableId,
   year_level: z.coerce.number().int().min(1).max(10).nullable().optional()
 });
 
@@ -124,7 +138,7 @@ export const termSchema = z.object({
 // ── SCHEDULING SCHEMAS ────────────────────────────────────────────────────────
 
 export const scheduleSchema = z.object({
-  teaching_load_id: z.coerce.number().int().positive(),
+  teaching_load_id: requiredId,
   day_of_week: z.enum(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']),
   start_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, 'Invalid HH:mm:ss format'),
   end_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, 'Invalid HH:mm:ss format'),
@@ -142,7 +156,7 @@ export const scheduleSchema = z.object({
 });
 
 export const autoScheduleSchema = z.object({
-  term_id: z.coerce.number().int().positive(),
-  campus_id: z.coerce.number().int().positive().optional()
+  term_id: requiredId,
+  campus_id: nullableId
 });
 
