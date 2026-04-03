@@ -28,14 +28,17 @@ api.interceptors.response.use(
     }
     
     const code = error.response?.data?.error?.code || 'UNKNOWN_ERROR';
+    const isLoginPath = window.location.pathname === '/login';
 
-    if (error.response?.status === 401) {
-      toast.error('Session expired. Please login again.');
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      // Only toast if we aren't already on the login page to avoid "toast storms"
+      if (!isLoginPath) {
+        toast.error('Session expired or invalid. Please login again.');
+        window.location.href = '/login';
+      }
       localStorage.removeItem('token');
-      window.location.href = '/login';
-    } else if (error.response?.status !== 404) {
-      // Don't toast 404s necessarily if they are handled by logic, 
-      // but for everything else, show the error.
+    } else if (error.response?.status !== 404 && !isLoginPath) {
+      // Don't toast 404s or generic errors if we are on login page
       toast.error(message);
     }
     
