@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api';
 import { Users, PlusCircle, Archive, AlertCircle, X, RefreshCw, Edit2, Search, BookOpen, GraduationCap, ShieldAlert } from 'lucide-react';
+import { formatYearLevel } from '../utils/formatters';
 import ConfirmModal from '../components/ConfirmModal';
 
 export default function Sections() {
@@ -260,7 +261,7 @@ export default function Sections() {
                     <tbody className="bg-white/40 dark:bg-slate-800/40 divide-y divide-gray-50 dark:divide-slate-700/50">
                       {progSections.map((sec) => (
                         <tr key={sec.id} className="hover:bg-white/80 dark:hover:bg-slate-700/50 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap font-bold text-gray-800 dark:text-slate-200 w-32">Year {sec.year_level}</td>
+                          <td className="px-6 py-4 whitespace-nowrap font-bold text-gray-800 dark:text-slate-200 w-32">{formatYearLevel(sec.year_level, sec.program_type)}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-gray-700 dark:text-slate-300 font-bold">{sec.name}</div>
                             <div className="text-[10px] font-black text-brand-600 dark:text-brand-400 uppercase tracking-widest mt-1">{sec.campus_name || 'Main Campus'}</div>
@@ -364,9 +365,11 @@ export default function Sections() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Year Level</label>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">
+                    {programs.find(p => p.id === Number(formData.program_id))?.type === 'SHS' ? 'Grade Level' : 'Year Level'}
+                  </label>
                   <input 
-                    type="number" min="1" max="12"
+                    type="number" min="1" max="13"
                     className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-gray-50 dark:bg-slate-900 dark:text-white"
                     value={formData.year_level}
                     onChange={e => setFormData({...formData, year_level: e.target.value})}

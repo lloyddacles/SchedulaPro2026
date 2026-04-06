@@ -8,6 +8,7 @@ import {
   SendHorizonal, CheckCircle2, XCircle, Clock, ChevronDown, ChevronUp,
   Edit, Archive, RotateCcw, MapPin, Users
 } from 'lucide-react';
+import { formatYearLevelShort } from '../utils/formatters';
 import ConfirmModal from '../components/ConfirmModal';
 
 // ── Status Config ─────────────────────────────────────────────────────────
@@ -407,7 +408,7 @@ export default function TeachingLoads() {
                         <div className="text-sm font-bold text-brand-700 dark:text-brand-400">{load.subject_code}</div>
                         <div className="text-xs text-gray-500 dark:text-slate-400">{load.subject_name}</div>
                         <span className="mt-1 inline-flex items-center text-[9px] font-extrabold text-white bg-indigo-500 px-1.5 py-0.5 rounded uppercase">
-                          {`${load.program_code}-${load.year_level}${load.section_name}`}
+                          {`${load.program_code}-${formatYearLevelShort(load.year_level, load.program_type)}${load.section_name}`}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center hidden sm:table-cell">

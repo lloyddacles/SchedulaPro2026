@@ -75,7 +75,7 @@ export const programSchema = z.object({
 
 export const sectionSchema = z.object({
   program_id: requiredId,
-  year_level: z.coerce.number().int().min(1).max(10),
+  year_level: z.coerce.number().int().min(1).max(13),
   name: z.string().min(1, "Section name is required"),
   student_count: z.coerce.number().int().min(1).default(50),
   campus_id: nullableId,
@@ -128,7 +128,7 @@ export const subjectSchema = z.object({
   required_hours: z.coerce.number().int().min(0),
   room_type: z.enum(['Lecture', 'Computer Lab', 'Science Lab', 'Kitchen', 'Court', 'Engineering Lab', 'Laboratory', 'Field', 'Any']).default('Any'),
   program_id: nullableId,
-  year_level: z.coerce.number().int().min(1).max(10).nullable().optional()
+  year_level: z.coerce.number().int().min(1).max(13).nullable().optional()
 });
 
 export const termSchema = z.object({

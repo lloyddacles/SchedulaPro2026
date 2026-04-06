@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api';
 import { Plus, Edit2, Archive, Search, X, RefreshCw, BarChart2, BookOpen, Layers, Users } from 'lucide-react';
+import { formatYearLevel } from '../utils/formatters';
 import { useAuth } from '../context/AuthContext';
 import useScheduleStore from '../store/useScheduleStore';
 import ConfirmModal from '../components/ConfirmModal';
@@ -272,7 +273,7 @@ export default function Subjects() {
                               )}
                             </div>
                             <div className="text-[10px] uppercase font-bold text-gray-500 dark:text-slate-400 tracking-wide mt-1.5 inline-flex items-center px-1.5 py-0.5 rounded bg-gray-50 dark:bg-slate-900/40 border border-gray-100 dark:border-slate-700/50">
-                              {s.program_id ? `Mapped: ${s.program_code || 'N/A'} (Yr ${s.year_level || '?'})` : 'Generic Cross-Section'}
+                              {s.program_id ? `Mapped: ${s.program_code || 'N/A'} (${formatYearLevel(s.year_level, s.program_type)})` : 'Generic Cross-Section'}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -389,8 +390,10 @@ export default function Subjects() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-gray-600 dark:text-slate-400 mb-1">Year Level</label>
-                      <input type="number" min="1" max="12" className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-brand-500 bg-white dark:bg-slate-900 dark:text-white text-sm" value={formData.year_level} onChange={e => setFormData({...formData, year_level: e.target.value})} placeholder="e.g. 1" />
+                      <label className="block text-[11px] font-bold text-gray-600 dark:text-slate-400 mb-1">
+                        {programs.find(p => p.id === Number(formData.program_id))?.type === 'SHS' ? 'Grade Level' : 'Year Level'}
+                      </label>
+                      <input type="number" min="1" max="13" className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-brand-500 bg-white dark:bg-slate-900 dark:text-white text-sm" value={formData.year_level} onChange={e => setFormData({...formData, year_level: e.target.value})} placeholder="e.g. 1" />
                     </div>
                   </div>
                 </div>
