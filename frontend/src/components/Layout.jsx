@@ -13,7 +13,7 @@ import {
 import BulkImportModal from '../components/BulkImportModal';
 import ChangePasswordModal from './ChangePasswordModal';
 import CommandPalette from './CommandPalette';
-import { Menu, Transition, Dialog } from '@headlessui/react';
+import { Menu as HMenu, Transition, Dialog } from '@headlessui/react';
 import { ChevronDown, CalendarPlus, Check } from 'lucide-react';
 
 // ── Role badge config ────────────────────────────────────────────────────────
@@ -262,12 +262,12 @@ export default function Layout() {
             {/* Term Switcher (Scheduler + Admin Only) */}
             {isScheduler && (
               <div className="flex items-center gap-2">
-                <Menu as="div" className="relative inline-block text-left">
+                <HMenu as="div" className="relative inline-block text-left">
                   <div>
-                    <Menu.Button className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500/10 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 rounded-xl text-xs font-black uppercase tracking-widest border border-brand-500/20 hover:bg-brand-500/20 transition-all">
+                    <HMenu.Button className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500/10 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 rounded-xl text-xs font-black uppercase tracking-widest border border-brand-500/20 hover:bg-brand-500/20 transition-all">
                       {terms.find(t => t.id === activeTermId)?.name || 'Select Term'}
                       <ChevronDown className="w-3.5 h-3.5" />
-                    </Menu.Button>
+                    </HMenu.Button>
                   </div>
                   <Transition
                     as={React.Fragment}
@@ -278,10 +278,10 @@ export default function Layout() {
                     leaveFrom="transform opacity-100 scale-100"
                     leaveTo="transform opacity-0 scale-95"
                   >
-                    <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 dark:divide-slate-700 rounded-2xl bg-white dark:bg-slate-800 shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none z-50 overflow-hidden border border-gray-100 dark:border-slate-700">
+                    <HMenu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 dark:divide-slate-700 rounded-2xl bg-white dark:bg-slate-800 shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none z-50 overflow-hidden border border-gray-100 dark:border-slate-700">
                       <div className="px-1 py-1">
                         {terms.map((t) => (
-                          <Menu.Item key={t.id}>
+                          <HMenu.Item key={t.id}>
                             {({ active }) => (
                               <button
                                 onClick={() => setActiveTermId(t.id)}
@@ -293,12 +293,12 @@ export default function Layout() {
                                 {t.id === activeTermId && <Check className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-emerald-500'}`} />}
                               </button>
                             )}
-                          </Menu.Item>
+                          </HMenu.Item>
                         ))}
                       </div>
-                    </Menu.Items>
+                    </HMenu.Items>
                   </Transition>
-                </Menu>
+                </HMenu>
 
                 {isAdmin && (
                   <button
