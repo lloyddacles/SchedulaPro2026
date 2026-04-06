@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api';
-import { Plus, Edit2, Archive, Search, X, RefreshCw, BarChart2, BookOpen, Layers, Users } from 'lucide-react';
+import { Plus, Edit2, Archive, Search, X, RefreshCw, BarChart2, BookOpen, Layers, Users, Link } from 'lucide-react';
 import { formatYearLevel } from '../utils/formatters';
 import { useAuth } from '../context/AuthContext';
 import useScheduleStore from '../store/useScheduleStore';
@@ -22,6 +22,11 @@ export default function Subjects() {
   const [currentId, setCurrentId] = useState(null);
   const [apiError, setApiError] = useState('');
   
+  const [isPrereqModalOpen, setIsPrereqModalOpen] = useState(false);
+  const [currentPrereqTarget, setCurrentPrereqTarget] = useState(null);
+  const [prereqIds, setPrereqIds] = useState([]);
+
+
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', type: '', onConfirm: () => {} });
 
@@ -77,6 +82,16 @@ export default function Subjects() {
   const restoreMutation = useMutation({
     mutationFn: (id) => api.put(`/subjects/${id}/restore`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['subjects'] })
+  });
+
+  const prereqMutation = useMutation({
+    mutationFn: ({ id, ids }) => api.put(`/subjects/${id}/prerequisites`, { prerequisite_ids: ids }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subjects'] });
+      setIsPrereqModalOpen(false);
+      setCurrentPrereqTarget(null);
+    },
+    onError: (err) => setApiError(err.response?.data?.message || 'Error updating prerequisites')
   });
 
   // Handlers
@@ -279,8 +294,15 @@ export default function Subjects() {
                                 </span>
                               )}
                             </div>
-                            <div className="text-[10px] uppercase font-bold text-gray-500 dark:text-slate-400 tracking-wide mt-1.5 inline-flex items-center px-1.5 py-0.5 rounded bg-gray-50 dark:bg-slate-900/40 border border-gray-100 dark:border-slate-700/50">
-                              {s.program_id ? `Mapped: ${s.program_code || 'N/A'} (${formatYearLevel(s.year_level, s.program_type)})` : 'Generic Cross-Section'}
+                            <div className="text-[10px] uppercase font-bold text-gray-500 dark:text-slate-400 tracking-wide mt-1.5 flex flex-wrap gap-1.5 items-center">
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-50 dark:bg-slate-900/40 border border-gray-100 dark:border-slate-700/50">
+                                {s.program_id ? `Mapped: ${s.program_code || 'N/A'} (${formatYearLevel(s.year_level, s.program_type)})` : 'Generic Cross-Section'}
+                              </span>
+                              {s.prerequisite_codes && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-100 dark:border-blue-800 gap-1">
+                                  <Link className="w-3 h-3" /> Requires: {s.prerequisite_codes}
+                                </span>
+                              )}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -297,26 +319,42 @@ export default function Subjects() {
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             {isHead && !showArchived && (
                               <>
+                                <button 
+                                  onClick={() => {
+                                    setCurrentPrereqTarget(s);
+                                    setPrereqIds(s.prerequisite_ids ? s.prerequisite_ids.split(',').map(Number) : []);
+                                    setIsPrereqModalOpen(true);
+                                  }}
+                                  className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 mr-4 transition-colors"
+                                  title="Map Prerequisites"
+                                >
+                                  <Link className="w-5 h-5 inline" />
+                                </button>
                                 <button onClick={() => openEditModal(s)} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-4 transition-colors"><Edit2 className="w-5 h-5 inline" /></button>
-                                <button onClick={() => { 
-                                  setConfirmConfig({
-                                    title: 'Archive Subject?',
-                                    message: 'This will remove the subject from active rotations. Existing schedules mapping to this subject will not be modified.',
-                                    type: 'danger',
-                                    onConfirm: () => deleteMutation.mutate(s.id)
-                                  });
-                                  setIsConfirmModalOpen(true);
-                                }} className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"><Archive className="w-5 h-5 inline" /></button>
+                                <button
+                                  onClick={() => {
+                                    setConfirmConfig({
+                                      title: 'Archive Subject',
+                                      message: `Are you sure you want to archive ${s.subject_code}? This removes it from the scheduling rotation. Existing historical assignments and evaluations remain untouched.`,
+                                      type: 'danger',
+                                      onConfirm: () => deleteMutation.mutate(s.id)
+                                    });
+                                    setIsConfirmModalOpen(true);
+                                  }}
+                                  className="text-rose-600 hover:text-rose-900 dark:text-rose-400 dark:hover:text-rose-300 transition-colors"
+                                ><Archive className="w-5 h-5 inline" /></button>
                               </>
                             )}
                             {isHead && showArchived && (
-                              <button onClick={() => { 
-                                setConfirmConfig({
-                                  title: 'Restore Subject?',
-                                  message: 'This subject will become visible again to curriculum mappers and load dispatchers.',
-                                  type: 'restore',
-                                  onConfirm: () => restoreMutation.mutate(s.id)
-                                });
+                              <button
+                                onClick={() => { 
+                                  setConfirmConfig({
+                                    title: 'Restore Subject?',
+                                    message: 'This subject will become visible again to curriculum mappers and load dispatchers.',
+                                    type: 'restore',
+                                    onConfirm: () => restoreMutation.mutate(s.id)
+                                  });
+                                  setIsConfirmModalOpen(true);
                                 setIsConfirmModalOpen(true);
                               }} className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors font-bold flex items-center justify-end w-full gap-2">
                                 <RefreshCw className="w-4 h-4" /> Restore
@@ -412,6 +450,67 @@ export default function Subjects() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Prerequisite Mapping Modal */}
+      {isPrereqModalOpen && currentPrereqTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-gray-100 dark:border-slate-700 flex flex-col max-h-[80vh]">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-700/50 flex justify-between items-center bg-blue-50 dark:bg-blue-900/20">
+              <h3 className="text-lg font-bold text-blue-800 dark:text-blue-300 flex items-center gap-2">
+                <Link className="w-5 h-5" /> Map Prerequisites
+              </h3>
+              <button onClick={() => setIsPrereqModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 flex-1 overflow-y-auto space-y-4">
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                Select required subjects for: <span className="text-blue-600 dark:text-blue-400 font-black">{currentPrereqTarget.subject_code} ({currentPrereqTarget.subject_name})</span>
+              </p>
+              
+              <div className="space-y-2">
+                {subjects.filter(s => s.id !== currentPrereqTarget.id && !s.is_archived).map(s => {
+                  const isSelected = prereqIds.includes(s.id);
+                  return (
+                    <label key={s.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-colors cursor-pointer ${isSelected ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          if (e.target.checked) setPrereqIds([...prereqIds, s.id]);
+                          else setPrereqIds(prereqIds.filter(id => id !== s.id));
+                        }}
+                      />
+                      <div className="flex-1">
+                        <div className="text-sm font-bold text-slate-900 dark:text-white">{s.subject_code}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">{s.subject_name}</div>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex gap-3">
+              <button 
+                onClick={() => setIsPrereqModalOpen(false)} 
+                className="flex-1 py-2.5 px-4 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                disabled={prereqMutation.isPending}
+                onClick={() => prereqMutation.mutate({ id: currentPrereqTarget.id, ids: prereqIds })} 
+                className="flex-[2] py-2.5 px-4 bg-blue-600 text-white rounded-xl text-sm font-bold shadow hover:bg-blue-700 transition disabled:opacity-50"
+              >
+                {prereqMutation.isPending ? 'Saving...' : 'Save Prerequisites'}
+              </button>
             </div>
           </div>
         </div>

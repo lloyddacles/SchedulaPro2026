@@ -20,7 +20,9 @@ router.get('/', async (req: Request, res: Response) => {
               WHERE tl.subject_id = s.id 
                 AND tl.status != 'archived'
                 ${termId ? 'AND tl.term_id = ?' : ''}
-             ) as usage_count
+             ) as usage_count,
+             (SELECT GROUP_CONCAT(prerequisite_id) FROM subject_prerequisites WHERE subject_id = s.id) as prerequisite_ids,
+             (SELECT GROUP_CONCAT(ps.subject_code SEPARATOR ', ') FROM subject_prerequisites sp JOIN subjects ps ON sp.prerequisite_id = ps.id WHERE sp.subject_id = s.id) as prerequisite_codes
       FROM subjects s
       LEFT JOIN programs p ON s.program_id = p.id
       WHERE s.is_archived = ?
@@ -136,6 +138,29 @@ router.put('/:id/restore', authorizeRoles('admin', 'program_head', 'program_assi
     res.json({ message: 'Subject restored successfully' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Phase 4: Subject Prerequisites Mapping
+router.put('/:id/prerequisites', authorizeRoles('admin', 'program_head'), async (req: any, res: Response, next: express.NextFunction) => {
+  const subject_id = req.params.id;
+  const { prerequisite_ids } = req.body; // array of subject IDs
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    await connection.query('DELETE FROM subject_prerequisites WHERE subject_id = ?', [subject_id]);
+    if (prerequisite_ids && prerequisite_ids.length > 0) {
+      const values = prerequisite_ids.map((pid: number) => [subject_id, pid]);
+      await connection.query('INSERT IGNORE INTO subject_prerequisites (subject_id, prerequisite_id) VALUES ?', [values]);
+    }
+    await connection.commit();
+    await logAudit('UPDATE_PREREQ', 'Subject', subject_id, { prerequisite_ids }, req.user.username);
+    res.json({ message: 'Prerequisites updated successfully.' });
+  } catch (error: any) {
+    await connection.rollback();
+    next(error);
+  } finally {
+    connection.release();
   }
 });
 

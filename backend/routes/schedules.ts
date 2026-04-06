@@ -92,6 +92,25 @@ router.get('/check-conflict', authorizeRoles('admin', 'program_head', 'program_a
     next(error);
   }
 });
+router.get('/suggest-slots', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: Request, res: Response, next: express.NextFunction) => {
+  const { teaching_load_id, term_id, preferred_room } = req.query;
+
+  if (!teaching_load_id || !term_id) {
+    return res.status(400).json({ message: 'teaching_load_id and term_id are required.' });
+  }
+
+  try {
+    const suggestions = await ScheduleService.suggestAlternativeSlots(pool, {
+      teachingLoadId: Number(teaching_load_id),
+      termId: Number(term_id),
+      preferredRoom: preferred_room as string | undefined
+    });
+    res.json(suggestions);
+  } catch (error: any) {
+    next(error);
+  }
+});
+
 router.post('/', authorizeRoles('admin', 'program_head', 'program_assistant'), validate(scheduleSchema), async (req: any, res: Response, next: express.NextFunction) => {
   const { teaching_load_id, day_of_week, start_time, end_time, room } = req.body;
   const connection = await pool.getConnection();

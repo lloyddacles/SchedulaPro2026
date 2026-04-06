@@ -188,13 +188,15 @@ router.get('/me/loads', async (req: any, res: Response, next: express.NextFuncti
         tl.id, tl.term_id, tl.status,
         t.name as term_name,
         s.subject_code, s.subject_name, s.required_hours,
-        sec.name as section_name, p.code as program_code, sec.year_level
+        sec.name as section_name, p.code as program_code, sec.year_level,
+        le.rating as evaluation_rating, le.notes as evaluation_notes
       FROM teaching_loads tl
       JOIN subjects s ON tl.subject_id = s.id
       JOIN terms t ON tl.term_id = t.id
       LEFT JOIN sections sec ON tl.section_id = sec.id
       LEFT JOIN programs p ON sec.program_id = p.id
-      WHERE tl.faculty_id = ? AND tl.status != 'archived'
+      LEFT JOIN load_evaluations le ON tl.id = le.teaching_load_id
+      WHERE tl.faculty_id = ?
       ORDER BY t.id DESC, s.subject_code ASC
     `;
     const [rows] = await pool.query(query, [req.user.faculty_id]);
@@ -203,5 +205,6 @@ router.get('/me/loads', async (req: any, res: Response, next: express.NextFuncti
     next(error);
   }
 });
+
 
 export default router;

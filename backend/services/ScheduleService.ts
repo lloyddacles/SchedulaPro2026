@@ -485,4 +485,77 @@ export class ScheduleService {
 
     return { scheduled: newlyMapped.length, failed: failures.length, failures, newlyMapped };
   }
+
+  /**
+   * Phase 2: Smart Conflict Resolver — Suggest alternative valid slots
+   * Returns up to `limit` conflict-free alternative placements for a given teaching load.
+   */
+  static async suggestAlternativeSlots(
+    poolOrConn: any,
+    params: { teachingLoadId: number; termId: number; preferredRoom?: string; limit?: number }
+  ): Promise<{ day_of_week: string; start_time: string; end_time: string; room: string }[]> {
+    const { teachingLoadId, termId, preferredRoom, limit = 5 } = params;
+
+    // Fetch load details
+    const [tlRows]: [any[], any] = await poolOrConn.query(`
+      SELECT tl.faculty_id, tl.co_faculty_id_1, tl.co_faculty_id_2, tl.section_id, 
+             s.required_hours, s.room_type, sec.campus_id
+      FROM teaching_loads tl
+      JOIN subjects s ON tl.subject_id = s.id
+      JOIN sections sec ON tl.section_id = sec.id
+      WHERE tl.id = ?
+    `, [teachingLoadId]);
+
+    if (tlRows.length === 0) return [];
+    const { faculty_id, co_faculty_id_1, co_faculty_id_2, section_id, required_hours, room_type, campus_id } = tlRows[0];
+    const durationHours = Number(required_hours) || 1;
+    const facIds = [faculty_id, co_faculty_id_1, co_faculty_id_2].filter(Boolean);
+
+    // Fetch compatible rooms
+    const [roomRows]: [any[], any] = await poolOrConn.query(`
+      SELECT name, type, capacity FROM rooms 
+      WHERE is_archived = FALSE AND campus_id = ? ${room_type && room_type !== 'Any' ? 'AND type = ?' : ''}
+      ORDER BY capacity DESC
+    `, room_type && room_type !== 'Any' ? [campus_id, room_type] : [campus_id]);
+
+    // If preferred room is provided, prioritize it
+    const sortedRooms = preferredRoom
+      ? [roomRows.find((r: any) => r.name === preferredRoom), ...roomRows.filter((r: any) => r.name !== preferredRoom)].filter(Boolean)
+      : roomRows;
+
+    const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const suggestions: { day_of_week: string; start_time: string; end_time: string; room: string }[] = [];
+
+    for (const day of DAYS) {
+      if (suggestions.length >= limit) break;
+      for (let timeCode = 7; timeCode <= 22 - durationHours; timeCode += 0.5) {
+        if (suggestions.length >= limit) break;
+        const sAttempt = timeCode;
+        const eAttempt = timeCode + durationHours;
+
+        for (const room of sortedRooms) {
+          const result = await this.validatePlacement(poolOrConn, {
+            teachingLoadId,
+            dayOfWeek: day,
+            startTime: this.formatTime(sAttempt),
+            endTime: this.formatTime(eAttempt),
+            room: room.name,
+            termId
+          });
+
+          if (result.valid) {
+            suggestions.push({
+              day_of_week: day,
+              start_time: this.formatTime(sAttempt),
+              end_time: this.formatTime(eAttempt),
+              room: room.name
+            });
+            break; // One suggestion per time slot (best room)
+          }
+        }
+      }
+    }
+
+    return suggestions;
+  }
 }

@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import {
   Layers, PlusCircle, Trash2, ShieldAlert, X, AlertCircle,
   SendHorizonal, CheckCircle2, XCircle, Clock, ChevronDown, ChevronUp,
-  Edit, Archive, RotateCcw, MapPin, Users
+  Edit, Archive, RotateCcw, MapPin, Users, Star
 } from 'lucide-react';
 import { formatYearLevelShort } from '../utils/formatters';
 import ConfirmModal from '../components/ConfirmModal';
@@ -47,6 +47,10 @@ export default function TeachingLoads() {
   const [rejectModal, setRejectModal] = useState(null); // load id
   const [rejectNote, setRejectNote] = useState('');
   const [expandedReject, setExpandedReject] = useState(null); // show rejection note
+  
+  const [evalModal, setEvalModal] = useState(null); // load obj for evaluation
+  const [evalRating, setEvalRating] = useState('Satisfactory');
+  const [evalNote, setEvalNote] = useState('');
   
   const [selectedCampusId, setSelectedCampusId] = useState('');
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -156,6 +160,16 @@ export default function TeachingLoads() {
   const approveMutation = useMutation({
     mutationFn: (id) => api.patch(`/teaching-loads/${id}/approve`, { reviewed_by: user?.id }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['loads'] })
+  });
+
+  const evaluateMutation = useMutation({
+    mutationFn: (payload) => api.post('/evaluations', payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['loads'] }); // To trigger data refresh if we attached evals to loads
+      setEvalModal(null);
+      alert('Teaching Load Evaluation successfully submitted.');
+    },
+    onError: (err) => setError(err.response?.data?.error?.details || err.response?.data?.message || 'Error submitting evaluation.')
   });
 
   const rejectMutation = useMutation({
@@ -477,6 +491,15 @@ export default function TeachingLoads() {
                           )}
 
                           {/* Archive (If Approved or Admin) */}
+                          {isHead && ['approved', 'archived'].includes(load.status) && (
+                            <button
+                              onClick={() => { setEvalModal(load); setEvalRating('Satisfactory'); setEvalNote(''); }}
+                              className="p-1.5 rounded-lg text-indigo-500 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                              title="Evaluate Teaching Load"
+                            >
+                              <Star className="w-4 h-4" />
+                            </button>
+                          )}
                           {isAdmin && activeTab !== 'archived' && (
                              <button
                                onClick={() => {
@@ -595,7 +618,73 @@ export default function TeachingLoads() {
         </div>
       )}
 
+      {/* ── Evaluation Modal (Phase 3) ───────────────────────────────────────── */}
+      {evalModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm animate-fade-in print:hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden border border-gray-100 dark:border-slate-700">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-700/50 flex justify-between items-center bg-indigo-50 dark:bg-indigo-900/20">
+              <h3 className="text-base font-bold text-indigo-700 dark:text-indigo-400 flex items-center gap-2">
+                <Star className="w-5 h-5 fill-current" /> Performance Evaluation
+              </h3>
+              <button onClick={() => setEvalModal(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-5">
+              <div className="text-sm">
+                <p className="font-bold text-gray-900 dark:text-white">{evalModal.faculty_name}</p>
+                <p className="text-gray-500 dark:text-slate-400">{evalModal.subject_code} — {evalModal.section_name}</p>
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wide">Rating</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['Excellent', 'Satisfactory', 'Needs Improvement'].map(r => (
+                    <button
+                      key={r}
+                      onClick={() => setEvalRating(r)}
+                      className={`py-2 px-2 text-xs font-bold border rounded-xl text-center transition-colors ${
+                        evalRating === r 
+                        ? (r === 'Excellent' ? 'bg-emerald-500 border-emerald-600 text-white shadow-inner' : r === 'Satisfactory' ? 'bg-blue-500 border-blue-600 text-white shadow-inner' : 'bg-amber-500 border-amber-600 text-white shadow-inner')
+                        : 'bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-600'
+                      }`}
+                    >
+                      {r.replace(' ', '\n')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                 <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wide">Qualitative Notes (Optional)</label>
+                 <textarea
+                   rows={3}
+                   className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm bg-gray-50 dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 resize-none placeholder:text-gray-400"
+                   placeholder="Add specific feedback or observations here..."
+                   value={evalNote}
+                   onChange={e => setEvalNote(e.target.value)}
+                 />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setEvalModal(null)} className="flex-1 py-3 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-xs font-bold text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors uppercase tracking-wide">
+                  Cancel
+                </button>
+                <button
+                  onClick={() => evaluateMutation.mutate({ teaching_load_id: evalModal.id, rating: evalRating, notes: evalNote })}
+                  disabled={evaluateMutation.isPending}
+                  className="flex-[2] py-3 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/30 disabled:opacity-50 uppercase tracking-wide flex justify-center items-center gap-2"
+                >
+                   {evaluateMutation.isPending ? 'Submitting...' : 'Submit Evaluation'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Assign/Edit Load Modal ────────────────────────────────────────────── */}
+
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-fade-in">
           <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden">

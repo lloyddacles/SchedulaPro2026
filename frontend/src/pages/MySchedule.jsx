@@ -393,6 +393,7 @@ export default function MySchedule() {
                           <th className="text-left px-3 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Subject Name</th>
                           <th className="text-left px-3 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Section</th>
                           <th className="text-center px-3 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Hours</th>
+                          <th className="text-left px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Evaluation</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -402,6 +403,24 @@ export default function MySchedule() {
                             <td className="px-3 py-3 text-slate-600 dark:text-slate-300 font-medium">{load.subject_name}</td>
                             <td className="px-3 py-3 text-slate-500">{load.program_code} {load.year_level} {load.section_name}</td>
                             <td className="px-3 py-3 text-center font-black text-brand-600">{load.required_hours}</td>
+                            <td className="px-6 py-3">
+                              {load.evaluation_rating ? (
+                                <div>
+                                  <span className={`inline-block px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                                    load.evaluation_rating === 'Excellent' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                    : load.evaluation_rating === 'Satisfactory' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                  }`}>
+                                    {load.evaluation_rating}
+                                  </span>
+                                  {load.evaluation_notes && (
+                                    <p className="mt-1 text-[10px] text-slate-500 max-w-[200px] line-clamp-2" title={load.evaluation_notes}>"{load.evaluation_notes}"</p>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-[10px] text-slate-400 italic">No rating yet</span>
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>

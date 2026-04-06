@@ -32,6 +32,7 @@ import notificationsRoutes from './routes/notifications.js';
 import reportsRoutes from './routes/reports.js';
 import campusesRoutes from './routes/campuses.js';
 import settingsRoutes from './routes/settings.js';
+import evaluationsRoutes from './routes/evaluations.js';
 
 // Utility Imports
 import { setIo } from './utils/socketStore.js';
@@ -157,6 +158,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/campuses', campusesRoutes);
+app.use('/api/evaluations', evaluationsRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.send('Faculty Scheduling System API with Realtime Sync is running on TypeScript...');

@@ -44,6 +44,8 @@ export default function Schedules() {
   const [isEditingSchedule, setIsEditingSchedule] = useState(false);
   const [selectedScheduleId, setSelectedScheduleId] = useState(null);
   const [popoverState, setPopoverState] = useState({ isOpen: false, data: null, position: { top: 0, left: 0 } });
+  const [smartSuggestions, setSmartSuggestions] = useState([]);
+  const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
   
   const [formData, setFormData] = useState({
     teaching_load_id: '', day_of_week: 'Monday', start_time: '08:00', end_time: '09:00', room: ''
@@ -211,43 +213,30 @@ export default function Schedules() {
     return isBlackedOut;
   };
 
-  const handleAutoSuggest = () => {
-    if (!formData.teaching_load_id) return setError("Please select an Active Section & Subject first.");
-    if (!formData.room) return setError("Please enter a target Room first to verify room conflicts.");
-    
+  const handleAutoSuggest = async () => {
+    if (!formData.teaching_load_id) return setError('Please select a Teaching Load first.');
+    setSmartSuggestions([]);
     setError('');
-    const load = loads.find(l => l.id === Number(formData.teaching_load_id));
-    if (!load) return;
-
-    const durationHours = Number(load.required_hours) || 1; 
-
-    for (const day of DAYS) {
-      for (let timeCode = 7; timeCode <= 22 - durationHours; timeCode += 0.5) {
-         const sAttempt = timeCode;
-         const eAttempt = timeCode + durationHours;
-         
-         // Skip slots that span the entire 11 AM–2 PM window (impossible to have a 1-hr gap)
-         if (sAttempt <= 11 && eAttempt >= 14) continue;
-
-         const isCollision = checkSlotCollision(day, sAttempt, eAttempt, load, formData.room, isEditingSchedule ? selectedScheduleId : null);
-
-         if (!isCollision) {
-            const formatTime = (t) => {
-               const hh = Math.floor(t).toString().padStart(2, '0');
-               const mm = (t % 1 === 0.5) ? '30' : '00';
-               return `${hh}:${mm}`;
-            };
-            setFormData({
-              ...formData,
-              day_of_week: day,
-              start_time: formatTime(sAttempt),
-              end_time: formatTime(eAttempt)
-            });
-            return;
-         }
+    setIsFetchingSuggestions(true);
+    try {
+      const res = await api.get('/schedules/suggest-slots', {
+        params: {
+          teaching_load_id: formData.teaching_load_id,
+          term_id: activeTermId,
+          preferred_room: formData.room || undefined
+        }
+      });
+      const suggestions = res.data;
+      if (suggestions.length === 0) {
+        setError('No available slots found. All valid windows are occupied for this faculty/section combination.');
+      } else {
+        setSmartSuggestions(suggestions);
       }
+    } catch (e) {
+      setError('Smart Resolver failed. Please try adjusting the load or term.');
+    } finally {
+      setIsFetchingSuggestions(false);
     }
-    setError(`No available ${durationHours}-hour slots found for this Faculty + Section + Room combination!`);
   };
 
   const handleSubmit = (e) => {
@@ -906,13 +895,36 @@ export default function Schedules() {
                     ).sort(([a], [b]) => a.localeCompare(b)).map(([campusName, campusRooms]) => (
                       <optgroup key={campusName} label={campusName}>
                         {campusRooms.map(r => (
-                          <option key={r.id} value={r.name}>{r.name} ({r.type})</option>
+                          <option key={r.id} value={r.name}>{r.name} ({r.type}) — Cap: {r.capacity || '?'}</option>
                         ))}
                       </optgroup>
                     ))}
                   </select>
                 </div>
               </div>
+              {/* ── Capacity Match Indicator (Phase 1) ─────────────────────── */}
+              {(() => {
+                const load = loads.find(l => l.id === Number(formData.teaching_load_id));
+                const room = rooms.find(r => r.name === formData.room);
+                if (!load || !room || !room.capacity) return null;
+                const section = sections.find(s => s.id === load.section_id);
+                const enrollment = section?.student_count || 0;
+                const capacity = room.capacity;
+                const ratio = enrollment / capacity;
+                const isOver = ratio > 1;
+                const isTight = ratio > 0.9 && ratio <= 1;
+                const color = isOver ? 'red' : isTight ? 'amber' : 'emerald';
+                const label = isOver ? '🔴 Overflowed' : isTight ? '🟡 Tight Fit' : '🟢 Fits';
+                const bgClass = isOver ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:text-red-400' : isTight ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400';
+                return (
+                  <div className={`flex items-center justify-between px-4 py-3 rounded-xl border text-xs font-bold ${bgClass}`}>
+                    <span>{label} — {enrollment} students / {capacity} seats</span>
+                    <div className="h-2 w-24 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${isOver ? 'bg-red-500' : isTight ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(ratio * 100, 100)}%` }} />
+                    </div>
+                  </div>
+                );
+              })()}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Start</label>
@@ -923,7 +935,29 @@ export default function Schedules() {
                   <input type="time" className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 bg-gray-50 dark:bg-slate-700" value={formData.end_time} onChange={e => setFormData({...formData, end_time: e.target.value})} required />
                 </div>
               </div>
-              <button type="button" onClick={handleAutoSuggest} className="w-full text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 py-3 rounded-xl font-bold flex items-center justify-center gap-2"><Sparkles className="w-4 h-4" /> Auto-Find Slot</button>
+              <button type="button" onClick={handleAutoSuggest} disabled={isFetchingSuggestions} className="w-full text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-100 transition-colors disabled:opacity-60">
+                {isFetchingSuggestions ? <><RefreshCw className="w-4 h-4 animate-spin" /> Scanning Slots...</> : <><Sparkles className="w-4 h-4" /> Smart Find Slot</>}
+              </button>
+              {/* Smart Suggestions Panel */}
+              {smartSuggestions.length > 0 && (
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-xl p-3 space-y-2">
+                  <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">✨ {smartSuggestions.length} Valid Slots Found — Click to Apply</p>
+                  {smartSuggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => {
+                        setFormData({ ...formData, day_of_week: s.day_of_week, start_time: s.start_time.slice(0,5), end_time: s.end_time.slice(0,5), room: s.room });
+                        setSmartSuggestions([]);
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-2 bg-white dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 border border-indigo-100 dark:border-indigo-700 rounded-lg text-xs font-bold text-indigo-800 dark:text-indigo-300 transition-colors text-left"
+                    >
+                      <span>{s.day_of_week}, {s.start_time.slice(0,5)} – {s.end_time.slice(0,5)}</span>
+                      <span className="text-[10px] font-black text-slate-400 truncate ml-2">{s.room}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
               {conflictCheck?.conflict && (
                 <div className="bg-red-50 text-red-700 p-4 rounded-xl text-sm border-2 border-red-500 animate-pulse">
                   <p className="font-bold">{conflictCheck.message}</p>
