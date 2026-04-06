@@ -99,15 +99,36 @@ router.post('/', authorizeRoles('admin', 'program_head', 'program_assistant'), v
       }
     }
 
-    const values = subject_ids.map((sid: number) => [faculty_id, co_faculty_id_1 || null, co_faculty_id_2 || null, sid, targetTermId, targetSectionId, 'draft']);
+    const isAutoApprovable = ['admin', 'program_head'].includes(req.user.role);
+    const initialStatus = isAutoApprovable ? 'approved' : 'draft';
+    const reviewerId = isAutoApprovable ? req.user.id : null;
+    const reviewedAt = isAutoApprovable ? new Date() : null;
+
+    const values = subject_ids.map((sid: number) => [
+      faculty_id, 
+      co_faculty_id_1 || null, 
+      co_faculty_id_2 || null, 
+      sid, 
+      targetTermId, 
+      targetSectionId, 
+      initialStatus,
+      reviewerId,
+      reviewedAt
+    ]);
+
     await connection.query(
-      `INSERT INTO teaching_loads (faculty_id, co_faculty_id_1, co_faculty_id_2, subject_id, term_id, section_id, status) VALUES ?`,
+      `INSERT INTO teaching_loads (faculty_id, co_faculty_id_1, co_faculty_id_2, subject_id, term_id, section_id, status, reviewed_by, reviewed_at) VALUES ?`,
       [values]
     );
 
     await connection.commit();
-    await logAudit('CREATE_BULK', 'TeachingLoad', null, { subject_ids, faculty_id }, req.user.username);
-    res.status(201).json({ message: `Successfully assigned ${subject_ids.length} subjects as Drafts.` });
+    await logAudit('CREATE_BULK', 'TeachingLoad', null, { subject_ids, faculty_id, status: initialStatus }, req.user.username);
+    
+    res.status(201).json({ 
+      message: isAutoApprovable 
+        ? `Successfully assigned and approved ${subject_ids.length} subjects.` 
+        : `Successfully assigned ${subject_ids.length} subjects as Drafts.` 
+    });
 
     const [[sec]]: [any[], any] = await connection.query('SELECT campus_id FROM sections WHERE id = ?', [targetSectionId]);
     if (sec) {
