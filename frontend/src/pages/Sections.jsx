@@ -75,8 +75,15 @@ export default function Sections() {
     setIsModalOpen(false);
     setIsEditing(false);
     setEditingId(null);
-    setFormData({ program_id: '', year_level: '1', name: 'A', student_count: '30', adviser_id: '', campus_id: '' });
+    setFormData({ program_id: '', year_level: '1', name: 'A', student_count: '50', adviser_id: '', campus_id: '' });
     setError('');
+  };
+
+  const openAddModal = () => {
+    setIsEditing(false);
+    setEditingId(null);
+    setFormData({ program_id: '', year_level: '1', name: 'A', student_count: '50', adviser_id: '', campus_id: '' });
+    setIsModalOpen(true);
   };
 
   const handleEdit = (sec) => {
