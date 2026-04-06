@@ -5,6 +5,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import compression from 'compression';
+import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 
 // Configure Environment
@@ -61,6 +62,28 @@ if (process.env.VERCEL) {
 
 setIo(io);
 
+// Socket.io Authentication Middleware
+if (!process.env.VERCEL) {
+  io.use((socket: any, next: (err?: Error) => void) => {
+    const cookieString = socket.handshake.headers.cookie;
+    if (!cookieString) return next(new Error('Authentication error: No cookies found'));
+
+    const tokenMatch = cookieString.match(/token=([^;]+)/);
+    const token = tokenMatch ? tokenMatch[1] : null;
+
+    if (!token) return next(new Error('Authentication error: No token found'));
+
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) return next(new Error('Authentication error: Server misconfigured'));
+
+    jwt.verify(token, JWT_SECRET, (err: any, decoded: any) => {
+      if (err) return next(new Error('Authentication error: Invalid token'));
+      socket.user = decoded;
+      next();
+    });
+  });
+}
+
 // Middleware
 app.use(helmet({
   contentSecurityPolicy: false,
@@ -72,6 +95,18 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use(cookieParser());
+
+// Global Rate Limiter: 100 requests per 15 minutes
+import rateLimit from 'express-rate-limit';
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' }
+});
+app.use(limiter);
 
 // Realtime Sync Middleware
 app.use((req: any, res: Response, next: NextFunction) => {
@@ -84,8 +119,10 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Dat
 
 import { seed } from './seed.js';
 app.get('/api/setup', async (req, res) => {
-  if (req.query.secret !== 'setup123') {
-    return res.status(403).json({ error: 'Unauthorized' });
+  const SETUP_SECRET = process.env.SETUP_SECRET;
+  
+  if (!SETUP_SECRET || req.query.secret !== SETUP_SECRET) {
+    return res.status(403).json({ error: 'Unauthorized: Setup access is disabled or secret is incorrect.' });
   }
   try {
     const result = await seed();

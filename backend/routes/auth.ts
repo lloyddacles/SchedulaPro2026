@@ -29,10 +29,23 @@ router.post('/login', validate(loginSchema), async (req: Request, res: Response,
       { expiresIn: '1d' }
     );
 
-    res.json({ token, role: user.role, faculty_id: user.faculty_id, username: user.username });
+    // Set secure httpOnly cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // true in production
+      sameSite: 'lax', // prevent CSRF while allowing navigation
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
+    });
+
+    res.json({ role: user.role, faculty_id: user.faculty_id, username: user.username });
   } catch (error: any) {
     next(error);
   }
+});
+
+router.post('/logout', (req: Request, res: Response) => {
+  res.clearCookie('token');
+  res.json({ message: 'Logged out successfully' });
 });
 
 router.put('/change-password', authenticateToken, validate(changePasswordSchema), async (req: any, res: Response, next: express.NextFunction) => {
@@ -53,6 +66,15 @@ router.put('/change-password', authenticateToken, validate(changePasswordSchema)
   } catch (error: any) {
     next(error);
   }
+});
+
+router.get('/me', authenticateToken, (req: any, res: Response) => {
+  res.json({
+    id: req.user.id,
+    username: req.user.username,
+    role: req.user.role,
+    faculty_id: req.user.faculty_id
+  });
 });
 
 export default router;

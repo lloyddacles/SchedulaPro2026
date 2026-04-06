@@ -3,15 +3,10 @@ import { toast } from 'react-hot-toast';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  withCredentials: true, // Enable sending cookies with requests
 });
 
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// Request interceptor removed as cookies are handled automatically by the browser
 
 api.interceptors.response.use(
   response => response,

@@ -16,14 +16,27 @@ router.post('/:entity', async (req: any, res: Response) => {
     return res.status(400).json({ message: 'Payload must be a populated JSON array.' });
   }
 
-  const allowedEntities = ['faculty', 'subjects', 'rooms', 'sections', 'programs'];
-  if (!allowedEntities.includes(entity)) {
+  const allowedEntities: Record<string, string[]> = {
+    'faculty': ['id', 'full_name', 'email', 'phone', 'department', 'employment_type', 'max_teaching_hours', 'campus_id', 'is_archived'],
+    'subjects': ['id', 'subject_code', 'subject_name', 'units', 'required_hours', 'room_type', 'program_id', 'year_level', 'is_archived'],
+    'rooms': ['id', 'name', 'type', 'capacity', 'campus_id', 'is_archived'],
+    'sections': ['id', 'program_id', 'year_level', 'name', 'student_count', 'adviser_id', 'campus_id', 'is_archived'],
+    'programs': ['id', 'code', 'name', 'campus_id', 'is_archived']
+  };
+
+  if (!allowedEntities[entity]) {
      return res.status(400).json({ message: 'Target entity is outside allowed parameter scope.' });
   }
 
   try {
     const keys = Object.keys(dataArray[0]);
     if (keys.length === 0) return res.status(400).json({ message: 'Invalid object mapping bounds.' });
+
+    // Validate that all keys are in the whitelist
+    const illeagalKeys = keys.filter(k => !allowedEntities[entity].includes(k));
+    if (illeagalKeys.length > 0) {
+      return res.status(400).json({ message: `Illegal columns detected: ${illeagalKeys.join(', ')}` });
+    }
 
     const cols = keys.join(', ');
     const values = dataArray.map((obj: any) => keys.map(k => obj[k] !== undefined && obj[k] !== '' ? obj[k] : null));

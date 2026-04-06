@@ -11,7 +11,12 @@ if (!JWT_SECRET) {
  */
 export const authenticateToken = (req: any, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  let token = authHeader && authHeader.split(' ')[1];
+  
+  // Fallback to cookie if header is not present
+  if (!token && req.cookies) {
+    token = req.cookies.token;
+  }
   
   if (!token) return res.status(401).json({ message: 'No token provided' });
   

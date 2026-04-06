@@ -1,0 +1,92 @@
+'Log files:
+/Users/lloyd.dacles/Documents/Cursor Project/faculty-scheduling-system/backend/backend/.npm-cache/_logs/2026-04-03T11_34_18_223Z-debug-0.log
+
+# npm resolution error report
+
+While resolving: @typescript-eslint/eslint-plugin@8.57.2
+Found: typescript@6.0.2
+node_modules/typescript
+  peer typescript@">=4.8.4" from ts-api-utils@2.5.0
+  node_modules/ts-api-utils
+    ts-api-utils@"^2.4.0" from @typescript-eslint/eslint-plugin@8.57.2
+    node_modules/@typescript-eslint/eslint-plugin
+      dev @typescript-eslint/eslint-plugin@"^8.57.2" from the root project
+    ts-api-utils@"^2.4.0" from @typescript-eslint/type-utils@8.57.2
+    node_modules/@typescript-eslint/type-utils
+      @typescript-eslint/type-utils@"8.57.2" from @typescript-eslint/eslint-plugin@8.57.2
+      node_modules/@typescript-eslint/eslint-plugin
+        dev @typescript-eslint/eslint-plugin@"^8.57.2" from the root project
+    ts-api-utils@"^2.4.0" from @typescript-eslint/typescript-estree@8.57.2
+    node_modules/@typescript-eslint/typescript-estree
+      @typescript-eslint/typescript-estree@"8.57.2" from @typescript-eslint/parser@8.57.2
+      node_modules/@typescript-eslint/parser
+        peer @typescript-eslint/parser@"^8.57.2" from @typescript-eslint/eslint-plugin@8.57.2
+        node_modules/@typescript-eslint/eslint-plugin
+          dev @typescript-eslint/eslint-plugin@"^8.57.2" from the root project
+        dev @typescript-eslint/parser@"^8.57.2" from the root project
+      @typescript-eslint/typescript-estree@"8.57.2" from @typescript-eslint/type-utils@8.57.2
+      node_modules/@typescript-eslint/type-utils
+        @typescript-eslint/type-utils@"8.57.2" from @typescript-eslint/eslint-plugin@8.57.2
+        node_modules/@typescript-eslint/eslint-plugin
+          dev @typescript-eslint/eslint-plugin@"^8.57.2" from the root project
+      @typescript-eslint/typescript-estree@"8.57.2" from @typescript-eslint/utils@8.57.2
+      node_modules/@typescript-eslint/utils
+        @typescript-eslint/utils@"8.57.2" from @typescript-eslint/eslint-plugin@8.57.2
+        node_modules/@typescript-eslint/eslint-plugin
+          dev @typescript-eslint/eslint-plugin@"^8.57.2" from the root project
+        @typescript-eslint/utils@"8.57.2" from @typescript-eslint/type-utils@8.57.2
+        node_modules/@typescript-eslint/type-utils
+          @typescript-eslint/type-utils@"8.57.2" from @typescript-eslint/eslint-plugin@8.57.2
+          node_modules/@typescript-eslint/eslint-plugin
+            dev @typescript-eslint/eslint-plugin@"^8.57.2" from the root project
+  peer typescript@">=2.7" from ts-node@10.9.2
+  node_modules/ts-node
+    peerOptional ts-node@">=9.0.0" from jest-config@30.3.0
+    node_modules/jest-config
+      jest-config@"30.3.0" from @jest/core@30.3.0
+      node_modules/@jest/core
+        @jest/core@"30.3.0" from jest@30.3.0
+        node_modules/jest
+          peer jest@"^29.0.0 || ^30.0.0" from ts-jest@29.4.6
+          node_modules/ts-jest
+            dev ts-jest@"^29.4.6" from the root project
+          dev jest@"^30.3.0" from the root project
+        @jest/core@"30.3.0" from jest-cli@30.3.0
+        node_modules/jest-cli
+          jest-cli@"30.3.0" from jest@30.3.0
+          node_modules/jest
+            peer jest@"^29.0.0 || ^30.0.0" from ts-jest@29.4.6
+            node_modules/ts-jest
+              dev ts-jest@"^29.4.6" from the root project
+            dev jest@"^30.3.0" from the root project
+      jest-config@"30.3.0" from jest-cli@30.3.0
+      node_modules/jest-cli
+        jest-cli@"30.3.0" from jest@30.3.0
+        node_modules/jest
+          peer jest@"^29.0.0 || ^30.0.0" from ts-jest@29.4.6
+          node_modules/ts-jest
+            dev ts-jest@"^29.4.6" from the root project
+          dev jest@"^30.3.0" from the root project
+    ts-node@"^10.4.0" from ts-node-dev@2.0.0
+    node_modules/ts-node-dev
+      dev ts-node-dev@"^2.0.0" from the root project
+    dev ts-node@"^10.9.2" from the root project
+  peer typescript@"*" from ts-node-dev@2.0.0
+  node_modules/ts-node-dev
+    dev ts-node-dev@"^2.0.0" from the root project
+  dev typescript@"^6.0.2" from the root project
+
+Could not resolve dependency:
+peer typescript@">=4.8.4 <6.0.0" from @typescript-eslint/eslint-plugin@8.57.2
+node_modules/@typescript-eslint/eslint-plugin
+  dev @typescript-eslint/eslint-plugin@"^8.57.2" from the root project
+
+Conflicting peer dependency: typescript@5.9.3
+node_modules/typescript
+  peer typescript@">=4.8.4 <6.0.0" from @typescript-eslint/eslint-plugin@8.57.2
+  node_modules/@typescript-eslint/eslint-plugin
+    dev @typescript-eslint/eslint-plugin@"^8.57.2" from the root project
+
+Fix the upstream dependency conflict, or retry
+this command with --force or --legacy-peer-deps
+to accept an incorrect (and potentially broken) dependency resolution.

@@ -380,7 +380,15 @@ router.put('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'),
     await connection.query('DELETE FROM schedules WHERE teaching_load_id = ?', [loadId]);
 
     await connection.commit();
-    await logAudit('UPDATE', 'TeachingLoad', loadId, { faculty_id, subject_id, status: 'draft' }, req.user.username);
+    
+    // Detailed audit logging including original status for Admin overrides
+    await logAudit('UPDATE', 'TeachingLoad', loadId, { 
+      faculty_id, 
+      subject_id, 
+      previous_status: existLoad.status,
+      is_override: (req.user.role === 'admin' && ['approved', 'pending_review'].includes(existLoad.status))
+    }, req.user.username);
+    
     res.json({ message: 'Teaching load updated securely as Draft.' });
 
     const [[sec]]: [any[], any] = await connection.query('SELECT campus_id FROM sections WHERE id = ?', [section_id]);

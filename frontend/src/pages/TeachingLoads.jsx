@@ -444,7 +444,7 @@ export default function TeachingLoads() {
                           )}
 
                           {/* Edit Row Payload */}
-                          {['draft', 'rejected'].includes(load.status) && activeTab !== 'archived' && (
+                          {(isAdmin || ['draft', 'rejected'].includes(load.status)) && activeTab !== 'archived' && (
                             <button
                               onClick={() => { setFormData({ id: load.id, faculty_id: load.faculty_id, co_faculty_id_1: load.co_faculty_id_1||'', co_faculty_id_2: load.co_faculty_id_2||'', subject_id: load.subject_id, subject_ids: [], section_id: load.section_id }); setIsModalOpen(true); }}
                               className="p-1.5 rounded-lg text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
