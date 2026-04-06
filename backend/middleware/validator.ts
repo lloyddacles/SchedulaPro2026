@@ -77,7 +77,7 @@ export const sectionSchema = z.object({
   program_id: requiredId,
   year_level: z.coerce.number().int().min(1).max(10),
   name: z.string().min(1, "Section name is required"),
-  student_count: z.coerce.number().int().min(1).default(30),
+  student_count: z.coerce.number().int().min(1).default(50),
   campus_id: nullableId,
   adviser_id: nullableId
 });

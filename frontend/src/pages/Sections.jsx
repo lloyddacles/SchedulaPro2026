@@ -12,7 +12,7 @@ export default function Sections() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState('');
-  const [formData, setFormData] = useState({ program_id: '', year_level: '1', name: 'A', student_count: '30', adviser_id: '', campus_id: '' });
+  const [formData, setFormData] = useState({ program_id: '', year_level: '1', name: 'A', student_count: '50', adviser_id: '', campus_id: '' });
   const [error, setError] = useState('');
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', type: '', onConfirm: () => {} });

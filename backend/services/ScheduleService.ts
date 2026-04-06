@@ -149,7 +149,7 @@ export class ScheduleService {
     }
 
     const roomCapacity = roomCheck[0].capacity || 0;
-    const sectionSize = secCheck.length > 0 ? (secCheck[0].student_count || 0) : 30;
+    const sectionSize = secCheck.length > 0 ? (secCheck[0].student_count || 0) : 50;
 
     // Only enforce capacity breach if it's a REAL section (ID != 1)
     if (sectionId !== 1 && sectionSize > roomCapacity) {

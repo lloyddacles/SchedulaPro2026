@@ -127,7 +127,7 @@ export async function seed() {
         program_id INT NOT NULL,
         year_level INT NOT NULL,
         name VARCHAR(50) NOT NULL,
-        student_count INT DEFAULT 30,
+        student_count INT DEFAULT 50,
         adviser_id INT DEFAULT NULL,
         is_archived BOOLEAN DEFAULT FALSE,
         campus_id INT DEFAULT NULL,
