@@ -27,11 +27,11 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 router.post('/', validate(scheduleRequestSchema), async (req: Request, res: Response) => {
-  const { faculty_id, schedule_id, request_type, reason } = req.body;
+  const { faculty_id, schedule_id, request_type, reason_text } = req.body;
   try {
     await pool.query(
       'INSERT INTO schedule_requests (faculty_id, schedule_id, request_type, reason) VALUES (?, ?, ?, ?)',
-      [faculty_id, schedule_id, request_type, reason]
+      [faculty_id, schedule_id, request_type, reason_text]
     );
     res.status(201).json({ message: 'Request submitted successfully.' });
   } catch (error: any) {
