@@ -156,4 +156,23 @@ router.post('/bulk-upload', authorizeRoles('admin', 'program_head', 'program_ass
   }
 });
 
+router.get('/me/specializations', async (req: any, res: Response, next: express.NextFunction) => {
+  try {
+    if (!req.user.faculty_id) {
+      return res.status(403).json({ message: 'User is not linked to a faculty profile.' });
+    }
+    const query = `
+      SELECT s.id, s.code, s.name, s.required_hours as units, s.department
+      FROM faculty_specializations fs
+      JOIN subjects s ON fs.subject_id = s.id
+      WHERE fs.faculty_id = ?
+      ORDER BY s.code ASC
+    `;
+    const [rows] = await pool.query(query, [req.user.faculty_id]);
+    res.json(rows);
+  } catch (error: any) {
+    next(error);
+  }
+});
+
 export default router;

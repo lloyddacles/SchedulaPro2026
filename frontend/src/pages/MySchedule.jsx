@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import useScheduleStore from '../store/useScheduleStore';
 import { 
   Calendar, Printer, X, ShieldAlert, Sparkles, AlertCircle, 
-  TrendingUp, Users, Clock, MapPin, CheckCircle2, RefreshCw 
+  TrendingUp, Users, Clock, MapPin, CheckCircle2, RefreshCw, Award, BookOpen 
 } from 'lucide-react';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -115,6 +115,12 @@ export default function MySchedule() {
     enabled: !!activeTermId
   });
 
+  const { data: specializations = [], isLoading: loadingSpec } = useQuery({
+    queryKey: ['my-specializations'],
+    queryFn: async () => (await api.get('/faculty/me/specializations')).data,
+    enabled: !!user?.faculty_id && viewType === 'specializations'
+  });
+
   useEffect(() => {
     if (!socket || !isConnected) return;
     const handleUpdate = () => queryClient.invalidateQueries(['my-schedules']);
@@ -219,22 +225,28 @@ export default function MySchedule() {
           <p className="mt-1 text-slate-500 font-medium">Official institutional load and venue assignments.</p>
         </div>
         <div className="flex items-center gap-3">
-          {advisorySections.length > 0 && (
-            <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
-               <button 
-                onClick={() => setViewType('personal')}
-                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewType === 'personal' ? 'bg-white dark:bg-slate-700 text-brand-600 shadow-sm' : 'text-slate-400'}`}
-               >
-                 My Load
-               </button>
+          <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+             <button 
+              onClick={() => setViewType('personal')}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewType === 'personal' ? 'bg-white dark:bg-slate-700 text-brand-600 shadow-sm' : 'text-slate-400'}`}
+             >
+               My Load
+             </button>
+             {advisorySections.length > 0 && (
                <button 
                 onClick={() => setViewType('advisory')}
                 className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewType === 'advisory' ? 'bg-white dark:bg-slate-700 text-brand-600 shadow-sm' : 'text-slate-400'}`}
                >
                  Advisory
                </button>
-            </div>
-          )}
+             )}
+             <button 
+              onClick={() => setViewType('specializations')}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewType === 'specializations' ? 'bg-white dark:bg-slate-700 text-brand-600 shadow-sm' : 'text-slate-400'}`}
+             >
+               Specialization
+             </button>
+          </div>
           <button onClick={handlePrint} className="flex items-center gap-2 px-6 py-2.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-2xl font-bold shadow-sm hover:bg-slate-50 transition-all">
             <Printer className="w-5 h-5" /> Print Copy
           </button>
@@ -243,7 +255,7 @@ export default function MySchedule() {
 
       {viewType === 'personal' ? (
         <WorkloadDetails workload={myWorkload} percent={utilizedPercent} />
-      ) : (
+      ) : viewType === 'advisory' ? (
         <div className="glass p-6 rounded-[2.5rem] border border-white/40 shadow-lg bg-indigo-50/30 dark:bg-slate-800/30 mb-8 animate-fade-in">
            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
@@ -276,49 +288,93 @@ export default function MySchedule() {
         </div>
       )}
 
-      <div className="flex items-center gap-3 px-5 py-4 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-[1.5rem] text-sm text-blue-700 dark:text-blue-400 print:hidden shadow-sm">
-        <ShieldAlert className="w-5 h-5 flex-shrink-0" />
-        <span className="font-medium"><strong>Verified Blocks Only.</strong> Assignments still pending administrative review are hidden until approved by the Program Head.</span>
-      </div>
+      {viewType !== 'specializations' && (
+        <div className="flex items-center gap-3 px-5 py-4 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-[1.5rem] text-sm text-blue-700 dark:text-blue-400 print:hidden shadow-sm mb-6">
+          <ShieldAlert className="w-5 h-5 flex-shrink-0" />
+          <span className="font-medium"><strong>Verified Blocks Only.</strong> Assignments still pending administrative review are hidden until approved by the Program Head.</span>
+        </div>
+      )}
 
-      <div className="glass rounded-[2.5rem] shadow-xl border border-white/40 overflow-hidden print:hidden">
-        {isLoading ? (
-           <div className="flex justify-center items-center h-40"><RefreshCw className="animate-spin h-8 w-8 text-brand-600" /></div>
-        ) : (
-          <div className="bg-slate-900 rounded-[2.5rem] p-6 relative overflow-hidden group">
-             {/* Background Glow matching Master Schedule */}
-             <div className="absolute top-0 left-1/4 w-1/2 h-1 bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-
-             <style>{`
-               .fc-theme-standard td, .fc-theme-standard th { border-color: #334155; }
-               .fc-timegrid-slot-label-cushion { font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
-               .fc-col-header-cell-cushion { font-size: 11px; font-weight: 900; color: #f8fafc; padding: 12px 0; text-transform: uppercase; letter-spacing: 0.05em; }
-               .fc-event { border-radius: 8px !important; border: none !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-               .fc-timegrid-slot { height: 3.5rem !important; }
-               .fc-scrollgrid { border: none !important; }
-             `}</style>
-             <FullCalendar
-                plugins={[timeGridPlugin]}
-                initialView="timeGridWeek"
-                headerToolbar={false}
-                firstDay={1}
-                hiddenDays={[0]}
-                slotMinTime="07:00:00"
-                slotMaxTime="21:00:00"
-                allDaySlot={false}
-                dayHeaderFormat={{ weekday: 'long' }}
-                slotLabelFormat={{ hour: 'numeric', minute: '2-digit', meridiem: 'short' }}
-                eventTimeFormat={{ hour: 'numeric', minute: '2-digit', meridiem: 'short' }}
-                events={fcEvents}
-                eventClick={handleEventClick}
-                eventContent={renderEventContent}
-                editable={false}
-                height="auto"
-                slotDuration="00:30:00"
-             />
-          </div>
-        )}
-      </div>
+      {viewType === 'specializations' ? (
+        <div className="animate-fade-in">
+          {loadingSpec ? (
+             <div className="flex justify-center items-center h-40"><RefreshCw className="animate-spin h-8 w-8 text-brand-600" /></div>
+          ) : specializations.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {specializations.map((spec) => (
+                <div key={spec.id} className="glass p-6 rounded-[2rem] border border-white/40 shadow-xl bg-white/40 dark:bg-slate-800/40 hover:scale-[1.02] transition-all group">
+                   <div className="flex justify-between items-start mb-6">
+                      <div className="p-4 bg-emerald-500/10 rounded-2xl text-emerald-600 dark:text-emerald-400 group-hover:rotate-12 transition-transform">
+                        <Award className="w-7 h-7" />
+                      </div>
+                      <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">Accredited</span>
+                   </div>
+                   <div className="space-y-1">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{spec.code}</p>
+                      <h3 className="text-xl font-black text-slate-900 dark:text-white font-display leading-tight">{spec.name}</h3>
+                   </div>
+                   <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+                        <BookOpen className="w-4 h-4 text-brand-500" />
+                        {spec.units} Units
+                      </div>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{spec.department || 'General Education'}</span>
+                   </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="glass p-12 rounded-[2.5rem] border border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-center gap-4 bg-white/10">
+               <div className="p-6 bg-slate-100 dark:bg-slate-800 rounded-full">
+                 <ShieldAlert className="w-12 h-12 text-slate-300" />
+               </div>
+               <div>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white">Professional Portfolio Empty</h3>
+                  <p className="text-slate-500 max-w-sm mt-1">Visit Academic Affairs to register your subject specializations and institutional accreditations.</p>
+               </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="glass rounded-[2.5rem] shadow-xl border border-white/40 overflow-hidden print:hidden">
+          {isLoading ? (
+             <div className="flex justify-center items-center h-40"><RefreshCw className="animate-spin h-8 w-8 text-brand-600" /></div>
+          ) : (
+            <div className="bg-slate-900 rounded-[2.5rem] p-6 relative overflow-hidden group">
+               {/* Background Glow matching Master Schedule */}
+               <div className="absolute top-0 left-1/4 w-1/2 h-1 bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+  
+               <style>{`
+                 .fc-theme-standard td, .fc-theme-standard th { border-color: #334155; }
+                 .fc-timegrid-slot-label-cushion { font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
+                 .fc-col-header-cell-cushion { font-size: 11px; font-weight: 900; color: #f8fafc; padding: 12px 0; text-transform: uppercase; letter-spacing: 0.05em; }
+                 .fc-event { border-radius: 8px !important; border: none !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+                 .fc-timegrid-slot { height: 3.5rem !important; }
+                 .fc-scrollgrid { border: none !important; }
+               `}</style>
+               <FullCalendar
+                  plugins={[timeGridPlugin]}
+                  initialView="timeGridWeek"
+                  headerToolbar={false}
+                  firstDay={1}
+                  hiddenDays={[0]}
+                  slotMinTime="07:00:00"
+                  slotMaxTime="22:00:00"
+                  allDaySlot={false}
+                  dayHeaderFormat={{ weekday: 'long' }}
+                  slotLabelFormat={{ hour: 'numeric', minute: '2-digit', meridiem: 'short' }}
+                  eventTimeFormat={{ hour: 'numeric', minute: '2-digit', meridiem: 'short' }}
+                  events={fcEvents}
+                  eventClick={handleEventClick}
+                  eventContent={renderEventContent}
+                  editable={false}
+                  height="auto"
+                  slotDuration="00:30:00"
+               />
+            </div>
+          )}
+        </div>
+      )}
 
       {isModalOpen && selectedSch && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in print:hidden">
