@@ -63,7 +63,7 @@ export const changePasswordSchema = z.object({
 export const userSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters").optional(),
-  role: z.enum(['admin', 'viewer', 'program_head', 'faculty']).default('faculty'),
+  role: z.enum(['admin', 'viewer', 'program_head', 'program_assistant', 'faculty']).default('faculty'),
   faculty_id: nullableId
 });
 
