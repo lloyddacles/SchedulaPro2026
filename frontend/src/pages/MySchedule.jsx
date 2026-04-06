@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import useScheduleStore from '../store/useScheduleStore';
 import { 
   Calendar, Printer, X, ShieldAlert, Sparkles, AlertCircle, 
-  TrendingUp, Users, Clock, MapPin, CheckCircle2, RefreshCw, Award, BookOpen 
+  TrendingUp, Users, Clock, MapPin, CheckCircle2, RefreshCw, Award, BookOpen, History 
 } from 'lucide-react';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -120,6 +120,24 @@ export default function MySchedule() {
     queryFn: async () => (await api.get('/faculty/me/specializations')).data,
     enabled: !!user?.faculty_id && viewType === 'specializations'
   });
+
+  const { data: loadHistory = [], isLoading: loadingHistory } = useQuery({
+    queryKey: ['my-load-history'],
+    queryFn: async () => (await api.get('/faculty/me/loads')).data,
+    enabled: !!user?.faculty_id && viewType === 'history'
+  });
+
+  // Group load history by term
+  const loadsByTerm = React.useMemo(() => {
+    const grouped = {};
+    loadHistory.forEach(load => {
+      if (!grouped[load.term_id]) {
+        grouped[load.term_id] = { term_name: load.term_name, term_id: load.term_id, loads: [] };
+      }
+      grouped[load.term_id].loads.push(load);
+    });
+    return Object.values(grouped);
+  }, [loadHistory]);
 
   useEffect(() => {
     if (!socket || !isConnected) return;
@@ -246,6 +264,12 @@ export default function MySchedule() {
              >
                Specialization
              </button>
+             <button 
+              onClick={() => setViewType('history')}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewType === 'history' ? 'bg-white dark:bg-slate-700 text-brand-600 shadow-sm' : 'text-slate-400'}`}
+             >
+               Load History
+             </button>
           </div>
           <button onClick={handlePrint} className="flex items-center gap-2 px-6 py-2.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-2xl font-bold shadow-sm hover:bg-slate-50 transition-all">
             <Printer className="w-5 h-5" /> Print Copy
@@ -332,6 +356,59 @@ export default function MySchedule() {
                   <h3 className="text-xl font-black text-slate-900 dark:text-white">Professional Portfolio Empty</h3>
                   <p className="text-slate-500 max-w-sm mt-1">Visit Academic Affairs to register your subject specializations and institutional accreditations.</p>
                </div>
+            </div>
+          )}
+        </div>
+      ) : viewType === 'history' ? (
+        <div className="animate-fade-in space-y-6">
+          {loadingHistory ? (
+            <div className="flex justify-center items-center h-40"><RefreshCw className="animate-spin h-8 w-8 text-brand-600" /></div>
+          ) : loadsByTerm.length > 0 ? (
+            loadsByTerm.map((termGroup) => {
+              const isActiveTerm = termGroup.term_id === activeTermId;
+              const totalHours = termGroup.loads.reduce((sum, l) => sum + Number(l.required_hours || 0), 0);
+              return (
+                <div key={termGroup.term_id} className={`glass rounded-[2rem] border shadow-xl overflow-hidden ${isActiveTerm ? 'border-brand-500/30 bg-white/40 dark:bg-slate-800/40' : 'border-white/30 bg-white/20 dark:bg-slate-900/20'}`}>
+                  <div className={`px-6 py-4 flex items-center justify-between ${isActiveTerm ? 'bg-brand-500/10' : 'bg-slate-50/50 dark:bg-slate-800/30'}`}>
+                    <div className="flex items-center gap-3">
+                      <History className={`w-5 h-5 ${isActiveTerm ? 'text-brand-600' : 'text-slate-400'}`} />
+                      <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">{termGroup.term_name}</h3>
+                      {isActiveTerm && <span className="px-2 py-0.5 bg-brand-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest">Current</span>}
+                    </div>
+                    <span className={`text-xs font-black uppercase tracking-widest ${isActiveTerm ? 'text-brand-600' : 'text-slate-400'}`}>{totalHours} hrs total</span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-100 dark:border-slate-700">
+                          <th className="text-left px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Subject Code</th>
+                          <th className="text-left px-3 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Subject Name</th>
+                          <th className="text-left px-3 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Section</th>
+                          <th className="text-center px-3 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Hours</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {termGroup.loads.map((load) => (
+                          <tr key={load.id} className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                            <td className="px-6 py-3 font-black text-slate-900 dark:text-white">{load.subject_code}</td>
+                            <td className="px-3 py-3 text-slate-600 dark:text-slate-300 font-medium">{load.subject_name}</td>
+                            <td className="px-3 py-3 text-slate-500">{load.program_code} {load.year_level} {load.section_name}</td>
+                            <td className="px-3 py-3 text-center font-black text-brand-600">{load.required_hours}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="glass p-12 rounded-[2.5rem] border border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-center gap-4">
+              <History className="w-16 h-16 text-slate-200 dark:text-slate-700" />
+              <div>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white">No Teaching History Found</h3>
+                <p className="text-slate-500 mt-1 max-w-sm">Your teaching load records from previous semesters will appear here once they are archived.</p>
+              </div>
             </div>
           )}
         </div>

@@ -162,11 +162,41 @@ router.get('/me/specializations', async (req: any, res: Response, next: express.
       return res.status(403).json({ message: 'User is not linked to a faculty profile.' });
     }
     const query = `
-      SELECT s.id, s.code, s.name, s.required_hours as units, s.department
+      SELECT s.id, s.subject_code as code, s.subject_name as name, 
+             s.required_hours as units, s.units as credit_units,
+             p.code as department
       FROM faculty_specializations fs
       JOIN subjects s ON fs.subject_id = s.id
+      LEFT JOIN programs p ON s.program_id = p.id
       WHERE fs.faculty_id = ?
-      ORDER BY s.code ASC
+      ORDER BY s.subject_code ASC
+    `;
+    const [rows] = await pool.query(query, [req.user.faculty_id]);
+    res.json(rows);
+  } catch (error: any) {
+    next(error);
+  }
+});
+
+router.get('/me/loads', async (req: any, res: Response, next: express.NextFunction) => {
+  try {
+    if (!req.user.faculty_id) {
+      return res.status(403).json({ message: 'User is not linked to a faculty profile.' });
+    }
+    const query = `
+      SELECT 
+        tl.id, tl.term_id, tl.status,
+        t.name as term_name,
+        s.subject_code, s.subject_name, s.required_hours,
+        sec.name as section_name, p.code as program_code, sec.year_level,
+        COALESCE(SUM(s.required_hours), 0) as total_hours
+      FROM teaching_loads tl
+      JOIN subjects s ON tl.subject_id = s.id
+      JOIN terms t ON tl.term_id = t.id
+      LEFT JOIN sections sec ON tl.section_id = sec.id
+      LEFT JOIN programs p ON sec.program_id = p.id
+      WHERE tl.faculty_id = ? AND tl.status != 'archived'
+      ORDER BY t.id DESC, s.subject_code ASC
     `;
     const [rows] = await pool.query(query, [req.user.faculty_id]);
     res.json(rows);
