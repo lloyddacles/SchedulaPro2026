@@ -38,7 +38,7 @@ router.get('/', async (req: any, res: Response) => {
   }
 });
 
-router.post('/', authorizeRoles('admin', 'program_head'), validate(roomSchema), async (req: any, res: Response) => {
+router.post('/', authorizeRoles('admin', 'program_head', 'program_assistant'), validate(roomSchema), async (req: any, res: Response) => {
   const { name, type, capacity, campus_id, status } = req.body;
   try {
     const [result]: any = await pool.query(
@@ -53,7 +53,7 @@ router.post('/', authorizeRoles('admin', 'program_head'), validate(roomSchema), 
   }
 });
 
-router.post('/bulk-upload', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.post('/bulk-upload', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   const rooms = req.body;
   if (!Array.isArray(rooms)) {
     return res.status(400).json({ error: 'Invalid data format. Expected an array of rooms.' });
@@ -88,7 +88,7 @@ router.post('/bulk-upload', authorizeRoles('admin', 'program_head'), async (req:
   }
 });
 
-router.put('/:id', authorizeRoles('admin', 'program_head'), validate(roomSchema), async (req: any, res: Response) => {
+router.put('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), validate(roomSchema), async (req: any, res: Response) => {
   const { name, type, capacity, campus_id, status } = req.body;
   try {
     await pool.query(
@@ -103,7 +103,7 @@ router.put('/:id', authorizeRoles('admin', 'program_head'), validate(roomSchema)
   }
 });
 
-router.delete('/:id', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.delete('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   try {
     await pool.query('UPDATE rooms SET is_archived = TRUE WHERE id = ?', [req.params.id]);
     await logAudit('ARCHIVE', 'Room', req.params.id as string, {}, req.user.username);
@@ -113,7 +113,7 @@ router.delete('/:id', authorizeRoles('admin', 'program_head'), async (req: any, 
   }
 });
 
-router.put('/:id/restore', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.put('/:id/restore', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   try {
     await pool.query('UPDATE rooms SET is_archived = FALSE WHERE id = ?', [req.params.id]);
     await logAudit('RESTORE', 'Room', req.params.id as string, {}, req.user.username);
@@ -123,7 +123,7 @@ router.put('/:id/restore', authorizeRoles('admin', 'program_head'), async (req: 
   }
 });
 
-router.patch('/:id/status', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.patch('/:id/status', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   const { status } = req.body;
   try {
     await pool.query('UPDATE rooms SET status = ? WHERE id = ?', [status, req.params.id]);

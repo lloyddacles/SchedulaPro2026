@@ -41,7 +41,7 @@ router.get('/', async (req: Request, res: Response, next: express.NextFunction) 
   }
 });
 
-router.post('/', authorizeRoles('admin', 'program_head'), validate(facultySchema), async (req: any, res: Response, next: express.NextFunction) => {
+router.post('/', authorizeRoles('admin', 'program_head', 'program_assistant'), validate(facultySchema), async (req: any, res: Response, next: express.NextFunction) => {
   const { full_name, program_id, campus_id, employment_type, max_teaching_hours, specializations, department } = req.body;
 
   const connection = await pool.getConnection();
@@ -70,7 +70,7 @@ router.post('/', authorizeRoles('admin', 'program_head'), validate(facultySchema
   }
 });
 
-router.put('/:id', authorizeRoles('admin', 'program_head'), validate(facultySchema), async (req: any, res: Response, next: express.NextFunction) => {
+router.put('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), validate(facultySchema), async (req: any, res: Response, next: express.NextFunction) => {
   const { full_name, program_id, campus_id, employment_type, max_teaching_hours, specializations, department } = req.body;
   const facultyId = req.params.id;
   const connection = await pool.getConnection();
@@ -102,7 +102,7 @@ router.put('/:id', authorizeRoles('admin', 'program_head'), validate(facultySche
   }
 });
 
-router.delete('/:id', authorizeRoles('admin', 'program_head'), async (req: any, res: Response, next: express.NextFunction) => {
+router.delete('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response, next: express.NextFunction) => {
   try {
     const [[fac]]: [any[], any] = await pool.query('SELECT full_name FROM faculty WHERE id = ?', [req.params.id]);
     if (!fac) throw new ApiError(404, 'Faculty not found', 'NOT_FOUND');
@@ -116,7 +116,7 @@ router.delete('/:id', authorizeRoles('admin', 'program_head'), async (req: any, 
   }
 });
 
-router.post('/bulk-upload', authorizeRoles('admin', 'program_head'), async (req: any, res: Response, next: express.NextFunction) => {
+router.post('/bulk-upload', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response, next: express.NextFunction) => {
   const faculty = req.body;
   if (!Array.isArray(faculty)) {
     return res.status(400).json({ message: 'Invalid data format. Expected an array of faculty.' });

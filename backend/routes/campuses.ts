@@ -20,7 +20,7 @@ router.get('/', async (req: any, res: Response) => {
 });
 
 // Create campus
-router.post('/', authorizeRoles('admin', 'program_head'), validate(campusSchema), async (req: any, res: Response) => {
+router.post('/', authorizeRoles('admin', 'program_head', 'program_assistant'), validate(campusSchema), async (req: any, res: Response) => {
   const { name, code } = req.body;
   try {
     const [result]: any = await pool.query(
@@ -35,7 +35,7 @@ router.post('/', authorizeRoles('admin', 'program_head'), validate(campusSchema)
   }
 });
 
-router.post('/bulk-upload', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.post('/bulk-upload', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   const campuses = req.body;
   if (!Array.isArray(campuses)) {
     return res.status(400).json({ error: 'Invalid data format. Expected an array of campuses.' });
@@ -63,7 +63,7 @@ router.post('/bulk-upload', authorizeRoles('admin', 'program_head'), async (req:
 });
 
 // Update campus
-router.put('/:id', authorizeRoles('admin', 'program_head'), validate(campusSchema), async (req: any, res: Response) => {
+router.put('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), validate(campusSchema), async (req: any, res: Response) => {
   const { name, code } = req.body;
   try {
     await pool.query(
@@ -79,7 +79,7 @@ router.put('/:id', authorizeRoles('admin', 'program_head'), validate(campusSchem
 });
 
 // Archive campus
-router.delete('/:id', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.delete('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   try {
     await pool.query('UPDATE campuses SET is_archived = TRUE WHERE id = ?', [req.params.id]);
     await logAudit('ARCHIVE', 'Campus', req.params.id as string, {}, req.user.username);
@@ -90,7 +90,7 @@ router.delete('/:id', authorizeRoles('admin', 'program_head'), async (req: any, 
 });
 
 // Restore campus
-router.put('/:id/restore', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.put('/:id/restore', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   try {
     await pool.query('UPDATE campuses SET is_archived = FALSE WHERE id = ?', [req.params.id]);
     await logAudit('RESTORE', 'Campus', req.params.id as string, {}, req.user.username);

@@ -50,7 +50,7 @@ router.get('/advisory', async (req: any, res: Response) => {
   }
 });
 
-router.post('/', authorizeRoles('admin', 'program_head'), validate(sectionSchema), async (req: any, res: Response) => {
+router.post('/', authorizeRoles('admin', 'program_head', 'program_assistant'), validate(sectionSchema), async (req: any, res: Response) => {
   try {
     const { program_id, year_level, name, student_count, adviser_id, campus_id } = req.body;
     const [result]: any = await pool.query(
@@ -64,7 +64,7 @@ router.post('/', authorizeRoles('admin', 'program_head'), validate(sectionSchema
   }
 });
 
-router.post('/bulk-upload', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.post('/bulk-upload', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   const sections = req.body;
   if (!Array.isArray(sections)) {
     return res.status(400).json({ error: 'Invalid data format. Expected an array of sections.' });
@@ -103,7 +103,7 @@ router.post('/bulk-upload', authorizeRoles('admin', 'program_head'), async (req:
   }
 });
 
-router.delete('/:id', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.delete('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   try {
     await pool.query('UPDATE sections SET is_archived = TRUE WHERE id = ?', [req.params.id]);
     await logAudit('ARCHIVE', 'Section', req.params.id as string, {}, req.user.username);
@@ -113,7 +113,7 @@ router.delete('/:id', authorizeRoles('admin', 'program_head'), async (req: any, 
   }
 });
 
-router.put('/:id', authorizeRoles('admin', 'program_head'), validate(sectionSchema), async (req: any, res: Response) => {
+router.put('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), validate(sectionSchema), async (req: any, res: Response) => {
   try {
     const { program_id, year_level, name, student_count, adviser_id, campus_id } = req.body;
     await pool.query(
@@ -127,7 +127,7 @@ router.put('/:id', authorizeRoles('admin', 'program_head'), validate(sectionSche
   }
 });
 
-router.put('/:id/restore', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.put('/:id/restore', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   try {
     await pool.query('UPDATE sections SET is_archived = FALSE WHERE id = ?', [req.params.id]);
     await logAudit('RESTORE', 'Section', req.params.id as string, {}, req.user.username);

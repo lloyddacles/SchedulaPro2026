@@ -35,7 +35,7 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/', authorizeRoles('admin', 'program_head'), validate(subjectSchema), async (req: any, res: Response) => {
+router.post('/', authorizeRoles('admin', 'program_head', 'program_assistant'), validate(subjectSchema), async (req: any, res: Response) => {
   const { subject_code, subject_name, units, required_hours, room_type, program_id, year_level } = req.body;
   try {
     const [result]: any = await pool.query(
@@ -58,7 +58,7 @@ router.post('/', authorizeRoles('admin', 'program_head'), validate(subjectSchema
   }
 });
 
-router.put('/:id', authorizeRoles('admin', 'program_head'), validate(subjectSchema), async (req: any, res: Response) => {
+router.put('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), validate(subjectSchema), async (req: any, res: Response) => {
   const { subject_code, subject_name, units, required_hours, room_type, program_id, year_level } = req.body;
   try {
     await pool.query(
@@ -78,7 +78,7 @@ router.put('/:id', authorizeRoles('admin', 'program_head'), validate(subjectSche
   }
 });
 
-router.delete('/:id', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.delete('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   try {
     const [[sub]]: [any[], any] = await pool.query('SELECT subject_code FROM subjects WHERE id = ?', [req.params.id]);
     await pool.query('DELETE FROM subjects WHERE id = ?', [req.params.id]);
@@ -91,7 +91,7 @@ router.delete('/:id', authorizeRoles('admin', 'program_head'), async (req: any, 
   }
 });
 
-router.post('/bulk-upload', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.post('/bulk-upload', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   const subjects = req.body;
   if (!Array.isArray(subjects)) {
     return res.status(400).json({ message: 'Invalid data format. Expected an array of subjects.' });
@@ -129,7 +129,7 @@ router.post('/bulk-upload', authorizeRoles('admin', 'program_head'), async (req:
   }
 });
 
-router.put('/:id/restore', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.put('/:id/restore', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   try {
     await pool.query('UPDATE subjects SET is_archived = FALSE WHERE id = ?', [req.params.id]);
     await logAudit('RESTORE', 'Subject', req.params.id as string, {}, req.user.username);

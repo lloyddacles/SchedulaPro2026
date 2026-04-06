@@ -15,7 +15,7 @@ router.get('/', async (req: any, res: Response) => {
   }
 });
 
-router.post('/', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.post('/', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   const { code, name, type } = req.body;
   try {
     const [result]: any = await pool.query(
@@ -29,7 +29,7 @@ router.post('/', authorizeRoles('admin', 'program_head'), async (req: any, res: 
   }
 });
 
-router.post('/bulk-upload', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.post('/bulk-upload', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   const programs = req.body;
   if (!Array.isArray(programs)) {
     return res.status(400).json({ error: 'Invalid data format. Expected an array of programs.' });
@@ -59,7 +59,7 @@ router.post('/bulk-upload', authorizeRoles('admin', 'program_head'), async (req:
   }
 });
 
-router.put('/:id', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.put('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   const { code, name, type } = req.body;
   try {
     await pool.query(
@@ -73,7 +73,7 @@ router.put('/:id', authorizeRoles('admin', 'program_head'), async (req: any, res
   }
 });
 
-router.delete('/:id', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.delete('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   try {
     await pool.query('UPDATE programs SET is_archived = TRUE WHERE id = ?', [req.params.id]);
     await logAudit('ARCHIVE', 'Program', req.params.id as string, {}, req.user.username);
@@ -83,7 +83,7 @@ router.delete('/:id', authorizeRoles('admin', 'program_head'), async (req: any, 
   }
 });
 
-router.put('/:id/restore', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+router.put('/:id/restore', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   try {
     await pool.query('UPDATE programs SET is_archived = FALSE WHERE id = ?', [req.params.id]);
     await logAudit('RESTORE', 'Program', req.params.id as string, {}, req.user.username);
