@@ -286,7 +286,7 @@ export default function MySchedule() {
               )}
            </div>
         </div>
-      )}
+      ) : null}
 
       {viewType !== 'specializations' && (
         <div className="flex items-center gap-3 px-5 py-4 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-[1.5rem] text-sm text-blue-700 dark:text-blue-400 print:hidden shadow-sm mb-6">
