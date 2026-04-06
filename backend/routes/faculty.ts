@@ -116,15 +116,43 @@ router.delete('/:id', authorizeRoles('admin', 'program_head'), async (req: any, 
   }
 });
 
-router.put('/:id/restore', authorizeRoles('admin', 'program_head'), async (req: any, res: Response, next: express.NextFunction) => {
-  try {
-    const [result]: any = await pool.query('UPDATE faculty SET is_archived = FALSE WHERE id = ?', [req.params.id]);
-    if (result.affectedRows === 0) throw new ApiError(404, 'Faculty not found', 'NOT_FOUND');
+router.post('/bulk-upload', authorizeRoles('admin', 'program_head'), async (req: any, res: Response, next: express.NextFunction) => {
+  const faculty = req.body;
+  if (!Array.isArray(faculty)) {
+    return res.status(400).json({ message: 'Invalid data format. Expected an array of faculty.' });
+  }
 
-    await logAudit('RESTORE', 'Faculty', req.params.id as string, {}, req.user.username);
-    res.json({ message: 'Faculty restored successfully' });
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // Mapping maps
+    const [programs]: any = await connection.query('SELECT id, code from programs');
+    const [campuses]: any = await connection.query('SELECT id, name from campuses');
+    
+    const programMap = new Map(programs.map((p: any) => [p.code.toUpperCase(), p.id]));
+    const campusMap = new Map(campuses.map((c: any) => [c.name.toUpperCase(), c.id]));
+
+    for (const fac of faculty) {
+      const { full_name, program_code, campus_name, employment_type, max_teaching_hours, department } = fac;
+      
+      const pId = programMap.get(program_code?.toUpperCase()) || 1;
+      const cId = campusMap.get(campus_name?.toUpperCase()) || null;
+
+      await connection.query(
+        'INSERT INTO faculty (full_name, program_id, campus_id, employment_type, max_teaching_hours, department) VALUES (?, ?, ?, ?, ?, ?)',
+        [full_name, pId, cId, employment_type || 'Regular', max_teaching_hours || 24, department || 'General Education']
+      );
+    }
+
+    await connection.commit();
+    await logAudit('CREATE_BULK', 'Faculty', null, { count: faculty.length }, req.user.username);
+    res.status(201).json({ message: `Successfully imported ${faculty.length} faculty members.` });
   } catch (error: any) {
+    await connection.rollback();
     next(error);
+  } finally {
+    connection.release();
   }
 });
 

@@ -6,6 +6,7 @@ import { formatYearLevel } from '../utils/formatters';
 import { useAuth } from '../context/AuthContext';
 import useScheduleStore from '../store/useScheduleStore';
 import ConfirmModal from '../components/ConfirmModal';
+import BulkActions from '../components/BulkActions';
 
 export default function Subjects() {
   const { user } = useAuth();
@@ -162,9 +163,15 @@ export default function Subjects() {
             {showArchived ? 'Viewing Archived' : 'Show Archived'}
           </button>
           {isHead && (
-            <button onClick={openAddModal} className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white rounded-xl font-semibold shadow-lg hover:bg-brand-700 transition hover:-translate-y-0.5">
-              <Plus className="w-5 h-5" /> Add Subject
-            </button>
+            <div className="flex items-center gap-3">
+              <BulkActions 
+                entity="subjects"
+                columns={['subject_code', 'subject_name', 'units', 'required_hours', 'room_type', 'year_level', 'program_code']}
+              />
+              <button onClick={openAddModal} className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white rounded-xl font-semibold shadow-lg hover:bg-brand-700 transition hover:-translate-y-0.5">
+                <Plus className="w-5 h-5" /> Add Subject
+              </button>
+            </div>
           )}
         </div>
       </div>

@@ -6,6 +6,7 @@ import { Plus, Edit2, Archive, Search, X, Clock, RefreshCw, Users, Activity, Bar
 import { useAuth } from '../context/AuthContext';
 import UnavailabilityModal from '../components/UnavailabilityModal';
 import ConfirmModal from '../components/ConfirmModal';
+import BulkActions from '../components/BulkActions';
 
 export default function Faculty() {
   const { user } = useAuth();
@@ -190,9 +191,15 @@ export default function Faculty() {
             {showArchived ? 'Viewing Archived' : 'Show Archived'}
           </button>
           {isHead && (
-            <button onClick={openAddModal} className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white rounded-xl font-bold shadow-lg shadow-brand-500/20 hover:bg-brand-700 transition transform hover:-translate-y-0.5">
-              <Plus className="w-5 h-5" /> Add Instructor
-            </button>
+            <div className="flex items-center gap-3">
+              <BulkActions 
+                entity="faculty"
+                columns={['full_name', 'program_code', 'campus_name', 'employment_type', 'max_teaching_hours', 'department']}
+              />
+              <button onClick={openAddModal} className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white rounded-xl font-bold shadow-lg shadow-brand-500/20 hover:bg-brand-700 transition transform hover:-translate-y-0.5">
+                <Plus className="w-5 h-5" /> Add Instructor
+              </button>
+            </div>
           )}
         </div>
       </div>
