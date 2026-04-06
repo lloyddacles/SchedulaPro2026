@@ -27,7 +27,7 @@ router.get('/:facultyId', async (req: any, res: Response) => {
 });
 
 // Insert new blocked time
-router.post('/', authorizeRoles('admin', 'program_head', 'faculty'), async (req: any, res: Response) => {
+router.post('/', authorizeRoles('admin', 'program_head', 'program_assistant', 'faculty'), async (req: any, res: Response) => {
   const { faculty_id, day_of_week, start_time, end_time, reason } = req.body;
   
   if (start_time >= end_time) return res.status(400).json({ error: 'End time must be cleanly after start time.' });
@@ -50,7 +50,7 @@ router.post('/', authorizeRoles('admin', 'program_head', 'faculty'), async (req:
   } catch (error: any) { res.status(500).json({ error: error.message }); }
 });
 
-router.delete('/:id', authorizeRoles('admin', 'program_head', 'faculty'), async (req: any, res: Response) => {
+router.delete('/:id', authorizeRoles('admin', 'program_head', 'program_assistant', 'faculty'), async (req: any, res: Response) => {
   try {
     await pool.query('DELETE FROM faculty_unavailability WHERE id = ?', [req.params.id]);
     await logAudit('DELETE', 'FacultyUnavailability', req.params.id, {}, req.user.username);
