@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import pool from '../config/db.js';
 import { sendEmail } from '../utils/mailer.js';
 import { notifyFaculty } from '../utils/notify.js';
-import { authenticateToken } from '../utils/auth.js';
+import { authenticateToken, authorizeRoles } from '../utils/auth.js';
 import { validate, scheduleRequestSchema } from '../middleware/validator.js';
 
 const router = express.Router();
@@ -39,7 +39,7 @@ router.post('/', validate(scheduleRequestSchema), async (req: Request, res: Resp
   }
 });
 
-router.put('/:id/:action', async (req: Request, res: Response) => {
+router.put('/:id/:action', authorizeRoles('admin', 'program_head'), async (req: Request, res: Response) => {
   const { id, action } = req.params as { id: string, action: string };
   
   if (!['approve', 'reject'].includes(action)) return res.status(400).json({ message: 'Invalid administrative execution payload.' });
@@ -57,7 +57,7 @@ router.put('/:id/:action', async (req: Request, res: Response) => {
     
     if (status === 'APPROVED' || status === 'REJECTED') {
       const [requests]: [any[], any] = await connection.query(`
-        SELECT sr.schedule_id, sr.request_type, f.full_name, sub.subject_code 
+        SELECT sr.schedule_id, sr.request_type, sr.faculty_id, f.full_name, sub.subject_code 
         FROM schedule_requests sr 
         JOIN faculty f ON sr.faculty_id = f.id
         JOIN schedules s ON sr.schedule_id = s.id

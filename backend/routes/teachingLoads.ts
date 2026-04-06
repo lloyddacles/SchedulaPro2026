@@ -127,7 +127,7 @@ router.post('/', authorizeRoles('admin', 'program_head', 'program_assistant'), v
     res.status(201).json({ 
       message: isAutoApprovable 
         ? `Successfully assigned and approved ${subject_ids.length} subjects.` 
-        : `Successfully assigned ${subject_ids.length} subjects as Drafts.` 
+        : `Successfully assigned ${subject_ids.length} subjects for endorsement.` 
     });
 
     const [[sec]]: [any[], any] = await connection.query('SELECT campus_id FROM sections WHERE id = ?', [targetSectionId]);
@@ -154,11 +154,11 @@ router.patch('/:id/submit', authorizeRoles('admin', 'program_head', 'program_ass
       `UPDATE teaching_loads SET status = 'pending_review', review_notes = NULL, reviewed_by = NULL, reviewed_at = NULL WHERE id = ?`,
       [req.params.id]
     );
-    await logAudit('SUBMIT_REVIEW', 'TeachingLoad', req.params.id, { previous_status: load.status }, req.user.username);
+    await logAudit('ENDORSE_REVIEW', 'TeachingLoad', req.params.id, { previous_status: load.status }, req.user.username);
     
-    await notifyRole('program_head', 'New Load Pending Review', 'A new teaching load was submitted for your approval.', 'info', '/assign-loads');
+    await notifyRole('program_head', 'New Load Endorsed for Approval', 'A new teaching load was endorsed and is pending your approval.', 'info', '/assign-loads');
 
-    res.json({ message: 'Load submitted for review.' });
+    res.json({ message: 'Load endorsed for approval.' });
 
     const [[sec]]: [any[], any] = await pool.query('SELECT sec.campus_id FROM teaching_loads tl JOIN sections sec ON tl.section_id = sec.id WHERE tl.id = ?', [req.params.id]);
     if (sec) {
@@ -410,7 +410,7 @@ router.put('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'),
       is_override: (req.user.role === 'admin' && ['approved', 'pending_review'].includes(existLoad.status))
     }, req.user.username);
     
-    res.json({ message: 'Teaching load updated securely as Draft.' });
+    res.json({ message: 'Teaching load updated. Endorse when ready for approval.' });
 
     const [[sec]]: [any[], any] = await connection.query('SELECT campus_id FROM sections WHERE id = ?', [section_id]);
     if (sec) {

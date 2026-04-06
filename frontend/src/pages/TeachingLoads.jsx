@@ -307,7 +307,7 @@ export default function TeachingLoads() {
         >
           All Loads ({activeTab === 'archived' ? '-' : loads.length})
         </button>
-        {isHead && (
+        {(isHead || isAssistant) && (
           <button
             onClick={() => setActiveTab('pending')}
             className={`px-4 py-2.5 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'pending' ? 'border-amber-500 text-amber-600 dark:text-amber-400 dark:border-amber-400' : 'border-transparent text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'}`}
@@ -432,15 +432,15 @@ export default function TeachingLoads() {
                       </td>
                       <td className="px-4 py-4 text-right w-40">
                         <div className="flex items-center justify-end gap-1">
-                          {/* Program Assistant: Submit for review */}
+                          {/* Program Assistant: Endorse for approval */}
                           {(isAssistant || isAdmin) && ['draft', 'rejected'].includes(load.status) && activeTab !== 'archived' && (
                             <button
                               onClick={() => submitMutation.mutate(load.id)}
                               disabled={submitMutation.isPending}
                               className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded-lg text-xs font-bold transition-colors"
-                              title="Submit for Review"
+                              title="Endorse for Approval"
                             >
-                              <SendHorizonal className="w-3.5 h-3.5" /> Submit
+                              <SendHorizonal className="w-3.5 h-3.5" /> Endorse
                             </button>
                           )}
 
@@ -568,7 +568,7 @@ export default function TeachingLoads() {
             </div>
             <div className="p-6 space-y-4">
               <p className="text-sm text-gray-600 dark:text-slate-400">
-                Provide a reason for rejection. The Program Assistant will see this note and can resubmit after corrections.
+                Provide a reason for rejection. The preparatory Assistant will see this note and can resubmit after corrections.
               </p>
               <textarea
                 autoFocus
@@ -621,7 +621,7 @@ export default function TeachingLoads() {
               {!isEditing && (
                 <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 text-xs text-blue-700 dark:text-blue-400">
                   <Clock className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                  <span>New loads are saved as <strong>Draft</strong>. Submit for review when ready for Program Head approval.</span>
+                  <span>New loads are saved as <strong>Draft</strong>. Endorse when ready for Program Head approval.</span>
                 </div>
               )}
 
@@ -766,7 +766,7 @@ export default function TeachingLoads() {
               <div className="pt-2 flex gap-3 border-t border-gray-100 dark:border-slate-700">
                 <button type="button" onClick={closeModal} className="flex-1 py-3 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-gray-700 dark:text-slate-300 font-semibold hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors text-sm">Cancel</button>
                 <button type="submit" disabled={isHardCapped || createMutation.isPending || updateMutation.isPending || (isEditing ? !formData.subject_id : formData.subject_ids.length === 0)} className="flex-1 py-3 bg-brand-600 text-white rounded-xl font-semibold hover:bg-brand-700 shadow-md transition-colors disabled:opacity-50 text-sm">
-                  {createMutation.isPending || updateMutation.isPending ? 'Saving...' : (isEditing ? 'Update Draft' : 'Save as Draft')}
+                  {createMutation.isPending || updateMutation.isPending ? 'Saving...' : (isEditing ? 'Update Draft' : 'Save for Endorsement')}
                 </button>
               </div>
             </form>

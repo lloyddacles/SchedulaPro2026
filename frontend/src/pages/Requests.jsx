@@ -1,15 +1,18 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import { CheckCircle, XCircle, Clock, AlertCircle, RefreshCw, MapPin } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
-
 export default function Requests() {
   const queryClient = useQueryClient();
-
+  const { user } = useAuth();
   const [selectedCampus, setSelectedCampus] = React.useState('');
   const [isConfirmModalOpen, setIsConfirmModalOpen] = React.useState(false);
   const [confirmConfig, setConfirmConfig] = React.useState({ title: '', message: '', type: '', onConfirm: () => {} });
+
+  const isAdmin = user?.role === 'admin';
+  const isHead = user?.role === 'program_head' || isAdmin;
 
   const { data: campuses = [] } = useQuery({ 
     queryKey: ['campuses'], 
@@ -123,7 +126,7 @@ export default function Requests() {
                       )}
                     </td>
                     <td className="px-6 py-5 text-right w-[140px]">
-                      {req.status === 'PENDING' ? (
+                      {req.status === 'PENDING' && isHead ? (
                         <div className="flex justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-sm">
                           <button onClick={() => { 
                             setConfirmConfig({

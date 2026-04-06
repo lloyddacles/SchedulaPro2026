@@ -8,7 +8,7 @@ import useScheduleStore from '../store/useScheduleStore';
 import {
   Users, BookOpen, Calendar, LayoutDashboard, Database, Building2, LogOut,
   Hexagon, FileSpreadsheet, PlusCircle, Inbox, Sun, Moon, Shield, Menu, X, UserCog,
-  Bell, CheckCircle2, Circle, PieChart, Key, MapPin, Settings
+  Bell, CheckCircle2, Circle, PieChart, Key, MapPin, Settings, CalendarCheck
 } from 'lucide-react';
 import BulkImportModal from '../components/BulkImportModal';
 import ChangePasswordModal from './ChangePasswordModal';
@@ -164,7 +164,7 @@ export default function Layout() {
             {systemSettings.logo_url ? (
               <img src={systemSettings.logo_url} alt="Logo" className="w-6 h-6 flex-shrink-0 rounded object-contain" />
             ) : (
-              <Hexagon className="text-brand-400 dark:text-brand-500 w-5 h-5 flex-shrink-0" />
+              <CalendarCheck className="text-brand-400 dark:text-brand-500 w-5 h-5 flex-shrink-0" />
             )}
             <span className="truncate">{systemSettings.app_name || 'FacultySync'}</span>
           </h1>
@@ -228,12 +228,12 @@ export default function Layout() {
           </button>
         </div>
 
-        {/* Developer Credit */}
-        <div className="px-4 pb-5 pt-2 border-t border-white/10">
-          <p className="text-[9px] text-brand-400/60 uppercase tracking-widest font-bold mb-0.5">Developed by</p>
-          <p className="text-[11px] text-brand-100/80 font-semibold leading-tight">Lloyd Christopher F. Dacles, MIS</p>
-          <p className="text-[10px] text-brand-400 font-bold tracking-widest uppercase mt-0.5">LDRaidmax</p>
-          <p className="text-[9px] text-brand-400/40 mt-1">&copy; {new Date().getFullYear()} All rights reserved</p>
+        {/* Architect & Owner Accreditation */}
+        <div className="px-4 pb-5 pt-3 border-t border-white/10">
+          <p className="text-[10px] text-brand-400/60 uppercase tracking-widest font-black mb-1">Architect & Owner</p>
+          <p className="text-[11px] text-brand-100 font-bold leading-tight">Mr. Lloyd Christopher F. Dacles, MIS</p>
+          <p className="text-[10px] text-brand-400 font-extrabold tracking-[0.15em] uppercase mt-0.5">LDRaidmax Systems</p>
+          <p className="text-[9px] text-brand-400/40 mt-2 font-bold select-none">&copy; {new Date().getFullYear()} Software Laboratory</p>
         </div>
       </aside>
 
