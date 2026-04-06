@@ -201,7 +201,15 @@ export default function MySchedule() {
       setIsModalOpen(false);
       alert("Change request successfully dispatched to the Administrator Queue.");
     },
-    onError: (err) => setErrorMsg(err.response?.data?.message || "Failed to submit request.")
+    onError: (err) => {
+      const data = err.response?.data;
+      // Show specific validation field errors if available
+      if (data?.errors?.length > 0) {
+        setErrorMsg(data.errors.map((e) => e.message).join(' · '));
+      } else {
+        setErrorMsg(data?.message || 'Failed to submit request.');
+      }
+    }
   });
 
   const handleEventClick = (info) => {

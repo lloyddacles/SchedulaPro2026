@@ -115,7 +115,6 @@ export const teachingLoadSchema = z.object({
 });
 
 export const scheduleRequestSchema = z.object({
-  faculty_id: requiredId,
   schedule_id: requiredId,
   request_type: z.enum(['DROP', 'SWAP', 'CHANGE_ROOM', 'CHANGE_TIME', 'OTHER']),
   reason_text: z.string().min(5, "Justification must be at least 5 characters")

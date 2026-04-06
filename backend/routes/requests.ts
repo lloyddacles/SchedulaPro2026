@@ -26,8 +26,14 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/', validate(scheduleRequestSchema), async (req: Request, res: Response) => {
-  const { faculty_id, schedule_id, request_type, reason_text } = req.body;
+router.post('/', validate(scheduleRequestSchema), async (req: any, res: Response) => {
+  const { schedule_id, request_type, reason_text } = req.body;
+  const faculty_id = req.user.faculty_id;
+
+  if (!faculty_id) {
+    return res.status(403).json({ message: 'Your account is not linked to a faculty profile. Please contact the administrator.' });
+  }
+
   try {
     await pool.query(
       'INSERT INTO schedule_requests (faculty_id, schedule_id, request_type, reason) VALUES (?, ?, ?, ?)',
