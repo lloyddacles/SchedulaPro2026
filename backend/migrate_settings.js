@@ -17,7 +17,7 @@ const migrateSettings = async () => {
         if (rows.length === 0) {
             await pool.query(`
                 INSERT INTO system_settings (key, value) VALUES 
-                ('app_name', 'FacultySync'),
+                ('app_name', 'SchedulaPro'),
                 ('institution_name', 'Golden Minds Colleges'),
                 ('logo_url', '')
             `);

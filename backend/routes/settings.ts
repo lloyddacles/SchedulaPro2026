@@ -15,7 +15,7 @@ const ensureTable = async () => {
   `);
 
   const defaults: [string, string][] = [
-    ['app_name', 'FacultySync'],
+    ['app_name', 'SchedulaPro'],
     ['institution_name', 'CARD-MRI Development Institute, Inc.'],
     ['logo_url', ''],
   ];

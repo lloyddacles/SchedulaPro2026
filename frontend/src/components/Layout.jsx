@@ -166,7 +166,7 @@ export default function Layout() {
             ) : (
               <CalendarCheck className="text-brand-400 dark:text-brand-500 w-5 h-5 flex-shrink-0" />
             )}
-            <span className="truncate">{systemSettings.app_name || 'FacultySync'}</span>
+            <span className="truncate">{systemSettings.app_name || 'SchedulaPro'}</span>
           </h1>
           <button onClick={closeSidebar} className="lg:hidden text-brand-300 hover:text-white p-1">
             <X className="w-5 h-5" />

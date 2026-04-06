@@ -71,7 +71,7 @@ export default function SystemSettings() {
               type="text"
               value={appName}
               onChange={(e) => setAppName(e.target.value)}
-              placeholder="e.g. FacultySync"
+              placeholder="e.g. SchedulaPro"
               className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
             />
             <p className="text-xs text-gray-400 mt-1">Displayed in the sidebar navigation header.</p>

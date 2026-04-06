@@ -1,19 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import { KeyRound, User, Layers, ShieldCheck, Info, CalendarCheck, Settings2, CheckCircle2 } from 'lucide-react';
+
+const CAROUSEL_IMAGES = [
+  "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1400",
+  "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=1400",
+  "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&q=80&w=1400"
+];
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [currentIdx, setCurrentIdx] = useState(0);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   // Handle subtle animation entrance
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { 
+    setMounted(true); 
+    const timer = setInterval(() => {
+      setCurrentIdx((prev) => (prev + 1) % CAROUSEL_IMAGES.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,13 +46,21 @@ export default function Login() {
   return (
     <div className="min-h-screen flex bg-white dark:bg-slate-950 font-sans selection:bg-brand-500/30">
       
-      {/* ── Left Side: Faculty Coordination Hero Section ────────────────────────── */}
-      <div className="hidden lg:flex lg:w-[58%] relative overflow-hidden group">
-        <img 
-          src="/Users/lloyd.dacles/.gemini/antigravity/brain/daaef2ba-49fd-4e61-8b5c-d516c70410ca/faculty_scheduler_workspace_bg_1775443661606.png" 
-          alt="Faculty Coordination Workspace" 
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-10000 ease-linear scale-110 group-hover:scale-100"
-        />
+      {/* ── Left Side: Faculty Coordination Hero Section (Carousel) ────────── */}
+      <div className="hidden lg:flex lg:w-[58%] relative overflow-hidden group bg-brand-900">
+        <AnimatePresence mode="wait">
+          <motion.img 
+            key={CAROUSEL_IMAGES[currentIdx]}
+            src={CAROUSEL_IMAGES[currentIdx]}
+            alt="Academic Planning Hub" 
+            initial={{ opacity: 0, scale: 1.1 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            transition={{ duration: 1.5, ease: "easeInOut" }}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        </AnimatePresence>
+
         <div className="absolute inset-0 bg-gradient-to-tr from-brand-950/85 via-brand-900/50 to-transparent" />
         
         {/* Branding on Image Overlay */}
@@ -46,7 +68,7 @@ export default function Login() {
           <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-xl">
             <CalendarCheck className="text-white w-6 h-6" />
           </div>
-          <h2 className="text-2xl font-black text-white tracking-tight">FacultySync</h2>
+          <h2 className="text-2xl font-black text-white tracking-tight">SchedulaPro</h2>
         </div>
 
         {/* Hero Text Content */}
@@ -90,7 +112,7 @@ export default function Login() {
             <div className="w-16 h-16 bg-brand-600 rounded-3xl flex items-center justify-center shadow-2xl mb-4">
               <CalendarCheck className="text-white w-8 h-8" />
             </div>
-            <h1 className="text-3xl font-black text-gray-900 dark:text-white">FacultySync</h1>
+            <h1 className="text-3xl font-black text-gray-900 dark:text-white">SchedulaPro</h1>
           </div>
 
           <div className="text-center lg:text-left">
@@ -99,9 +121,9 @@ export default function Login() {
           </div>
 
           {error && (
-            <div className="bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900 rounded-2xl p-4 flex items-center gap-3 animate-shake">
-              <Info className="w-5 h-5 text-red-500" />
-              <p className="text-sm font-bold text-red-600 dark:text-red-400">{error}</p>
+            <div className="bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900 rounded-2xl p-4 flex items-center gap-3 animate-shake text-sm font-bold text-red-600 dark:text-red-400">
+              <Info className="w-5 h-5 flex-shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -126,7 +148,7 @@ export default function Login() {
             <div className="space-y-2">
               <div className="flex justify-between items-end mr-1">
                 <label className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">Password</label>
-                <button type="button" className="text-[10px] font-black text-brand-600 dark:text-brand-400 uppercase tracking-wider hover:underline">Reset Matrix Key?</button>
+                <button type="button" className="text-[10px] font-black text-brand-600 dark:text-brand-400 uppercase tracking-wider hover:underline transition-colors">Reset Matrix Key?</button>
               </div>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
