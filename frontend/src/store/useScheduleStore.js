@@ -32,6 +32,29 @@ const useScheduleStore = create((set, get) => ({
   },
 
   setActiveTermId: (id) => set({ activeTermId: id }),
+  
+  createTerm: async (name, makeActive = false) => {
+    set({ isGlobalLoading: true });
+    try {
+      const res = await api.post('/terms', { name, is_active: makeActive });
+      const newTerm = res.data;
+      
+      // Refresh list immediately
+      const termsRes = await api.get('/terms');
+      const terms = termsRes.data;
+      
+      set((state) => ({ 
+        terms,
+        activeTermId: makeActive ? newTerm.id : state.activeTermId,
+        isGlobalLoading: false 
+      }));
+      return newTerm;
+    } catch (error) {
+      console.error('Failed to create term:', error);
+      set({ isGlobalLoading: false });
+      throw error;
+    }
+  },
 
   // --- Campus State ---
   campuses: [],

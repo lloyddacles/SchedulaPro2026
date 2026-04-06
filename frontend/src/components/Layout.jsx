@@ -13,6 +13,8 @@ import {
 import BulkImportModal from '../components/BulkImportModal';
 import ChangePasswordModal from './ChangePasswordModal';
 import CommandPalette from './CommandPalette';
+import { Menu, Transition, Dialog } from '@headlessui/react';
+import { ChevronDown, CalendarPlus, Check } from 'lucide-react';
 
 // ── Role badge config ────────────────────────────────────────────────────────
 const ROLE_BADGES = {
@@ -257,40 +259,55 @@ export default function Layout() {
           {/* Right controls */}
           <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
 
-            {/* Term Switcher (scheduler + admin only) */}
+            {/* Term Switcher (Scheduler + Admin Only) */}
             {isScheduler && (
-              <div className="hidden sm:flex items-center gap-2">
-                {isAddingTerm ? (
-                  <form onSubmit={handleCreateTerm} className="flex items-center gap-1">
-                    <input
-                      autoFocus type="text" placeholder="e.g. Spring 2027"
-                      value={newTermName} onChange={e => setNewTermName(e.target.value)}
-                      className="text-sm border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-lg p-1.5 focus:ring-brand-500 w-28"
-                    />
-                    <button type="submit" className="text-xs bg-brand-600 text-white px-2 py-1.5 rounded-lg font-bold">Save</button>
-                    <button type="button" onClick={() => setIsAddingTerm(false)} className="text-xs text-gray-500 px-1 py-1.5">✕</button>
-                  </form>
-                ) : (
-                  <>
-                    <select
-                      value={activeTermId || ''}
-                      onChange={(e) => setActiveTermId(parseInt(e.target.value))}
-                      className="bg-gray-50 dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 text-gray-800 text-sm font-semibold rounded-xl p-1.5 max-w-[160px] cursor-pointer"
-                    >
-                      {terms.map(t => (
-                        <option key={t.id} value={t.id}>{t.name}{t.is_active ? ' ✓' : ''}</option>
-                      ))}
-                    </select>
-                    {isAdmin && (
-                      <button
-                        onClick={() => setIsAddingTerm(true)}
-                        className="text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/20 p-1.5 rounded-lg transition-colors"
-                        title="New Term"
-                      >
-                        <PlusCircle className="w-4 h-4" />
-                      </button>
-                    )}
-                  </>
+              <div className="flex items-center gap-2">
+                <Menu as="div" className="relative inline-block text-left">
+                  <div>
+                    <Menu.Button className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500/10 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 rounded-xl text-xs font-black uppercase tracking-widest border border-brand-500/20 hover:bg-brand-500/20 transition-all">
+                      {terms.find(t => t.id === activeTermId)?.name || 'Select Term'}
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </Menu.Button>
+                  </div>
+                  <Transition
+                    as={React.Fragment}
+                    enter="transition ease-out duration-100"
+                    enterFrom="transform opacity-0 scale-95"
+                    enterTo="transform opacity-100 scale-100"
+                    leave="transition ease-in duration-75"
+                    leaveFrom="transform opacity-100 scale-100"
+                    leaveTo="transform opacity-0 scale-95"
+                  >
+                    <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 dark:divide-slate-700 rounded-2xl bg-white dark:bg-slate-800 shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none z-50 overflow-hidden border border-gray-100 dark:border-slate-700">
+                      <div className="px-1 py-1">
+                        {terms.map((t) => (
+                          <Menu.Item key={t.id}>
+                            {({ active }) => (
+                              <button
+                                onClick={() => setActiveTermId(t.id)}
+                                className={`${
+                                  active ? 'bg-brand-500 text-white' : 'text-gray-700 dark:text-slate-300'
+                                } group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-bold transition-all`}
+                              >
+                                <span className="truncate">{t.name}</span>
+                                {t.id === activeTermId && <Check className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-emerald-500'}`} />}
+                              </button>
+                            )}
+                          </Menu.Item>
+                        ))}
+                      </div>
+                    </Menu.Items>
+                  </Transition>
+                </Menu>
+
+                {isAdmin && (
+                  <button
+                    onClick={() => setIsAddingTerm(true)}
+                    className="p-2 bg-brand-500/10 hover:bg-brand-500/20 text-brand-600 rounded-xl border border-brand-500/20 transition-all"
+                    title="Setup New Academic Term"
+                  >
+                    <CalendarPlus className="w-4 h-4" />
+                  </button>
                 )}
               </div>
             )}
@@ -400,6 +417,90 @@ export default function Layout() {
       
       {/* Global Modals */}
       <ChangePasswordModal isOpen={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)} />
+      
+      {/* ── Premium Academic Term Modal ───────────────────────── */}
+      <Transition appear show={isAddingTerm} as={React.Fragment}>
+        <Dialog as="div" className="relative z-[100]" onClose={() => setIsAddingTerm(false)}>
+          <Transition.Child
+            as={React.Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-md" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center">
+              <Transition.Child
+                as={React.Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95 translate-y-8"
+                enterTo="opacity-100 scale-100 translate-y-0"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100 translate-y-0"
+                leaveTo="opacity-0 scale-95 translate-y-8"
+              >
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-[2.5rem] bg-white dark:bg-slate-900 p-8 text-left align-middle shadow-2xl transition-all border border-gray-100 dark:border-white/5">
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-14 h-14 bg-brand-500/10 rounded-2xl flex items-center justify-center border border-brand-500/20">
+                      <CalendarPlus className="w-7 h-7 text-brand-600" />
+                    </div>
+                    <div>
+                      <Dialog.Title as="h3" className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+                        Academic Term Setup
+                      </Dialog.Title>
+                      <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mt-1">Institutional Planning</p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleCreateTerm} className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Academic Year & Semester Name</label>
+                      <input
+                        autoFocus
+                        type="text"
+                        required
+                        placeholder="e.g. 1st Semester 2026-2027"
+                        className="w-full px-6 py-4 bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700/50 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-gray-800 dark:text-white placeholder-gray-300"
+                        value={newTermName}
+                        onChange={(e) => setNewTermName(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-3 bg-brand-500/5 p-4 rounded-2xl border border-brand-500/10">
+                      <div className="w-2 h-2 rounded-full bg-brand-500 animate-pulse" />
+                      <p className="text-[11px] text-brand-700 dark:text-brand-300 font-bold leading-relaxed">
+                        Creating a new term will allow you to generate unique teaching load matrices for this specific duration.
+                      </p>
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingTerm(false)}
+                        className="flex-1 px-6 py-4 rounded-2xl bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 font-black uppercase tracking-widest text-[11px] hover:bg-gray-200 dark:hover:bg-slate-700 transition-all"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 px-6 py-4 rounded-2xl bg-slate-950 dark:bg-brand-600 text-white font-black uppercase tracking-widest text-[11px] shadow-xl hover:-translate-y-1 active:scale-95 transition-all"
+                      >
+                        Initialize Term
+                      </button>
+                    </div>
+                  </form>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+
       <CommandPalette />
     </div>
   );
