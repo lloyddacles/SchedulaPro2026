@@ -64,6 +64,45 @@ router.post('/', authorizeRoles('admin', 'program_head'), validate(sectionSchema
   }
 });
 
+router.post('/bulk-upload', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+  const sections = req.body;
+  if (!Array.isArray(sections)) {
+    return res.status(400).json({ error: 'Invalid data format. Expected an array of sections.' });
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const [programs]: any = await connection.query('SELECT id, code FROM programs');
+    const [campuses]: any = await connection.query('SELECT id, name FROM campuses');
+    
+    const programMap = new Map(programs.map((p: any) => [p.code.toUpperCase(), p.id]));
+    const campusMap = new Map(campuses.map((c: any) => [c.name.toUpperCase(), c.id]));
+
+    for (const s of sections) {
+      if (!s.name || !s.program_code) continue;
+      
+      const pId = programMap.get(s.program_code?.toUpperCase()) || 1;
+      const cId = campusMap.get(s.campus_name?.toUpperCase()) || null;
+
+      await connection.query(
+        'INSERT INTO sections (program_id, year_level, name, student_count, campus_id) VALUES (?, ?, ?, ?, ?)',
+        [pId, s.year_level || 1, s.name, s.student_count || 50, cId]
+      );
+    }
+
+    await connection.commit();
+    await logAudit('CREATE_BULK', 'Section', null, { count: sections.length }, req.user.username);
+    res.status(201).json({ message: `Successfully imported ${sections.length} sections.` });
+  } catch (error: any) {
+    await connection.rollback();
+    res.status(500).json({ error: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
 router.delete('/:id', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
   try {
     await pool.query('UPDATE sections SET is_archived = TRUE WHERE id = ?', [req.params.id]);

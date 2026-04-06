@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api';
 import { BookOpen, PlusCircle, Archive, AlertCircle, X, Shield, RefreshCw, Edit2 } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
+import BulkActions from '../components/BulkActions';
 
 export default function Programs() {
   const queryClient = useQueryClient();
@@ -79,6 +80,10 @@ export default function Programs() {
           <p className="mt-1 text-gray-500 dark:text-slate-400">Manage institutional college degrees, strands, and curricular paths.</p>
         </div>
         <div className="flex items-center gap-3">
+          <BulkActions 
+            entity="programs"
+            columns={['code', 'name', 'type']}
+          />
           <button 
             onClick={() => setShowArchived(!showArchived)} 
             className={`px-4 py-2.5 rounded-xl font-bold border transition-colors ${showArchived ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800' : 'bg-white text-gray-600 border-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700'}`}

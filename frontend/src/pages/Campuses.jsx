@@ -6,6 +6,7 @@ import {
   Search, Shield, Activity, Globe, LayoutGrid, X
 } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
+import BulkActions from '../components/BulkActions';
 
 export default function Campuses() {
   const queryClient = useQueryClient();
@@ -77,6 +78,10 @@ export default function Campuses() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <BulkActions 
+            entity="campuses"
+            columns={['name', 'code']}
+          />
           <button 
             onClick={() => setShowArchived(!showArchived)}
             className={`px-6 py-3 rounded-2xl font-bold text-sm transition-all border ${

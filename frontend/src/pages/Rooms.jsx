@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ConfirmModal from '../components/ConfirmModal';
+import BulkActions from '../components/BulkActions';
 
 const RoomStats = ({ rooms }) => {
   const stats = useMemo(() => {
@@ -183,6 +184,10 @@ export default function Rooms() {
           <p className="mt-1 text-slate-500 font-medium">Institutional physical resource management and utilization analytics.</p>
         </div>
         <div className="flex items-center gap-3">
+          <BulkActions 
+            entity="rooms"
+            columns={['name', 'type', 'capacity', 'campus_name', 'notes']}
+          />
           <button 
             onClick={() => setShowArchived(!showArchived)} 
             className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold border transition-all ${

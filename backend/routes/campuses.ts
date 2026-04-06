@@ -35,6 +35,33 @@ router.post('/', authorizeRoles('admin', 'program_head'), validate(campusSchema)
   }
 });
 
+router.post('/bulk-upload', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+  const campuses = req.body;
+  if (!Array.isArray(campuses)) {
+    return res.status(400).json({ error: 'Invalid data format. Expected an array of campuses.' });
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    for (const c of campuses) {
+      if (!c.name || !c.code) continue;
+      await connection.query('INSERT INTO campuses (name, code) VALUES (?, ?)', [c.name, c.code]);
+    }
+
+    await connection.commit();
+    await logAudit('CREATE_BULK', 'Campus', null, { count: campuses.length }, req.user.username);
+    res.status(201).json({ message: `Successfully imported ${campuses.length} campuses.` });
+  } catch (error: any) {
+    await connection.rollback();
+    if (error.code === 'ER_DUP_ENTRY') return res.status(400).json({ error: 'One or more campus codes are already in use.' });
+    res.status(500).json({ error: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
 // Update campus
 router.put('/:id', authorizeRoles('admin', 'program_head'), validate(campusSchema), async (req: any, res: Response) => {
   const { name, code } = req.body;

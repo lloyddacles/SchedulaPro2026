@@ -53,6 +53,41 @@ router.post('/', authorizeRoles('admin', 'program_head'), validate(roomSchema), 
   }
 });
 
+router.post('/bulk-upload', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+  const rooms = req.body;
+  if (!Array.isArray(rooms)) {
+    return res.status(400).json({ error: 'Invalid data format. Expected an array of rooms.' });
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const [campuses]: any = await connection.query('SELECT id, name FROM campuses');
+    const campusMap = new Map(campuses.map((c: any) => [c.name.toUpperCase(), c.id]));
+
+    for (const r of rooms) {
+      if (!r.name) continue;
+      const cId = campusMap.get(r.campus_name?.toUpperCase()) || null;
+      
+      await connection.query(
+        'INSERT INTO rooms (name, type, capacity, campus_id, notes, status) VALUES (?, ?, ?, ?, ?, ?)',
+        [r.name, r.type || 'Lecture', r.capacity || 40, cId, r.notes || '', r.status || 'active']
+      );
+    }
+
+    await connection.commit();
+    await logAudit('CREATE_BULK', 'Room', null, { count: rooms.length }, req.user.username);
+    res.status(201).json({ message: `Successfully imported ${rooms.length} facilities.` });
+  } catch (error: any) {
+    await connection.rollback();
+    if (error.code === 'ER_DUP_ENTRY') return res.status(400).json({ error: 'One or more room names are already in use.' });
+    res.status(500).json({ error: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
 router.put('/:id', authorizeRoles('admin', 'program_head'), validate(roomSchema), async (req: any, res: Response) => {
   const { name, type, capacity, campus_id, status } = req.body;
   try {

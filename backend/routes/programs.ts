@@ -29,6 +29,36 @@ router.post('/', authorizeRoles('admin', 'program_head'), async (req: any, res: 
   }
 });
 
+router.post('/bulk-upload', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+  const programs = req.body;
+  if (!Array.isArray(programs)) {
+    return res.status(400).json({ error: 'Invalid data format. Expected an array of programs.' });
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    for (const p of programs) {
+      if (!p.code || !p.name) continue;
+      await connection.query(
+        'INSERT INTO programs (code, name, type) VALUES (?, ?, ?)',
+        [p.code, p.name, p.type || 'College']
+      );
+    }
+
+    await connection.commit();
+    await logAudit('CREATE_BULK', 'Program', null, { count: programs.length }, req.user.username);
+    res.status(201).json({ message: `Successfully imported ${programs.length} programs.` });
+  } catch (error: any) {
+    await connection.rollback();
+    if (error.code === 'ER_DUP_ENTRY') return res.status(400).json({ error: 'One or more program codes already exist.' });
+    res.status(500).json({ error: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
 router.put('/:id', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
   const { code, name, type } = req.body;
   try {

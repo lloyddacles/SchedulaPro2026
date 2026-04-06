@@ -4,6 +4,7 @@ import api from '../api';
 import { Users, PlusCircle, Archive, AlertCircle, X, RefreshCw, Edit2, Search, BookOpen, GraduationCap, ShieldAlert } from 'lucide-react';
 import { formatYearLevel } from '../utils/formatters';
 import ConfirmModal from '../components/ConfirmModal';
+import BulkActions from '../components/BulkActions';
 
 export default function Sections() {
   const queryClient = useQueryClient();
@@ -155,9 +156,15 @@ export default function Sections() {
           </h1>
           <p className="mt-1 text-gray-500 dark:text-slate-400">Manage cohorts, track programmatic travel blocks, and assign faculty advising.</p>
         </div>
-        <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white rounded-xl font-semibold shadow-lg hover:bg-brand-700 transition hover:-translate-y-0.5">
-          <PlusCircle className="w-5 h-5" /> Generate Section
-        </button>
+          <div className="flex items-center gap-3">
+             <BulkActions 
+                entity="sections"
+                columns={['program_code', 'year_level', 'name', 'student_count', 'campus_name']}
+             />
+             <button onClick={openAddModal} className="flex items-center gap-2 px-6 py-2.5 bg-brand-600 text-white rounded-2xl font-bold shadow-xl shadow-brand-500/10 hover:bg-brand-700 transition transform hover:-translate-y-0.5">
+               <PlusCircle className="w-5 h-5" /> Generate Section
+             </button>
+          </div>
       </div>
 
       {/* Analytics Header */}
