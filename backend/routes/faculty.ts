@@ -188,8 +188,7 @@ router.get('/me/loads', async (req: any, res: Response, next: express.NextFuncti
         tl.id, tl.term_id, tl.status,
         t.name as term_name,
         s.subject_code, s.subject_name, s.required_hours,
-        sec.name as section_name, p.code as program_code, sec.year_level,
-        COALESCE(SUM(s.required_hours), 0) as total_hours
+        sec.name as section_name, p.code as program_code, sec.year_level
       FROM teaching_loads tl
       JOIN subjects s ON tl.subject_id = s.id
       JOIN terms t ON tl.term_id = t.id
