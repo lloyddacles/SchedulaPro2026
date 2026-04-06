@@ -244,3 +244,246 @@ export const generateProfessionalPDF = (schedules, title, termName, campusName =
     }, 40000);
   }, 0);
 };
+
+/**
+ * Generates a high-fidelity, data-driven Analytics Report for institutional management.
+ * Consolidates KPIs, workload matrices, facility efficiency, and curricular demand.
+ */
+export const generateAnalyticsPDF = (data, termName, campusName = 'Main Campus', institutionName = 'GOLDEN MINDS COLLEGES') => {
+  const { facultyLoads, roomUtil, programDist, overallStats } = data;
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const marginX = 20;
+  let currentY = 20;
+
+  const checkPageBreak = (heightNeeded) => {
+    if (currentY + heightNeeded > pageHeight - 30) {
+      pdf.addPage();
+      currentY = 20;
+      renderHeader();
+      return true;
+    }
+    return false;
+  };
+
+  const renderHeader = () => {
+    // Branded Header Group
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(14);
+    pdf.setTextColor(15, 23, 42); // slate-900
+    pdf.text(institutionName, pageWidth / 2, currentY, { align: 'center' });
+    
+    currentY += 6;
+    pdf.setFontSize(10);
+    pdf.setTextColor(71, 85, 105); // slate-600
+    pdf.text(`${String(campusName).toUpperCase()} · INSTITUTIONAL OPERATIONS`, pageWidth / 2, currentY, { align: 'center' });
+    
+    currentY += 5;
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(100, 116, 139); // slate-500
+    pdf.text(`Academic Period: ${termName || 'Current Term'}`, pageWidth / 2, currentY, { align: 'center' });
+    
+    currentY += 10;
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(18);
+    pdf.setTextColor(15, 23, 42); 
+    pdf.text('ADMINISTRATIVE ANALYTICS REPORT', pageWidth / 2, currentY, { align: 'center' });
+    
+    currentY += 4;
+    pdf.setDrawColor(226, 232, 240); // slate-200
+    pdf.setLineWidth(0.5);
+    pdf.line(marginX, currentY, pageWidth - marginX, currentY);
+    currentY += 12;
+  };
+
+  const renderSectionHeader = (title) => {
+    checkPageBreak(15);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(12);
+    pdf.setTextColor(30, 41, 59); // slate-800
+    pdf.text(title.toUpperCase(), marginX, currentY);
+    currentY += 2;
+    pdf.setDrawColor(30, 41, 59);
+    pdf.setLineWidth(0.3);
+    pdf.line(marginX, currentY, marginX + 30, currentY);
+    currentY += 8;
+  };
+
+  const renderFooter = () => {
+    const totalPages = pdf.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      pdf.setPage(i);
+      pdf.setFont('helvetica', 'italic');
+      pdf.setFontSize(7);
+      pdf.setTextColor(148, 163, 184); // slate-400
+      pdf.text(`SchedulaPro Institutional Report · Page ${i} of ${totalPages}`, marginX, pageHeight - 15);
+      pdf.text(`Generated on: ${format(new Date(), 'PPP p')}`, pageWidth - marginX, pageHeight - 15, { align: 'right' });
+      
+      if (i === totalPages) {
+        // Last page signatures/accreditation
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(8);
+        pdf.setTextColor(30, 41, 59);
+        const sigY = pageHeight - 35;
+        pdf.line(marginX, sigY, marginX + 60, sigY);
+        pdf.text('Prepared by:', marginX, sigY - 2);
+        pdf.text('MR. LLOYD CHRISTOPHER F. DACLES, MIS', marginX, sigY + 5);
+        pdf.setFontSize(6);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text('System Architect & Principal Consultant', marginX, sigY + 8);
+        pdf.text('LDRaidmax Systems · Software Laboratory', marginX, sigY + 11);
+      }
+    }
+  };
+
+  // --- Start Generation ---
+  renderHeader();
+
+  // 1. Executive KPIs
+  renderSectionHeader('Executive Summary');
+  const capRatio = overallStats?.room_capacity 
+    ? Math.round((overallStats.room_capacity.total_booked_hours / overallStats.room_capacity.total_capacity_hours) * 100) 
+    : 0;
+
+  const kpis = [
+    { label: 'INSTITUTIONAL CAPACITY', value: `${capRatio}% Usage` },
+    { label: 'ACTIVE FACULTY COUNT', value: `${overallStats?.active_faculty || 0} Registered` },
+    { label: 'LOAD BALANCE (OVERLOAD)', value: `${overallStats?.overloaded_instructors || 0} Alerts` },
+    { label: 'TOTAL DATA SUBJECTS', value: `${overallStats?.total_subjects || 0} Units` }
+  ];
+
+  pdf.setFontSize(9);
+  kpis.forEach((kpi, i) => {
+    const x = i % 2 === 0 ? marginX : pageWidth / 2;
+    const y = currentY + (Math.floor(i / 2) * 12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(100, 116, 139);
+    pdf.text(kpi.label, x, y);
+    pdf.setFont('helvetica', 'black');
+    pdf.setFontSize(11);
+    pdf.setTextColor(15, 23, 42);
+    pdf.text(kpi.value, x, y + 5);
+    pdf.setFontSize(9);
+  });
+  currentY += 25;
+
+  // 2. Faculty Load Table
+  renderSectionHeader('Faculty Workload Matrix');
+  const tableHeaderY = currentY;
+  pdf.setFillColor(241, 245, 249); // slate-100
+  pdf.rect(marginX, tableHeaderY - 5, pageWidth - (marginX * 2), 7, 'F');
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8);
+  pdf.setTextColor(51, 65, 85);
+  pdf.text('FACULTY NAME', marginX + 2, tableHeaderY);
+  pdf.text('CONTRACT TYPE', marginX + 70, tableHeaderY);
+  pdf.text('MAX', marginX + 110, tableHeaderY, { align: 'center' });
+  pdf.text('LOAD', marginX + 130, tableHeaderY, { align: 'center' });
+  pdf.text('STATUS', marginX + 155, tableHeaderY);
+  
+  currentY += 5;
+  
+  facultyLoads?.forEach((f) => {
+    checkPageBreak(7);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(30, 41, 59);
+    
+    pdf.text(f.name || 'Unknown', marginX + 2, currentY);
+    pdf.text(f.contract_type || 'N/A', marginX + 70, currentY);
+    pdf.text(String(f.max_units || 24), marginX + 110, currentY, { align: 'center' });
+    pdf.text(String(f.current_load || 0), marginX + 130, currentY, { align: 'center' });
+    
+    const isOverload = Number(f.current_load) > Number(f.max_units || 24);
+    if (isOverload) {
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(220, 38, 38); // red-600
+      pdf.text('OVERLOAD', marginX + 155, currentY);
+    } else if (Number(f.current_load) === 0) {
+      pdf.setTextColor(148, 163, 184);
+      pdf.text('UNASSIGNED', marginX + 155, currentY);
+    } else {
+      pdf.setTextColor(16, 185, 129); // emerald-500
+      pdf.text('NORMAL', marginX + 155, currentY);
+    }
+    
+    pdf.setDrawColor(241, 245, 249);
+    pdf.line(marginX, currentY + 2, pageWidth - marginX, currentY + 2);
+    currentY += 6;
+  });
+
+  currentY += 10;
+
+  // 3. Room Efficiency
+  renderSectionHeader('Facility Utilization Profile');
+  const roomHeaders = ['ROOM NAME', 'TOTAL BOOKED HOURS', 'UTILIZATION RATE'];
+  pdf.setFillColor(241, 245, 249);
+  pdf.rect(marginX, currentY - 5, pageWidth - (marginX * 2), 7, 'F');
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(51, 65, 85);
+  pdf.text('FACILITY NAME', marginX + 2, currentY);
+  pdf.text('BOOKED HRS', marginX + 80, currentY, { align: 'center' });
+  pdf.text('EFFICIENCY ESTIMATE', marginX + 140, currentY, { align: 'center' });
+  
+  currentY += 5;
+  roomUtil?.forEach((r) => {
+    checkPageBreak(7);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(30, 41, 59);
+    pdf.text(r.name, marginX + 2, currentY);
+    pdf.text(`${r.value} h`, marginX + 80, currentY, { align: 'center' });
+    
+    // Efficiency based on 72h max
+    const rate = Math.round((Number(r.value) / 72) * 100);
+    pdf.text(`${rate}%`, marginX + 140, currentY, { align: 'center' });
+    
+    pdf.setDrawColor(241, 245, 249);
+    pdf.line(marginX, currentY + 2, pageWidth - marginX, currentY + 2);
+    currentY += 6;
+  });
+
+  currentY += 10;
+
+  // 4. Program Distribution
+  renderSectionHeader('Curricular Demand Breakdown');
+  pdf.setFillColor(241, 245, 249);
+  pdf.rect(marginX, currentY - 5, pageWidth - (marginX * 2), 7, 'F');
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(51, 65, 85);
+  pdf.text('ACADEMIC PROGRAM', marginX + 2, currentY);
+  pdf.text('TOTAL LOADS', marginX + 140, currentY, { align: 'center' });
+
+  currentY += 5;
+  programDist?.forEach((p) => {
+    checkPageBreak(7);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(30, 41, 59);
+    pdf.text(`${p.program_code || p.name} - ${p.description || ''}`, marginX + 2, currentY);
+    pdf.text(String(p.total_loads || p.value), marginX + 140, currentY, { align: 'center' });
+    
+    pdf.setDrawColor(241, 245, 249);
+    pdf.line(marginX, currentY + 2, pageWidth - marginX, currentY + 2);
+    currentY += 6;
+  });
+
+  // Final Pass: Header/Footer
+  renderFooter();
+
+  // Save/Download
+  const filename = `Management_Analytics_${termName.replace(/ /g, '_')}.pdf`;
+  const blob = pdf.output('blob');
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  setTimeout(() => {
+    link.click();
+    setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    }, 40000);
+  }, 0);
+};

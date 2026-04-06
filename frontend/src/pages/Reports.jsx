@@ -10,8 +10,8 @@ import {
   Download, Printer, PieChart as PieIcon, BarChart3, Users, Building2, 
   BookOpen, Activity, TrendingUp, Gauge, AlertCircle 
 } from 'lucide-react';
-import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { generateAnalyticsPDF } from '../utils/pdfGenerator';
 import { motion } from 'framer-motion';
 
 const containerVariants = {
@@ -58,35 +58,23 @@ export default function Reports() {
 
   const isLoading = loadingFac || loadingRoom || loadingProg || loadingOverall;
 
-  const exportPDF = async () => {
-    const element = reportRef.current;
-    if (!element) return;
-    try {
-      const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      const filename = `Analytics_Export_${terms.find(t=>t.id===activeTermId)?.name.replace(/ /g, '_') || 'Term'}.pdf`;
-      const blob = pdf.output('blob');
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      
-      setTimeout(() => {
-        link.click();
-        setTimeout(() => {
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(url);
-        }, 40000);
-      }, 0);
-    } catch (e) {
-      console.error(e);
-      alert('Error exporting PDF');
-    }
+  const exportPDF = () => {
+    const term = terms.find(t => t.id === activeTermId);
+    if (!term) return;
+
+    const data = {
+      facultyLoads,
+      roomUtil,
+      programDist,
+      overallStats
+    };
+
+    generateAnalyticsPDF(
+      data, 
+      term.name, 
+      'Main Campus', // Could be dynamic from settings if needed
+      'CARD-MRI Development Institute, Inc.' 
+    );
   };
 
   const handlePrint = () => window.print();
