@@ -163,11 +163,7 @@ export default function Layout() {
         {/* Logo */}
         <div className="p-5 border-b border-brand-800 dark:border-slate-800/50 flex items-center justify-between">
           <h1 className="text-base font-bold tracking-tight text-brand-50 dark:text-white flex items-center gap-2">
-            {systemSettings.logo_url ? (
-              <img src={systemSettings.logo_url} alt="Logo" className="w-6 h-6 flex-shrink-0 rounded object-contain" />
-            ) : (
-              <CalendarCheck className="text-brand-400 dark:text-brand-500 w-5 h-5 flex-shrink-0" />
-            )}
+            <img src={systemSettings.logo_url || '/logo.png'} alt="Logo" className="w-8 h-8 flex-shrink-0 rounded-xl shadow-lg border border-white/10 dark:border-slate-700 object-cover" />
             <span className="truncate">{systemSettings.app_name || 'SchedulaPro'}</span>
           </h1>
           <button onClick={closeSidebar} className="lg:hidden text-brand-300 hover:text-white p-1">

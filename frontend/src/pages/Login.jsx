@@ -65,8 +65,8 @@ export default function Login() {
         
         {/* Branding on Image Overlay */}
         <div className={`absolute top-12 left-12 flex items-center gap-3 transition-all duration-1000 delay-300 ${mounted ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0'}`}>
-          <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-xl">
-            <CalendarCheck className="text-white w-6 h-6" />
+          <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-xl overflow-hidden p-0.5">
+            <img src="/logo.png" alt="SchedulaPro Logo" className="w-full h-full object-cover rounded-xl" />
           </div>
           <h2 className="text-2xl font-black text-white tracking-tight">SchedulaPro</h2>
         </div>
@@ -109,8 +109,8 @@ export default function Login() {
           
           {/* Mobile Only Branding */}
           <div className="lg:hidden flex flex-col items-center mb-10">
-            <div className="w-16 h-16 bg-brand-600 rounded-3xl flex items-center justify-center shadow-2xl mb-4">
-              <CalendarCheck className="text-white w-8 h-8" />
+            <div className="w-16 h-16 rounded-3xl flex items-center justify-center shadow-2xl mb-4 p-0.5 border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+              <img src="/logo.png" alt="SchedulaPro Logo" className="w-full h-full object-cover rounded-3xl" />
             </div>
             <h1 className="text-3xl font-black text-gray-900 dark:text-white">SchedulaPro</h1>
           </div>
