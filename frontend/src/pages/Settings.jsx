@@ -1,5 +1,9 @@
-import { Settings, Save, Building2, Monitor, Image, RefreshCw, CheckCircle, CalendarPlus, Archive, CheckCircle2, MoreVertical, Trash2 } from 'lucide-react';
-// ... existing imports ...
+import React, { useState, useEffect } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { Settings, Save, Building2, Monitor, Image, RefreshCw, CheckCircle, CalendarPlus, Archive, CheckCircle2, MoreVertical, Trash2, PlusCircle, Info } from 'lucide-react';
+import api from '../api';
+import useScheduleStore from '../store/useScheduleStore';
+import toast from 'react-hot-toast';
 
 export default function SystemSettings() {
   const { 
@@ -288,10 +292,3 @@ export default function SystemSettings() {
     </div>
   );
 }
-
-const PlusCircle = ({ className }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-  </svg>
-);
-
