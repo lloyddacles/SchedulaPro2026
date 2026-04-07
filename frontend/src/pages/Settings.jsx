@@ -286,29 +286,37 @@ export default function SystemSettings() {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 group/actions">
                       {!term.is_active && !term.is_archived && (
                         <button 
                           onClick={() => handlePromote(term.id)}
-                          className="p-2 rounded-xl text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10 transition-colors"
+                          className="p-2 rounded-xl text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10 transition-all hover:scale-110 active:scale-90"
                           title="Promote to Operational Default"
                         >
                           <CheckCircle2 className="w-5 h-5" />
                         </button>
                       )}
-                      {!term.is_active && (
-                         <button 
-                          onClick={() => handleArchive(term.id, !term.is_archived)}
-                          className={`p-2 rounded-xl transition-all ${
-                            term.is_archived 
-                              ? 'text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-500/10' 
-                              : 'text-rose-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 hover:scale-110'
-                          }`}
-                          title={term.is_archived ? 'Restore to Timeline' : 'Move to Archive'}
-                        >
-                          {term.is_archived ? <RefreshCw className="w-5 h-5" /> : <Archive className="w-5 h-5" />}
-                        </button>
-                      )}
+                      
+                      <button 
+                        onClick={() => {
+                          const msg = term.is_active 
+                            ? "Archiving the active term will also deactivate it. Proceed?" 
+                            : term.is_archived 
+                              ? "Restore this term to operations?" 
+                              : "Move this term to historical archive?";
+                          if (window.confirm(msg)) {
+                            handleArchive(term.id, !term.is_archived);
+                          }
+                        }}
+                        className={`p-2 rounded-xl transition-all hover:scale-110 active:scale-90 ${
+                          term.is_archived 
+                            ? 'text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-500/10' 
+                            : 'text-rose-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10'
+                        }`}
+                        title={term.is_archived ? 'Restore to Timeline' : 'Move to Archive'}
+                      >
+                        {term.is_archived ? <RefreshCw className="w-5 h-5" /> : <Archive className="w-5 h-5" />}
+                      </button>
                     </div>
                   </div>
                 </motion.div>
