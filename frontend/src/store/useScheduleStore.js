@@ -18,11 +18,12 @@ const useScheduleStore = create((set, get) => ({
   activeTermId: null,
   isTermsLoading: false,
 
-  fetchTerms: async () => {
+  fetchTerms: async (includeArchived = false) => {
     set({ isTermsLoading: true });
     try {
-      const res = await api.get('/terms');
+      const res = await api.get(`/terms?include_archived=${includeArchived}`);
       const terms = res.data;
+      // ALWAYS prioritize the globally 'is_active' term as the default
       const activeTerm = terms.find(t => t.is_active) || terms[0];
       set({ terms, activeTermId: activeTerm?.id || null, isTermsLoading: false });
     } catch (error) {
@@ -33,21 +34,45 @@ const useScheduleStore = create((set, get) => ({
 
   setActiveTermId: (id) => set({ activeTermId: id }),
   
+  promoteTerm: async (id) => {
+    set({ isGlobalLoading: true });
+    try {
+      await api.put(`/terms/${id}/activate`);
+      await get().fetchTerms(); // Refresh local state
+      set({ isGlobalLoading: false });
+    } catch (error) {
+      console.error('Failed to promote term:', error);
+      set({ isGlobalLoading: false });
+      throw error;
+    }
+  },
+
+  archiveTerm: async (id, isArchived) => {
+    set({ isGlobalLoading: true });
+    try {
+      await api.put(`/terms/${id}/archive`, { is_archived: isArchived });
+      await get().fetchTerms(); // Refresh local state
+      set({ isGlobalLoading: false });
+    } catch (error) {
+      console.error('Failed to archive term:', error);
+      set({ isGlobalLoading: false });
+      throw error;
+    }
+  },
+  
   createTerm: async (name, makeActive = false) => {
     set({ isGlobalLoading: true });
     try {
       const res = await api.post('/terms', { name, is_active: makeActive });
       const newTerm = res.data;
       
-      // Refresh list immediately
-      const termsRes = await api.get('/terms');
-      const terms = termsRes.data;
+      if (makeActive) {
+        await get().promoteTerm(newTerm.id);
+      } else {
+        await get().fetchTerms();
+      }
       
-      set((state) => ({ 
-        terms,
-        activeTermId: makeActive ? newTerm.id : state.activeTermId,
-        isGlobalLoading: false 
-      }));
+      set({ isGlobalLoading: false });
       return newTerm;
     } catch (error) {
       console.error('Failed to create term:', error);

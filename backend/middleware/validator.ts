@@ -132,7 +132,8 @@ export const subjectSchema = z.object({
 
 export const termSchema = z.object({
   name: z.string().min(2, "Term name is required"),
-  is_active: z.boolean().default(false)
+  is_active: z.coerce.boolean().default(false),
+  is_archived: z.coerce.boolean().default(false)
 });
 
 // ── SCHEDULING SCHEMAS ────────────────────────────────────────────────────────

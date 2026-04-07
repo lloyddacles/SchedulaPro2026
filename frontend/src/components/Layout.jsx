@@ -274,19 +274,29 @@ export default function Layout() {
                     leaveFrom="transform opacity-100 scale-100"
                     leaveTo="transform opacity-0 scale-95"
                   >
-                    <HMenu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 dark:divide-slate-700 rounded-2xl bg-white dark:bg-slate-800 shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none z-50 overflow-hidden border border-gray-100 dark:border-slate-700">
+                    <HMenu.Items className="absolute right-0 mt-2 w-64 origin-top-right divide-y divide-gray-100 dark:divide-slate-700 rounded-2xl bg-white dark:bg-slate-800 shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none z-50 overflow-hidden border border-gray-100 dark:border-slate-700">
                       <div className="px-1 py-1">
-                        {terms.map((t) => (
+                        <div className="px-3 py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 dark:border-slate-700 mb-1">Operational Terms</div>
+                        {terms.filter(t => !t.is_archived).map((t) => (
                           <HMenu.Item key={t.id}>
                             {({ active }) => (
                               <button
                                 onClick={() => setActiveTermId(t.id)}
                                 className={`${
-                                  active ? 'bg-brand-500 text-white' : 'text-gray-700 dark:text-slate-300'
-                                } group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-bold transition-all`}
+                                  active ? 'bg-brand-500 text-white shadow-lg' : 'text-gray-700 dark:text-slate-300'
+                                } group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-bold transition-all gap-3`}
                               >
-                                <span className="truncate">{t.name}</span>
-                                {t.id === activeTermId && <Check className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-emerald-500'}`} />}
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="truncate">{t.name}</span>
+                                  {t.is_active && (
+                                    <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter shadow-sm ${
+                                      active ? 'bg-white text-brand-600' : 'bg-emerald-500 text-white'
+                                    }`}>
+                                      Active
+                                    </span>
+                                  )}
+                                </div>
+                                {t.id === activeTermId && <Check className={`w-3.5 h-3.5 flex-shrink-0 ${active ? 'text-white' : 'text-emerald-500'}`} />}
                               </button>
                             )}
                           </HMenu.Item>
