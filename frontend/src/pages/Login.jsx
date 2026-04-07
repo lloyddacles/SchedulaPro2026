@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { KeyRound, User, Layers, ShieldCheck, Info, CalendarCheck, Settings2, CheckCircle2 } from 'lucide-react';
+import { KeyRound, User, Layers, ShieldCheck, Info, CalendarCheck, Settings2, CheckCircle2, Eye, EyeOff, Lock } from 'lucide-react';
 
 const CAROUSEL_IMAGES = [
   "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1400",
@@ -13,6 +13,8 @@ const CAROUSEL_IMAGES = [
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -44,7 +46,24 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex bg-white dark:bg-slate-950 font-sans selection:bg-brand-500/30">
+    <div className="min-h-screen flex bg-white dark:bg-slate-950 font-sans selection:bg-brand-500/30 overflow-hidden">
+      <style>{`
+        @keyframes scan {
+          0% { top: -10%; opacity: 0; }
+          40% { opacity: 0.6; }
+          60% { opacity: 0.6; }
+          100% { top: 110%; opacity: 0; }
+        }
+        .matrix-scan {
+          position: absolute;
+          width: 100%;
+          height: 4px;
+          background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.5), #6366f1, rgba(59, 130, 246, 0.5), transparent);
+          box-shadow: 0 0 20px 4px rgba(99, 102, 241, 0.4);
+          z-index: 20;
+          animation: scan 4s linear infinite;
+        }
+      `}</style>
       
       {/* ── Left Side: Faculty Coordination Hero Section (Carousel) ────────── */}
       <div className="hidden lg:flex lg:w-[58%] relative overflow-hidden group bg-brand-900">
@@ -61,14 +80,15 @@ export default function Login() {
           />
         </AnimatePresence>
 
-        <div className="absolute inset-0 bg-gradient-to-tr from-brand-950/85 via-brand-900/50 to-transparent" />
+        <div className="matrix-scan" />
+
+        <div className="absolute inset-0 bg-gradient-to-tr from-brand-950/90 via-brand-900/40 to-transparent" />
         
-        {/* Branding on Image Overlay */}
         <div className={`absolute top-12 left-12 flex items-center gap-3 transition-all duration-1000 delay-300 ${mounted ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0'}`}>
-          <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-xl overflow-hidden p-0.5">
+          <div className="w-12 h-12 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)] overflow-hidden p-0.5 group-hover:scale-110 transition-transform duration-500">
             <img src="/logo.png" alt="SchedulaPro Logo" className="w-full h-full object-cover rounded-xl" />
           </div>
-          <h2 className="text-2xl font-black text-white tracking-tight">SchedulaPro</h2>
+          <h2 className="text-2xl font-black text-white tracking-tight drop-shadow-lg">SchedulaPro</h2>
         </div>
 
         {/* Hero Text Content */}
@@ -81,23 +101,23 @@ export default function Login() {
               Orchestrating Faculty <br/> 
               <span className="text-brand-400">Synchronization.</span>
             </h1>
-            <p className="text-brand-100/80 text-lg font-medium leading-relaxed">
+            <p className={`text-brand-100/90 text-lg font-medium leading-relaxed transition-all duration-1000 delay-700 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
               Standardizing institutional workloads and schedule boundaries through high-fidelity matrix automation.
             </p>
           </div>
 
           {/* Quick Stats/Info Pills */}
-          <div className={`flex gap-4 mt-12 transition-all duration-1000 delay-700 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-            <div className="px-4 py-3 bg-white/5 backdrop-blur-md rounded-2xl border border-white/5 space-y-1">
+          <div className={`flex gap-4 mt-12 transition-all duration-1000 delay-1000 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
+            <div className="px-5 py-3.5 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 space-y-1 shadow-lg group-hover:bg-white/10 transition-colors duration-500">
               <p className="text-[10px] text-brand-300 font-bold uppercase tracking-wider">Matrix Status</p>
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.6)] animate-pulse" />
                 <span className="text-sm font-bold text-white">Operational</span>
               </div>
             </div>
-            <div className="px-4 py-3 bg-white/5 backdrop-blur-md rounded-2xl border border-white/5 space-y-1">
+            <div className="px-5 py-3.5 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 space-y-1 shadow-lg group-hover:bg-white/10 transition-colors duration-500">
               <p className="text-[10px] text-brand-300 font-bold uppercase tracking-wider">Administrative Mode</p>
-              <span className="text-sm font-bold text-white">Full Access [v2.4]</span>
+              <span className="text-sm font-bold text-white">Full Access [v2.5]</span>
             </div>
           </div>
         </div>
@@ -138,7 +158,7 @@ export default function Login() {
                   type="text"
                   required
                   className="block w-full pl-14 pr-4 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-gray-800 dark:text-white placeholder-gray-300"
-                  placeholder="Official Username"
+                  placeholder="Institutional Username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                 />
@@ -155,29 +175,52 @@ export default function Login() {
                   <KeyRound className="h-5 w-5 text-gray-300 group-focus-within:text-brand-500 transition-colors" />
                 </div>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
-                  className="block w-full pl-14 pr-4 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-gray-800 dark:text-white placeholder-gray-300"
+                  className="block w-full pl-14 pr-12 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-gray-800 dark:text-white placeholder-gray-300"
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-5 flex items-center text-gray-300 hover:text-brand-500 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
               </div>
+            </div>
+
+            <div className="flex items-center justify-between px-1">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <div className="relative flex items-center justify-center">
+                  <input
+                    type="checkbox"
+                    className="peer appearance-none w-5 h-5 border-2 border-gray-100 dark:border-slate-800 rounded-lg checked:bg-brand-600 checked:border-brand-600 transition-all duration-300 cursor-pointer"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
+                  <CheckCircle2 className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
+                </div>
+                <span className="text-[11px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest group-hover:text-brand-500 transition-colors">Keep Session Synced</span>
+              </label>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center items-center py-5 px-6 rounded-2xl bg-slate-950 dark:bg-brand-600 text-white font-black uppercase tracking-widest shadow-2xl shadow-slate-900/20 dark:shadow-brand-500/30 hover:shadow-brand-500/40 hover:-translate-y-1 active:scale-95 transition-all disabled:opacity-50"
+              className="w-full relative group/btn flex justify-center items-center py-5 px-6 rounded-2xl bg-slate-950 dark:bg-brand-600 text-white font-black uppercase tracking-widest shadow-2xl shadow-slate-900/20 dark:shadow-brand-500/20 hover:shadow-brand-500/40 hover:-translate-y-1.5 active:scale-95 transition-all duration-300 disabled:opacity-50"
             >
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-500 -z-10" />
               {loading ? (
                 <span className="flex items-center gap-3">
                   <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                  Dispatching Matrix...
+                  Decrypting Matrix...
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
-                  <Settings2 className="w-5 h-5" /> 
+                  <Lock className="w-5 h-5" /> 
                   Authorize Entry
                 </span>
               )}
