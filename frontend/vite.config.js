@@ -16,9 +16,9 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
           calendar: ['@fullcalendar/react', '@fullcalendar/timegrid', '@fullcalendar/interaction', '@fullcalendar/core'],
-          ui: ['framer-motion', 'lucide-react', 'react-hot-toast'],
+          ui: ['framer-motion', 'lucide-react', 'react-hot-toast', 'recharts'],
           query: ['@tanstack/react-query', 'axios'],
-          utils: ['jspdf', 'xlsx', 'socket.io-client', 'zustand']
+          utils: ['jspdf', 'papaparse', 'socket.io-client', 'zustand']
         }
       }
     }
