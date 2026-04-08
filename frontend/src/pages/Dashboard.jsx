@@ -310,7 +310,8 @@ export default function Dashboard() {
       )}
 
       {/* ── Top KPIs: Optimized Grid ─────────────────────────── */}
-      <div className={`grid grid-cols-2 md:grid-cols-3 ${isHead ? 'lg:grid-cols-7' : 'lg:grid-cols-6'} gap-4`}>
+      {/* ── Top KPIs: Optimized Grid ─────────────────────────── */}
+      <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 ${isHead ? 'lg:grid-cols-7' : 'lg:grid-cols-6'} gap-4`}>
         <StatCard name="Faculty" stat={summary.total_faculty ?? 0} icon={Users} color="text-blue-600" bg="bg-blue-50 dark:bg-blue-900/20" />
         <StatCard name="Subjects" stat={summary.total_subjects ?? 0} icon={BookOpen} color="text-indigo-600" bg="bg-indigo-50 dark:bg-indigo-900/20" />
         <StatCard name="Assigned" stat={summary.total_assigned_loads ?? 0} icon={Layers} color="text-purple-600" bg="bg-purple-50 dark:bg-purple-900/20" />

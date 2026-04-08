@@ -240,38 +240,38 @@ export default function Faculty() {
       )}
 
       {/* Advanced Filters Bar */}
-      <div className="glass rounded-[2rem] shadow-xl border border-white/40 dark:border-slate-700/50 p-6 bg-white/50 dark:bg-slate-900/50 flex flex-col lg:flex-row justify-between items-center gap-5">
-        <div className="flex flex-wrap items-center gap-5 w-full lg:w-auto">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700">
+      <div className="glass rounded-[2rem] shadow-xl border border-white/40 dark:border-slate-700/50 p-6 bg-white/50 dark:bg-slate-900/50 flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 flex-1 sm:flex-none">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider pl-1">Campus:</span>
             <select 
               value={selectedCampus} 
               onChange={(e) => setSelectedCampus(e.target.value)}
-              className="bg-transparent text-xs font-bold text-gray-700 dark:text-white outline-none min-w-[120px]"
+              className="bg-transparent text-xs font-bold text-gray-700 dark:text-white outline-none w-full sm:min-w-[120px]"
             >
               <option value="">All Campuses</option>
               {campuses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 flex-1 sm:flex-none">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider pl-1">Contract:</span>
             <select 
               value={selectedEmploymentType} 
               onChange={(e) => setSelectedEmploymentType(e.target.value)}
-              className="bg-transparent text-xs font-bold text-gray-700 dark:text-white outline-none min-w-[120px]"
+              className="bg-transparent text-xs font-bold text-gray-700 dark:text-white outline-none w-full sm:min-w-[120px]"
             >
               <option value="">All Types</option>
               {Object.keys(EMPLOYMENT_DEFAULTS).map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
-          <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800">
+          <div className="flex items-center justify-center gap-2 p-1 bg-gray-100 dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800">
              <button 
               onClick={() => setGroupingMode('program')}
-              className={`px-4 py-1.5 text-[10px] font-bold rounded-xl transition-all ${groupingMode === 'program' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-sm border border-gray-100 dark:border-slate-600' : 'text-gray-500 hover:text-gray-700 dark:text-slate-500'}`}
+              className={`flex-1 sm:flex-none px-4 py-1.5 text-[10px] font-bold rounded-xl transition-all ${groupingMode === 'program' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-sm border border-gray-100 dark:border-slate-600' : 'text-gray-500 hover:text-gray-700 dark:text-slate-500'}`}
              >By Program</button>
              <button 
               onClick={() => setGroupingMode('department')}
-              className={`px-4 py-1.5 text-[10px] font-bold rounded-xl transition-all ${groupingMode === 'department' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-sm border border-gray-100 dark:border-slate-600' : 'text-gray-500 hover:text-gray-700 dark:text-slate-500'}`}
+              className={`flex-1 sm:flex-none px-4 py-1.5 text-[10px] font-bold rounded-xl transition-all ${groupingMode === 'department' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-sm border border-gray-100 dark:border-slate-600' : 'text-gray-500 hover:text-gray-700 dark:text-slate-500'}`}
              >By Dept</button>
           </div>
         </div>

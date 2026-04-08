@@ -100,69 +100,123 @@ export default function Programs() {
         {isLoading ? (
           <div className="flex justify-center items-center h-40"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div></div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100 dark:divide-slate-700/50">
-              <thead className="bg-gray-50/80 dark:bg-slate-900/50">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Program Code</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Program Name</th>
-                  <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Type</th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white/40 dark:bg-slate-800/40 divide-y divide-gray-50 dark:divide-slate-700/50">
-                {programs.map((p) => (
-                  <tr key={p.id} className="hover:bg-white/80 dark:hover:bg-slate-700/50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap font-bold text-brand-700 dark:text-brand-400">{p.code}</td>
-                    <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-800 dark:text-slate-200">{p.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center text-gray-600 dark:text-slate-300">
-                      <span className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full border shadow-sm ${
-                        p.type === 'College' ? 'bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800/50' : 
-                        p.type === 'SHS' ? 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/50' : 
-                        p.type === 'JHS' ? 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50' : 
-                        'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-900/20 dark:text-slate-400 dark:border-slate-800/50'
-                      }`}>
-                        {p.type}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                      {!showArchived && (
-                        <div className="flex items-center justify-end gap-3">
-                          <button onClick={() => openEditModal(p)} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
-                            <Edit2 className="w-5 h-5 inline" />
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-100 dark:divide-slate-700/50">
+                <thead className="bg-gray-50/80 dark:bg-slate-900/50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Program Code</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Program Name</th>
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Type</th>
+                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white/40 dark:bg-slate-800/40 divide-y divide-gray-50 dark:divide-slate-700/50">
+                  {programs.map((p) => (
+                    <tr key={p.id} className="hover:bg-white/80 dark:hover:bg-slate-700/50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap font-bold text-brand-700 dark:text-brand-400">{p.code}</td>
+                      <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-800 dark:text-slate-200">{p.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-gray-600 dark:text-slate-300">
+                        <span className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full border shadow-sm ${
+                          p.type === 'College' ? 'bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800/50' : 
+                          p.type === 'SHS' ? 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/50' : 
+                          p.type === 'JHS' ? 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50' : 
+                          'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-900/20 dark:text-slate-400 dark:border-slate-800/50'
+                        }`}>
+                          {p.type}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                        {!showArchived && (
+                          <div className="flex items-center justify-end gap-3">
+                            <button onClick={() => openEditModal(p)} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+                              <Edit2 className="w-5 h-5 inline" />
+                            </button>
+                            <button onClick={() => { 
+                              setConfirmConfig({
+                                title: 'Archive Program?',
+                                message: `Are you sure you want to archive ${p.code}? All mapped sections will track this archiving status.`,
+                                type: 'danger',
+                                onConfirm: () => deleteMutation.mutate(p.id)
+                              });
+                              setIsConfirmModalOpen(true);
+                            }} className="text-gray-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors">
+                              <Archive className="w-5 h-5 inline" />
+                            </button>
+                          </div>
+                        )}
+                        {showArchived && (
+                          <button onClick={() => { 
+                              setConfirmConfig({
+                                title: 'Restore Program?',
+                                message: `Restore ${p.code} to active mapping?`,
+                                type: 'restore',
+                                onConfirm: () => restoreMutation.mutate(p.id)
+                              });
+                              setIsConfirmModalOpen(true);
+                          }} className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors font-bold flex items-center justify-end w-full gap-2">
+                            <RefreshCw className="w-4 h-4" /> Restore
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-gray-100 dark:divide-slate-700/50 bg-white/40 dark:bg-slate-800/40">
+              {programs.map((p) => (
+                <div key={p.id} className="p-5 space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-black text-brand-600 dark:text-brand-400 uppercase tracking-widest">{p.code}</span>
+                        <span className={`px-2.5 py-0.5 text-[8px] font-black uppercase tracking-tighter rounded-full border ${
+                          p.type === 'College' ? 'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400' : 
+                          p.type === 'SHS' ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400' : 
+                          'bg-slate-50 text-slate-500 border-slate-100 dark:bg-slate-900/20 dark:text-slate-400'
+                        }`}>
+                          {p.type}
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-gray-800 dark:text-slate-200 leading-tight">{p.name}</h4>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      {!showArchived ? (
+                        <>
+                          <button onClick={() => openEditModal(p)} className="p-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl">
+                            <Edit2 className="w-4 h-4" />
                           </button>
                           <button onClick={() => { 
                             setConfirmConfig({
                               title: 'Archive Program?',
-                              message: `Are you sure you want to archive ${p.code}? All mapped sections will track this archiving status.`,
+                              message: `Archive ${p.code}?`,
                               type: 'danger',
                               onConfirm: () => deleteMutation.mutate(p.id)
                             });
                             setIsConfirmModalOpen(true);
-                          }} className="text-gray-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors">
-                            <Archive className="w-5 h-5 inline" />
+                          }} className="p-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl">
+                            <Archive className="w-4 h-4" />
                           </button>
-                        </div>
-                      )}
-                      {showArchived && (
-                        <button onClick={() => { 
-                            setConfirmConfig({
-                              title: 'Restore Program?',
-                              message: `Restore ${p.code} to active mapping?`,
-                              type: 'restore',
-                              onConfirm: () => restoreMutation.mutate(p.id)
-                            });
-                            setIsConfirmModalOpen(true);
-                        }} className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors font-bold flex items-center justify-end w-full gap-2">
-                          <RefreshCw className="w-4 h-4" /> Restore
+                        </>
+                      ) : (
+                        <button onClick={() => restoreMutation.mutate(p.id)} className="p-2.5 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-xl">
+                          <RefreshCw className="w-4 h-4" />
                         </button>
                       )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {programs.length === 0 && (
+                <div className="p-10 text-center text-gray-400 italic">No programs found</div>
+              )}
+            </div>
+          </>
         )}
       </div>
 
