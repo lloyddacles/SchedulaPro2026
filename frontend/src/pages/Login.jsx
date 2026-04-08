@@ -50,7 +50,8 @@ export default function Login() {
       await login(username, password);
       navigate('/dashboard');
     } catch (err) {
-      setError('Invalid identity credentials. Please verify and try again.');
+      const serverMessage = err.response?.data?.message || err.response?.data?.error?.message || err.message;
+      setError(serverMessage || 'Invalid identity credentials. Please verify and try again.');
     } finally {
       setLoading(false);
     }
