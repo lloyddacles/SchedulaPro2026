@@ -180,10 +180,10 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   res.status(statusCode).json({
     success: false,
     error: {
-      message: message, // Unmasking message
-      code: code,
+      message,
+      code,
       details: (err instanceof ApiError) ? err.details : null,
-      stack: err.stack, // Temporarily unmasking stack
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
     }
   });
 });

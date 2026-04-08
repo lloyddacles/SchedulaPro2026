@@ -50,9 +50,7 @@ export default function Login() {
       await login(username, password);
       navigate('/dashboard');
     } catch (err) {
-      console.error('Login Failure Matrix:', err);
-      const serverMessage = err.response?.data?.error?.message || err.response?.data?.message || err.message;
-      setError(serverMessage || 'Invalid identity credentials. Please verify and try again.');
+      setError('Invalid identity credentials. Please verify and try again.');
     } finally {
       setLoading(false);
     }
