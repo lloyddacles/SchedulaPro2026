@@ -62,9 +62,20 @@ export const changePasswordSchema = z.object({
 
 export const userSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Invalid email address").optional().or(z.literal("")),
   password: z.string().min(6, "Password must be at least 6 characters").optional(),
   role: z.enum(['admin', 'viewer', 'program_head', 'program_assistant', 'faculty']).default('faculty'),
   faculty_id: nullableId
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email address")
+});
+
+export const resetPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  otp: z.string().length(6, "OTP must be 6 digits"),
+  newPassword: z.string().min(6, "Password must be at least 6 characters")
 });
 
 export const programSchema = z.object({

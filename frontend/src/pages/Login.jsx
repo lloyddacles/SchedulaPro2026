@@ -16,8 +16,18 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
+  
+  // Recovery States
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [recoveryStep, setRecoveryStep] = useState('identify'); // identify, verify, reset
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [recoveryOtp, setRecoveryOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -42,6 +52,48 @@ export default function Login() {
       setError('Invalid identity credentials. Please verify and try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setRecoveryLoading(true);
+    setError('');
+    try {
+      await api.post('/auth/forgot-password', { email: recoveryEmail });
+      setRecoveryStep('verify');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to initiate recovery.');
+    } finally {
+      setRecoveryLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setRecoveryStep('reset');
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setRecoveryLoading(true);
+    setError('');
+    try {
+      await api.post('/auth/reset-password', { 
+        email: recoveryEmail, 
+        otp: recoveryOtp, 
+        newPassword 
+      });
+      setSuccess('Identity key synchronized. You can now login.');
+      setShowRecovery(false);
+      setRecoveryStep('identify');
+      setRecoveryEmail('');
+      setRecoveryOtp('');
+      setNewPassword('');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Recovery failed.');
+    } finally {
+      setRecoveryLoading(false);
     }
   };
 
@@ -124,108 +176,244 @@ export default function Login() {
       </div>
 
       {/* ── Right Side: Professional Scheduler Portal ──────────────────────── */}
-      <div className="flex-1 flex flex-col items-center justify-center p-8 sm:p-12 lg:p-16 relative">
+      <div className="flex-1 flex flex-col items-center justify-center p-8 sm:p-12 lg:p-16 relative bg-white dark:bg-slate-950">
         <div className={`w-full max-w-sm space-y-8 transition-all duration-1000 delay-200 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
           
-          {/* Mobile Only Branding */}
-          <div className="lg:hidden flex flex-col items-center mb-10">
-            <div className="w-16 h-16 rounded-3xl flex items-center justify-center shadow-2xl mb-4 p-0.5 border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900">
-              <img src="/logo.png" alt="SchedulaPro Logo" className="w-full h-full object-cover rounded-3xl" />
-            </div>
-            <h1 className="text-3xl font-black text-gray-900 dark:text-white">SchedulaPro</h1>
-          </div>
-
-          <div className="text-center lg:text-left">
-            <h2 className="text-4xl font-black text-gray-900 dark:text-white font-display mb-3 tracking-tighter">Scheduler Portal</h2>
-            <p className="text-gray-500 dark:text-slate-400 font-medium">Enter your coordinator credentials to access the academic resource planner.</p>
-          </div>
-
-          {error && (
-            <div className="bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900 rounded-2xl p-4 flex items-center gap-3 animate-shake text-sm font-bold text-red-600 dark:text-red-400">
-              <Info className="w-5 h-5 flex-shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <label className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">Username</label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-300 group-focus-within:text-brand-500 transition-colors" />
+          <AnimatePresence mode="wait">
+            {!showRecovery ? (
+              <motion.div
+                key="login-form"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="space-y-8"
+              >
+                {/* Mobile Only Branding */}
+                <div className="lg:hidden flex flex-col items-center mb-10">
+                  <div className="w-16 h-16 rounded-3xl flex items-center justify-center shadow-2xl mb-4 p-0.5 border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+                    <img src="/logo.png" alt="SchedulaPro Logo" className="w-full h-full object-cover rounded-3xl" />
+                  </div>
+                  <h1 className="text-3xl font-black text-gray-900 dark:text-white">SchedulaPro</h1>
                 </div>
-                <input
-                  type="text"
-                  required
-                  className="block w-full pl-14 pr-4 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-gray-800 dark:text-white placeholder-gray-300"
-                  placeholder="Institutional Username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                />
-              </div>
-            </div>
 
-            <div className="space-y-2">
-              <div className="flex justify-between items-end mr-1">
-                <label className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">Password</label>
-                <button type="button" className="text-[10px] font-black text-brand-600 dark:text-brand-400 uppercase tracking-wider hover:underline transition-colors">Reset Matrix Key?</button>
-              </div>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                  <KeyRound className="h-5 w-5 text-gray-300 group-focus-within:text-brand-500 transition-colors" />
+                <div className="text-center lg:text-left">
+                  <h2 className="text-4xl font-black text-gray-900 dark:text-white font-display mb-3 tracking-tighter">Scheduler Portal</h2>
+                  <p className="text-gray-500 dark:text-slate-400 font-medium">Enter your coordinator credentials to access the academic resource planner.</p>
                 </div>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  className="block w-full pl-14 pr-12 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-gray-800 dark:text-white placeholder-gray-300"
-                  placeholder="••••••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-5 flex items-center text-gray-300 hover:text-brand-500 transition-colors"
+
+                {error && (
+                  <div className="bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900 rounded-2xl p-4 flex items-center gap-3 animate-shake text-sm font-bold text-red-600 dark:text-red-400">
+                    <Info className="w-5 h-5 flex-shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
+                {success && (
+                  <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900 rounded-2xl p-4 flex items-center gap-3 text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                    <span>{success}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">Username</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                        <User className="h-5 w-5 text-gray-300 group-focus-within:text-brand-500 transition-colors" />
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        className="block w-full pl-14 pr-4 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-gray-800 dark:text-white placeholder-gray-300"
+                        placeholder="Institutional Username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-end mr-1">
+                      <label className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">Password</label>
+                      <button 
+                        type="button" 
+                        onClick={() => { setShowRecovery(true); setError(''); setSuccess(''); }}
+                        className="text-[10px] font-black text-brand-600 dark:text-brand-400 uppercase tracking-wider hover:underline transition-colors"
+                      >
+                        Reset Matrix Key?
+                      </button>
+                    </div>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                        <KeyRound className="h-5 w-5 text-gray-300 group-focus-within:text-brand-500 transition-colors" />
+                      </div>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        className="block w-full pl-14 pr-12 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-gray-800 dark:text-white placeholder-gray-300"
+                        placeholder="••••••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-5 flex items-center text-gray-300 hover:text-brand-500 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between px-1">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <div className="relative flex items-center justify-center">
+                        <input
+                          type="checkbox"
+                          className="peer appearance-none w-5 h-5 border-2 border-gray-100 dark:border-slate-800 rounded-lg checked:bg-brand-600 checked:border-brand-600 transition-all duration-300 cursor-pointer"
+                          checked={rememberMe}
+                          onChange={(e) => setRememberMe(e.target.checked)}
+                        />
+                        <CheckCircle2 className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
+                      </div>
+                      <span className="text-[11px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest group-hover:text-brand-500 transition-colors">Keep Session Synced</span>
+                    </label>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full relative group/btn flex justify-center items-center py-5 px-6 rounded-2xl bg-slate-950 dark:bg-brand-600 text-white font-black uppercase tracking-widest shadow-2xl shadow-slate-900/20 dark:shadow-brand-500/20 hover:shadow-brand-500/40 hover:-translate-y-1.5 active:scale-95 transition-all duration-300 disabled:opacity-50"
+                  >
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-500 -z-10" />
+                    {loading ? (
+                      <span className="flex items-center gap-3">
+                        <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                        Decrypting Matrix...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <Lock className="w-5 h-5" /> 
+                        Authorize Entry
+                      </span>
+                    )}
+                  </button>
+                </form>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="recovery-form"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-8"
+              >
+                <div className="text-center lg:text-left">
+                  <h2 className="text-4xl font-black text-gray-900 dark:text-white font-display mb-3 tracking-tighter">Identity Recovery</h2>
+                  <p className="text-gray-500 dark:text-slate-400 font-medium">Synchronize your access keys via institutional email verification.</p>
+                </div>
+
+                {error && (
+                  <div className="bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900 rounded-2xl p-4 flex items-center gap-3 text-sm font-bold text-red-600 dark:text-red-400">
+                    <Info className="w-5 h-5 flex-shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
+
+                <AnimatePresence mode="wait">
+                  {recoveryStep === 'identify' && (
+                    <motion.form 
+                      key="step-id"
+                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                      onSubmit={handleForgotPassword} className="space-y-5"
+                    >
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">Registered Email</label>
+                        <input
+                          type="email"
+                          required
+                          className="block w-full px-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-gray-800 dark:text-white placeholder-gray-300"
+                          placeholder="name@institution.edu"
+                          value={recoveryEmail}
+                          onChange={(e) => setRecoveryEmail(e.target.value)}
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={recoveryLoading}
+                        className="w-full py-5 px-6 rounded-2xl bg-brand-600 text-white font-black uppercase tracking-widest shadow-xl hover:-translate-y-1 transition-all disabled:opacity-50"
+                      >
+                        {recoveryLoading ? 'Generating OTP...' : 'Dispatch Reset OTP'}
+                      </button>
+                    </motion.form>
+                  )}
+
+                  {recoveryStep === 'verify' && (
+                    <motion.form 
+                      key="step-verify"
+                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                      onSubmit={handleVerifyOtp} className="space-y-5"
+                    >
+                      <div className="space-y-2 text-center">
+                        <label className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">Verification Matrix Code</label>
+                        <input
+                          type="text"
+                          required
+                          maxLength={6}
+                          className="block w-full px-6 py-6 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-black text-4xl text-center tracking-[1em] text-brand-600 dark:text-brand-400"
+                          placeholder="000000"
+                          value={recoveryOtp}
+                          onChange={(e) => setRecoveryOtp(e.target.value.replace(/\D/g, ''))}
+                        />
+                        <p className="text-[10px] text-gray-400 font-bold uppercase pt-2">Check your email for the 6-digit sync code</p>
+                      </div>
+                      <button
+                        type="submit"
+                        className="w-full py-5 px-6 rounded-2xl bg-brand-600 text-white font-black uppercase tracking-widest shadow-xl hover:-translate-y-1 transition-all"
+                      >
+                        Verify Identity
+                      </button>
+                    </motion.form>
+                  )}
+
+                  {recoveryStep === 'reset' && (
+                    <motion.form 
+                      key="step-reset"
+                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                      onSubmit={handleResetPassword} className="space-y-5"
+                    >
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">New Matrix Key</label>
+                        <input
+                          type="password"
+                          required
+                          minLength={6}
+                          className="block w-full px-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-gray-800 dark:text-white placeholder-gray-300"
+                          placeholder="••••••••••••"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={recoveryLoading}
+                        className="w-full py-5 px-6 rounded-2xl bg-brand-600 text-white font-black uppercase tracking-widest shadow-xl hover:-translate-y-1 transition-all disabled:opacity-50"
+                      >
+                        {recoveryLoading ? 'Synchronizing...' : 'Set Final Credentials'}
+                      </button>
+                    </motion.form>
+                  )}
+                </AnimatePresence>
+
+                <button 
+                  onClick={() => { setShowRecovery(false); setRecoveryStep('identify'); setError(''); }}
+                  className="w-full text-center text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-brand-500 transition-colors"
                 >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  Return to Main Terminal
                 </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between px-1">
-              <label className="flex items-center gap-2 cursor-pointer group">
-                <div className="relative flex items-center justify-center">
-                  <input
-                    type="checkbox"
-                    className="peer appearance-none w-5 h-5 border-2 border-gray-100 dark:border-slate-800 rounded-lg checked:bg-brand-600 checked:border-brand-600 transition-all duration-300 cursor-pointer"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                  />
-                  <CheckCircle2 className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
-                </div>
-                <span className="text-[11px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest group-hover:text-brand-500 transition-colors">Keep Session Synced</span>
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full relative group/btn flex justify-center items-center py-5 px-6 rounded-2xl bg-slate-950 dark:bg-brand-600 text-white font-black uppercase tracking-widest shadow-2xl shadow-slate-900/20 dark:shadow-brand-500/20 hover:shadow-brand-500/40 hover:-translate-y-1.5 active:scale-95 transition-all duration-300 disabled:opacity-50"
-            >
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-500 -z-10" />
-              {loading ? (
-                <span className="flex items-center gap-3">
-                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                  Decrypting Matrix...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Lock className="w-5 h-5" /> 
-                  Authorize Entry
-                </span>
-              )}
-            </button>
-          </form>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Institutional Integrity Note */}
           <div className="pt-6 border-t border-gray-50 dark:border-slate-800/50 flex items-start gap-3">

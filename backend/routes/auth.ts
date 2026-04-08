@@ -4,7 +4,9 @@ import jwt from 'jsonwebtoken';
 import pool from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { authenticateToken } from '../utils/auth.js';
-import { validate, loginSchema, changePasswordSchema } from '../middleware/validator.js';
+import { validate, loginSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema } from '../middleware/validator.js';
+import { sendOTPEmail } from '../utils/mailer.js';
+import crypto from 'crypto';
 
 const router = express.Router();
 
@@ -75,6 +77,57 @@ router.get('/me', authenticateToken, (req: any, res: Response) => {
     role: req.user.role,
     faculty_id: req.user.faculty_id
   });
+});
+
+// ── PASSWORD RECOVERY ────────────────────────────────────────────────────────
+
+router.post('/forgot-password', validate(forgotPasswordSchema), async (req: Request, res: Response, next: express.NextFunction) => {
+  const { email } = req.body;
+  try {
+    const [rows]: [any[], any] = await pool.query('SELECT id, username FROM users WHERE email = ?', [email]);
+    
+    // Security best practice: Don't reveal if user exists, but here we'll be helpful for internal tools
+    if (rows.length === 0) {
+      return res.status(200).json({ message: 'If an account exists with this email, an OTP has been sent.' });
+    }
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const expiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+
+    await pool.query('UPDATE users SET reset_otp = ?, reset_expires = ? WHERE email = ?', [otp, expiry, email]);
+    
+    await sendOTPEmail(email, otp);
+
+    res.json({ message: 'OTP sent successfully to your registered email.' });
+  } catch (error: any) {
+    next(error);
+  }
+});
+
+router.post('/reset-password', validate(resetPasswordSchema), async (req: Request, res: Response, next: express.NextFunction) => {
+  const { email, otp, newPassword } = req.body;
+  try {
+    const [rows]: [any[], any] = await pool.query(
+      'SELECT id FROM users WHERE email = ? AND reset_otp = ? AND reset_expires > NOW()',
+      [email, otp]
+    );
+
+    if (rows.length === 0) {
+      return res.status(400).json({ message: 'Invalid or expired OTP code.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(newPassword, salt);
+
+    await pool.query(
+      'UPDATE users SET password_hash = ?, reset_otp = NULL, reset_expires = NULL WHERE id = ?',
+      [hash, rows[0].id]
+    );
+
+    res.json({ message: 'Password has been reset successfully. You can now login.' });
+  } catch (error: any) {
+    next(error);
+  }
 });
 
 export default router;
