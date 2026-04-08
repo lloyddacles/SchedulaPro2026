@@ -25,6 +25,8 @@ import Reports from './pages/Reports';
 import Campuses from './pages/Campuses';
 import SystemSettings from './pages/Settings';
 
+import Landing from './pages/Landing';
+
 // Role Groups for Authorization
 const ADMIN_ONLY  = ['admin'];
 const SCHEDULER   = ['admin', 'program_head', 'program_assistant'];
@@ -37,14 +39,14 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <Routes>
+            <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
 
-            <Route path="/" element={
+            <Route element={
               <ProtectedRoute>
                 <Layout />
               </ProtectedRoute>
             }>
-              <Route index element={<IndexRedirect />} />
 
               {/* Scheduler + Admin routes */}
               <Route path="dashboard"      element={<ProtectedRoute allowedRoles={SCHEDULER}><Dashboard /></ProtectedRoute>} />
