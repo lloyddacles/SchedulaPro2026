@@ -1,11 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  console.warn(' [CRITICAL]: JWT_SECRET is not defined in environment variables. Authentication will fail.');
-}
-
 /**
  * Middleware to authenticate JWT tokens and attach user payload to the request.
  */
@@ -20,7 +15,9 @@ export const authenticateToken = (req: any, res: Response, next: NextFunction) =
   
   if (!token) return res.status(401).json({ message: 'No token provided' });
   
+  const JWT_SECRET = process.env.JWT_SECRET;
   if (!JWT_SECRET) {
+    console.error(' [CRITICAL ERROR]: JWT_SECRET is missing from environment. Auth system is offline.');
     return res.status(500).json({ message: 'Authentication service misconfigured' });
   }
 

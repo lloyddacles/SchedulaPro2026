@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
@@ -6,10 +9,6 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import compression from 'compression';
 import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
-
-// Configure Environment
-dotenv.config();
 
 // Route Imports
 import authRoutes from './routes/auth.js';
