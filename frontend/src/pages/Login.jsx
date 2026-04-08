@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { KeyRound, User, Layers, ShieldCheck, Info, CalendarCheck, Settings2, CheckCircle2, Eye, EyeOff, Lock } from 'lucide-react';
