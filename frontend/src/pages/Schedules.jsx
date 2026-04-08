@@ -30,6 +30,7 @@ export default function Schedules() {
   const queryClient = useQueryClient();
   const { activeTermId, socket, isConnected } = useScheduleStore();
   const calendarRef = useRef(null);
+  const containerRef = useRef(null);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState('');
@@ -643,7 +644,7 @@ export default function Schedules() {
         onCancel={confirmConfig.onCancel}
       />
 
-      <div ref={calendarRef} className="glass rounded-[2rem] shadow-xl border border-white/40 overflow-hidden print:shadow-none print:border-none print:bg-white print:rounded-none relative">
+      <div ref={containerRef} className="glass rounded-[2rem] shadow-xl border border-white/40 overflow-hidden print:shadow-none print:border-none print:bg-white print:rounded-none relative">
         {isLoadingSchedules ? (
            <div className="flex justify-center items-center h-40"><RefreshCw className="animate-spin h-8 w-8 text-brand-600" /></div>
         ) : (displayedSchedules.length === 0 && (selectedFacultyId || selectedSectionId || selectedProgramId || selectedRoomName)) ? (
@@ -708,6 +709,7 @@ export default function Schedules() {
              `}</style>
 
              <FullCalendar
+                ref={calendarRef}
                 plugins={[timeGridPlugin, interactionPlugin]}
                 initialView="timeGridWeek"
                 headerToolbar={false}
@@ -730,7 +732,7 @@ export default function Schedules() {
                    if (info.event.display !== 'background') {
                       const raw = info.event.extendedProps.raw;
                       const rect = info.el.getBoundingClientRect();
-                      const rootRect = calendarRef.current.getBoundingClientRect();
+                      const rootRect = containerRef.current.getBoundingClientRect();
                       
                       const top = rect.top - rootRect.top;
                       const left = rect.left - rootRect.left;
