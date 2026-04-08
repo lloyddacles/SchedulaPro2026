@@ -19,7 +19,7 @@ router.get('/', async (req: any, res: Response) => {
 router.get('/:facultyId', async (req: any, res: Response) => {
   try {
     const [rows] = await pool.query(
-      'SELECT * FROM faculty_unavailability WHERE faculty_id = ? ORDER BY FIELD(day_of_week, "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"), start_time ASC',
+      `SELECT * FROM faculty_unavailability WHERE faculty_id = ? ORDER BY FIELD(day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'), start_time ASC`,
       [req.params.facultyId]
     );
     res.json(rows);
