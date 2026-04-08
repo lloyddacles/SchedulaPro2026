@@ -170,16 +170,26 @@ export default function Dashboard() {
   const empData = employment_breakdown.map(e => ({ name: e.type, value: Number(e.count) }));
 
   // Institutional Color Way Mapping
-  const getProgramColor = (programCode) => {
-    const code = (programCode || '').toUpperCase();
-    if (code.includes('BSTM')) return '#7c3aed'; // Purple
-    if (code.includes('BSAIS') || code.includes('BSA')) return '#eab308'; // Yellow
-    if (code.includes('BSIS')) return '#1e3a8a'; // Navy Blue
-    if (code.includes('BSE')) return '#7f1d1d'; // Maroon
-    if (code.includes('BSCRIM')) return '#f97316'; // Orange
-    if (code.includes('SHS') || code.includes('TVL') || code.includes('GAS') || code.includes('ABM') || code.includes('STEM') || code.includes('HUMSS')) 
-      return '#10b981'; // Green
-    return '#64748b'; // Default Slate
+  const getProgramColor = (programName) => {
+    const name = (programName || '').toUpperCase();
+    // Check by college name or code
+    if (name.includes('COMPUTER') || name.includes('BSIS') || name.includes('CCS')) return '#3b82f6'; // Deep Blue
+    if (name.includes('BUSINESS') || name.includes('BSTM') || name.includes('HM') || name.includes('CBM')) return '#8b5cf6'; // Vivid Purple
+    if (name.includes('CRIMINAL') || name.includes('BSCRIM') || name.includes('CCJ')) return '#f59e0b'; // Amber Orange
+    if (name.includes('EDUCATION') || name.includes('BSE') || name.includes('CED')) return '#ef4444'; // Soft Red
+    if (name.includes('ACCOUNTANCY') || name.includes('BSA') || name.includes('BSAIS')) return '#10b981'; // Emerald Green
+    if (name.includes('SHS') || name.includes('SENIOR')) return '#ec4899'; // Pink
+    
+    // Fallback based on specific keywords
+    if (name.includes('BSTM')) return '#7c3aed'; 
+    if (name.includes('BSAIS') || name.includes('BSA')) return '#eab308';
+    if (name.includes('BSIS')) return '#1e3a8a';
+    if (name.includes('BSE')) return '#7f1d1d';
+    if (name.includes('BSCRIM')) return '#f97316';
+    
+    // Generate a color based on string if not matched
+    const hash = name.split('').reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
+    return `hsl(${Math.abs(hash) % 360}, 65%, 55%)`; 
   };
 
   // ── Load Status Summary numbers ──────────────────────────────────
@@ -216,10 +226,44 @@ export default function Dashboard() {
             Sync
           </button>
           <button
-            onClick={() => window.open(`${api.defaults.baseURL}/export/faculty-loads?term_id=${activeTermId}&campus_id=${user?.campus_id || ''}`)}
+            onClick={async () => {
+              try {
+                const res = await api.get(`/export/faculty-loads`, { params: { term_id: activeTermId, campus_id: user?.campus_id } });
+                const rows = res.data;
+                if (!rows || rows.length === 0) return alert("No data available for export.");
+                
+                const headers = ["Faculty", "Department", "Type", "Max Hrs", "Subject Code", "Subject Name", "Units", "Section", "Status"];
+                const csvContent = [
+                  headers.join(","),
+                  ...rows.map(r => [
+                    `"${r.full_name}"`,
+                    `"${r.department}"`,
+                    `"${r.employment_type}"`,
+                    r.max_teaching_hours,
+                    `"${r.subject_code}"`,
+                    `"${r.subject_name}"`,
+                    r.required_hours,
+                    `"${r.program} ${r.year_level}${r.section}"`,
+                    `"${r.load_status}"`
+                  ].join(","))
+                ].join("\n");
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", `Faculty_Loads_Report_${new Date().toISOString().split('T')[0]}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              } catch (err) {
+                console.error("Export failed:", err);
+                alert("Critical failure during report generation. Verify system connectivity.");
+              }
+            }}
             className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:-translate-y-0.5 transition-all text-sm"
           >
-            <Download className="w-4 h-4" /> Export Report
+            <Download className="w-4 h-4" /> Export CSV Report
           </button>
         </div>
       </div>
@@ -341,9 +385,13 @@ export default function Dashboard() {
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie data={empData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={8} dataKey="value" stroke="none">
-                          {empData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.name === 'Regular' ? '#3b82f6' : '#8b5cf6'} />
-                          ))}
+                          {empData.map((entry, index) => {
+                            let color = '#3b82f6'; // Regular
+                            if (entry.name === 'Contractual') color = '#8b5cf6';
+                            if (entry.name === 'Probationary') color = '#a78bfa';
+                            if (entry.name === 'Part-time') color = '#ec4899';
+                            return <Cell key={`cell-${index}`} fill={color} />;
+                          })}
                         </Pie>
                         <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)', fontSize: '11px' }} />
                         <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '15px' }} />

@@ -7,9 +7,10 @@ router.get('/faculty-loads', async (req: Request, res: Response) => {
   try {
     const term_id = req.query.term_id;
     let query = `
-      SELECT f.full_name, f.department, f.designation,
+      SELECT f.full_name, f.department, f.employment_type, f.max_teaching_hours,
              s.subject_code, s.subject_name, s.units, s.required_hours,
-             p.code as program, sec.year_level, sec.name as section
+             p.code as program, sec.year_level, sec.name as section,
+             tl.status as load_status
       FROM teaching_loads tl
       JOIN faculty f ON tl.faculty_id = f.id
       JOIN subjects s ON tl.subject_id = s.id
@@ -33,7 +34,9 @@ router.get('/schedules', async (req: Request, res: Response) => {
     const term_id = req.query.term_id;
     let query = `
       SELECT sch.day_of_week, sch.start_time, sch.end_time, sch.room,
-             f.full_name as faculty, s.subject_code, sec.name as section, p.code as program
+             f.full_name as faculty, f.employment_type, s.subject_code, 
+             sec.name as section, p.code as program,
+             tl.status as load_status
       FROM schedules sch
       JOIN teaching_loads tl ON sch.teaching_load_id = tl.id
       JOIN faculty f ON tl.faculty_id = f.id
