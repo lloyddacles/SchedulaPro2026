@@ -72,7 +72,7 @@ export default function Layout() {
 
   // Initialize store data
   useEffect(() => {
-    fetchTerms();
+    fetchTerms(true);
     fetchSettings();
   }, [fetchTerms, fetchSettings]);
 
