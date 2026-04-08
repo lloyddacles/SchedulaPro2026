@@ -13,14 +13,27 @@ const transporter = nodemailer.createTransport({
 });
 
 /**
+ * Sends a generic stylized email
+ */
+export const sendEmail = async (to: string, subject: string, html: string) => {
+    const mailOptions = {
+        from: `"SchedulaPro" <${process.env.SMTP_USER}>`,
+        to,
+        subject,
+        html,
+    };
+
+    return transporter.sendMail(mailOptions);
+};
+
+/**
  * Sends a stylized OTP email to the user
  */
 export const sendOTPEmail = async (email: string, otp: string) => {
-    const mailOptions = {
-        from: `"SchedulaPro Auth" <${process.env.SMTP_USER}>`,
-        to: email,
-        subject: 'Your Password Recovery OTP',
-        html: `
+    return sendEmail(
+        email, 
+        'Your Password Recovery OTP', 
+        `
             <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 24px;">
                 <div style="text-align: center; margin-bottom: 30px;">
                     <h1 style="color: #3b82f6; font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px;">SchedulaPro</h1>
@@ -37,10 +50,8 @@ export const sendOTPEmail = async (email: string, otp: string) => {
                     <p style="color: #cbd5e1; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px;">SchedulaPro © 2026 · Institutional Node</p>
                 </div>
             </div>
-        `,
-    };
-
-    return transporter.sendMail(mailOptions);
+        `
+    );
 };
 
 export default transporter;
