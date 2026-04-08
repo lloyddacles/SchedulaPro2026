@@ -593,12 +593,28 @@ export default function Schedules() {
           </div>
 
           {/* Combined Operations Menu */}
-          <div className="flex items-center gap-2">
-            <button onClick={handleExportPDF} disabled={isGeneratingPDF} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 text-brand-700 dark:text-brand-400 border border-brand-200 dark:border-slate-700 rounded-xl font-bold shadow-sm transition h-[42px]">
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+            <button onClick={handleExportPDF} disabled={isGeneratingPDF} className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-white dark:bg-slate-800 text-brand-700 dark:text-brand-400 border border-brand-200 dark:border-slate-700 rounded-xl font-bold shadow-sm transition h-[42px] flex-1 sm:flex-none">
               {isGeneratingPDF ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               <span className="hidden sm:inline">PDF</span>
             </button>
-            <button onClick={() => { setError(''); setIsEditingSchedule(false); setSelectedScheduleId(null); setFormData({ teaching_load_id: '', day_of_week: 'Monday', start_time: '08:00', end_time: '09:00', room: '' }); setIsModalOpen(true); }} className="flex items-center gap-2 px-5 py-2 bg-brand-600 text-white rounded-xl font-bold shadow-lg hover:bg-brand-700 transition h-[42px]">
+            <button onClick={handlePrint} className="p-2 sm:px-3 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 border border-gray-200 dark:border-slate-700 rounded-xl font-semibold shadow-sm transition h-[42px] hidden sm:flex items-center">
+               <Printer className="w-4 h-4" />
+            </button>
+            <div className="hidden sm:flex border-l border-gray-200 dark:border-slate-700 h-8 mx-1"></div>
+            <button onClick={() => { 
+                setConfirmConfig({ title: 'Reset Schedules?', message: 'This will permanently delete all class blocks for the current academic term. This action cannot be undone.', type: 'reset', onConfirm: () => resetMutation.mutate(activeTermId) });
+                setIsConfirmModalOpen(true);
+              }} disabled={resetMutation.isPending} className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-red-50 text-red-600 border border-red-200 dark:bg-red-900/20 dark:border-red-900/50 dark:text-red-400 rounded-xl font-bold shadow-sm hover:bg-red-100 transition h-[42px] flex-1 sm:flex-none">
+                <RotateCcw className="w-4 h-4" /> <span className="hidden lg:inline">Reset</span>
+            </button>
+            <button onClick={() => { 
+                setConfirmConfig({ title: 'Auto-Schedule?', message: 'Run the algorithm to securely map unassigned approved loads into available slots within institutional constraints.', type: 'indigo', onConfirm: () => autoScheduleMutation.mutate({ termId: activeTermId, campusId: selectedCampusId }) });
+                setIsConfirmModalOpen(true);
+              }} disabled={autoScheduleMutation.isPending} className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition h-[42px] flex-1 sm:flex-none">
+                <Sparkles className="w-4 h-4" /> <span className="hidden sm:inline">Auto</span>
+            </button>
+            <button onClick={() => { setError(''); setIsEditingSchedule(false); setSelectedScheduleId(null); setFormData({ teaching_load_id: '', day_of_week: 'Monday', start_time: '08:00', end_time: '09:00', room: '' }); setIsModalOpen(true); }} className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2 bg-brand-600 text-white rounded-xl font-bold shadow-lg hover:bg-brand-700 transition h-[42px] flex-1 sm:flex-none">
               <PlusCircle className="w-4 h-4" /> <span className="hidden sm:inline">Book Slot</span>
             </button>
           </div>
