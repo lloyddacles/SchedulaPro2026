@@ -25,9 +25,14 @@ router.post('/login', validate(loginSchema), async (req: Request, res: Response,
       throw new ApiError(401, 'Invalid credentials', 'AUTH_FAILED');
     }
 
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+      throw new ApiError(500, 'Identity signing service is not configured (JWT_SECRET)', 'SERVER_MISCONFIGURED');
+    }
+
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role, faculty_id: user.faculty_id },
-      process.env.JWT_SECRET as string,
+      JWT_SECRET,
       { expiresIn: '1d' }
     );
 
