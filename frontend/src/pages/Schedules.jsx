@@ -564,6 +564,14 @@ export default function Schedules() {
                <option value="">Program</option>
                {programs.map(p => <option key={p.id} value={p.id}>{p.code}</option>)}
              </select>
+             <select value={selectedSectionId} onChange={e => { setSelectedSectionId(e.target.value); setSelectedFacultyId(''); setSelectedRoomName(''); }} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 dark:text-slate-200 outline-none">
+               <option value="">Section</option>
+               {sections.filter(s => (selectedProgramId ? s.program_id === Number(selectedProgramId) : true) && (selectedCampusId ? s.campus_id === Number(selectedCampusId) : true)).map(s => <option key={s.id} value={s.id}>{s.program_code}-{s.year_level}{s.name}</option>)}
+             </select>
+             <select value={selectedRoomName} onChange={e => { setSelectedRoomName(e.target.value); setSelectedFacultyId(''); setSelectedSectionId(''); }} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 dark:text-slate-200 outline-none">
+               <option value="">Facility</option>
+               {rooms.filter(r => selectedCampusId ? r.campus_id === Number(selectedCampusId) : true).map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
+             </select>
           </div>
 
           <div className="hidden lg:flex flex-wrap items-center gap-3">
@@ -588,6 +596,24 @@ export default function Schedules() {
                 {faculty
                   .filter(f => (selectedProgramId ? f.program_id === Number(selectedProgramId) : true) && (selectedCampusId ? f.campus_id === Number(selectedCampusId) : true))
                   .map(f => (<option key={f.id} value={f.id}>{f.full_name}</option>))}
+              </select>
+            </div>
+            <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-1.5 shadow-sm flex items-center gap-2">
+              <label className="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase">Section</label>
+              <select value={selectedSectionId} onChange={e => { setSelectedSectionId(e.target.value); setSelectedFacultyId(''); setSelectedRoomName(''); }} className="bg-transparent border-none text-emerald-700 dark:text-emerald-400 font-bold text-sm focus:ring-0 outline-none w-32 truncate">
+                <option value="">Master View</option>
+                {sections
+                  .filter(s => (selectedProgramId ? s.program_id === Number(selectedProgramId) : true) && (selectedCampusId ? s.campus_id === Number(selectedCampusId) : true))
+                  .map(s => (<option key={s.id} value={s.id}>{s.program_code}-{s.year_level}{s.name}</option>))}
+              </select>
+            </div>
+            <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-1.5 shadow-sm flex items-center gap-2">
+              <label className="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-widest">Facility</label>
+              <select value={selectedRoomName} onChange={e => { setSelectedRoomName(e.target.value); setSelectedFacultyId(''); setSelectedSectionId(''); }} className="bg-transparent border-none text-amber-700 dark:text-amber-400 font-bold text-sm focus:ring-0 outline-none w-32 truncate">
+                <option value="">Master View</option>
+                {rooms
+                  .filter(r => selectedCampusId ? r.campus_id === Number(selectedCampusId) : true)
+                  .map(r => (<option key={r.id} value={r.name}>{r.name}</option>))}
               </select>
             </div>
           </div>
