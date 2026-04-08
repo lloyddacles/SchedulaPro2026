@@ -158,9 +158,9 @@ export default function Schedules() {
       queryClient.invalidateQueries({ queryKey: ['schedules'] });
       const { data } = res;
       if (data.scheduled > 0) {
-        alert(`Successfully scheduled ${data.scheduled} class blocks. ${data.failed > 0 ? `Failed to schedule ${data.failed} classes due to zero legal constraints left.` : ''}`);
+        alert(`Successfully auto-scheduled ${data.scheduled} class blocks. ${data.failed > 0 ? `\n\nNote: ${data.failed} classes could not be mapped automatically because there are no available rooms left, or the instructor's schedule is too full.` : ''}`);
       } else if (data.failed > 0) {
-         alert(`Algorithm complete. ${data.failed} classes could not securely reserve a continuous block. Manual mapping forced.`);
+         alert(`Auto-Scheduler finished. ${data.failed} classes could not be mapped because of severe room shortages or instructor availability limits. Please review and schedule these remaining blocks manually.`);
       } else {
          alert('Matrix clean! All approved teaching loads are inherently mapped!');
       }
