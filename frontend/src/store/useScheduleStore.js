@@ -47,11 +47,11 @@ const useScheduleStore = create((set, get) => ({
     }
   },
 
-  archiveTerm: async (id, isArchived) => {
+  archiveTerm: async (id, isArchived, includeArchived = false) => {
     set({ isGlobalLoading: true });
     try {
       await api.put(`/terms/${id}/archive`, { is_archived: isArchived });
-      await get().fetchTerms(); // Refresh local state
+      await get().fetchTerms(includeArchived); // Refresh local state while retaining archived view if requested
       set({ isGlobalLoading: false });
     } catch (error) {
       console.error('Failed to archive term:', error);

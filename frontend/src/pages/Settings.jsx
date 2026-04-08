@@ -70,6 +70,7 @@ export default function SystemSettings() {
   const handlePromote = async (id) => {
     try {
       await promoteTerm(id);
+      fetchTerms(true); // Manually ensure settings strictly keeps full lifecycle data
       toast.success('Operational environment shifted.');
     } catch (err) {
       toast.error('Promotion failed.');
@@ -78,7 +79,7 @@ export default function SystemSettings() {
 
   const handleArchive = async (id, isArchived) => {
     try {
-      await archiveTerm(id, isArchived);
+      await archiveTerm(id, isArchived, true);
       toast.success(isArchived ? 'Moved to archive.' : 'Restored to operations.');
     } catch (err) {
       toast.error('Status transition failed.');
