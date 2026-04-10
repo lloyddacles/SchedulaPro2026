@@ -17,19 +17,5 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/setupTests.js',
-  },
-  build: {
-    chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          calendar: ['@fullcalendar/react', '@fullcalendar/timegrid', '@fullcalendar/interaction', '@fullcalendar/core'],
-          ui: ['framer-motion', 'lucide-react', 'react-hot-toast', 'recharts'],
-          query: ['@tanstack/react-query', 'axios'],
-          utils: ['jspdf', 'papaparse', 'socket.io-client', 'zustand']
-        }
-      }
-    }
   }
 })
