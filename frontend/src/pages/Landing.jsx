@@ -1,10 +1,45 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, useInView } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
   ArrowRight, CalendarCheck, Layers, Zap, 
   ShieldCheck, LayoutDashboard, BrainCircuit, Users, CheckCircle2, ChevronRight 
 } from 'lucide-react';
+
+function AnimatedCounter({ end, suffix = "", text }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
+
+  useEffect(() => {
+    if (isInView) {
+      let start = 0;
+      const duration = 2000;
+      const increment = end / (duration / 16);
+      const timer = setInterval(() => {
+        start += increment;
+        if (start >= end) {
+          setCount(end);
+          clearInterval(timer);
+        } else {
+          setCount(start);
+        }
+      }, 16);
+      return () => clearInterval(timer);
+    }
+  }, [isInView, end]);
+
+  return (
+    <div ref={ref} className="flex flex-col items-center justify-center p-6 w-full sm:w-1/3">
+      <span className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-brand-600 to-indigo-600 dark:from-white dark:to-slate-400">
+        {Math.floor(count).toLocaleString()}{suffix}
+      </span>
+      <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-2 text-center">
+        {text}
+      </span>
+    </div>
+  );
+}
 
 export default function Landing() {
   // Animation Variants
@@ -90,6 +125,16 @@ export default function Landing() {
             <Link to="/login" className="px-8 py-5 rounded-2xl bg-gradient-to-r from-brand-500 to-indigo-600 text-white font-black text-sm uppercase tracking-widest shadow-2xl shadow-brand-500/30 hover:shadow-brand-500/50 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
               <LayoutDashboard className="w-5 h-5" /> Initialize Dashboard
             </Link>
+          </motion.div>
+
+          {/* Dynamic Metrics Counter */}
+          <motion.div 
+            variants={fadeUp} 
+            className="w-full max-w-4xl mx-auto mt-16 glass rounded-[2rem] border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl shadow-xl flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-slate-200 dark:divide-white/10 overflow-hidden"
+          >
+            <AnimatedCounter end={10000} suffix="+" text="Class Blocks Handled" />
+            <AnimatedCounter end={99} suffix=".9%" text="Conflict Reduction" />
+            <AnimatedCounter end={0} suffix="" text="System Intrusions" />
           </motion.div>
         </motion.div>
       </main>
