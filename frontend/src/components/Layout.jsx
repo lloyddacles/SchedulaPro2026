@@ -210,14 +210,16 @@ export default function Layout() {
               >
                 <FileSpreadsheet className="w-4 h-4 mr-3 flex-shrink-0" /> CSV Import
               </button>
-              <button
-                onClick={() => { setIsPasswordModalOpen(true); closeSidebar(); }}
-                className="w-full flex items-center px-3 py-2.5 text-sm font-semibold rounded-xl transition-all text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800"
-              >
-                <Key className="w-4 h-4 mr-3 flex-shrink-0" /> Security Keys
-              </button>
             </>
           )}
+
+          {/* Core User Security Settings */}
+          <button
+            onClick={() => { setIsPasswordModalOpen(true); closeSidebar(); }}
+            className="w-full flex items-center px-3 py-2.5 text-sm font-semibold rounded-xl transition-all text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800"
+          >
+            <Key className="w-4 h-4 mr-3 flex-shrink-0" /> Security Keys
+          </button>
           <button
             onClick={handleLogout}
             className="w-full flex items-center px-3 py-2.5 text-sm font-semibold rounded-xl transition-all text-red-400 hover:bg-red-900/20"

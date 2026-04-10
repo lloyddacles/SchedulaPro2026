@@ -4,11 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Settings, Save, Building2, Monitor, Image, RefreshCw, CheckCircle, 
   CalendarPlus, Archive, CheckCircle2, PlusCircle, Info, Database, 
-  ShieldCheck, Zap, ArrowRight, Layout 
+  ShieldCheck, Zap, ArrowRight, Layout, KeyRound, ShieldAlert
 } from 'lucide-react';
 import api from '../api';
 import useScheduleStore from '../store/useScheduleStore';
 import toast from 'react-hot-toast';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 
 export default function SystemSettings() {
   const { 
@@ -24,6 +25,7 @@ export default function SystemSettings() {
   const [showArchived, setShowArchived] = useState(false);
   const [isAddingTerm, setIsAddingTerm] = useState(false);
   const [newTermName, setNewTermName] = useState('');
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   useEffect(() => {
     fetchTerms(true);
@@ -430,9 +432,32 @@ export default function SystemSettings() {
                  </div>
                </div>
             </div>
+
+            {/* System Root Authentication Block */}
+            <div className="mt-8 border-t border-gray-100 dark:border-slate-800 pt-6">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 rounded-2xl bg-brand-500/10 text-brand-500">
+                     <ShieldAlert className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-widest">SysRoot Access Node</h3>
+                    <p className="text-xs font-medium text-gray-500 dark:text-slate-400 leading-relaxed">
+                      Override the default installation credentials here. Rotating this underlying encryption key securely protects your database infrastructure.
+                    </p>
+                    <button 
+                      onClick={() => setIsPasswordModalOpen(true)}
+                      className="mt-4 px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold text-xs uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-gray-900/20 dark:shadow-white/10 flex items-center gap-2"
+                    >
+                      <KeyRound className="w-4 h-4" /> Rotate Root Key
+                    </button>
+                  </div>
+                </div>
+            </div>
           </div>
         </motion.div>
       </div>
+
+      <ChangePasswordModal isOpen={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)} />
     </motion.div>
   );
 }
