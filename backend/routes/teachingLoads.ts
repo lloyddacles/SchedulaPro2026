@@ -15,6 +15,7 @@ router.use(authenticateToken);
 router.get('/', async (req: Request, res: Response, next: express.NextFunction) => {
   try {
     const { term_id, archived, campus_id } = req.query;
+    let query = `
       SELECT tl.*, 
              f.full_name as faculty_name, d.name as department, f.max_teaching_hours, f.department_id as faculty_department_id,
              f2.full_name as co_faculty_1_name, f3.full_name as co_faculty_2_name,
@@ -30,6 +31,7 @@ router.get('/', async (req: Request, res: Response, next: express.NextFunction) 
       JOIN sections sec ON tl.section_id = sec.id
       JOIN programs p ON sec.program_id = p.id
       LEFT JOIN users u ON tl.reviewed_by = u.id
+    `;
     const params: any[] = [];
     const conditions: string[] = [];
 
