@@ -3,8 +3,9 @@ import { motion, useInView } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
   ArrowRight, CalendarCheck, Layers, Zap, 
-  ShieldCheck, LayoutDashboard, BrainCircuit, Users, CheckCircle2, ChevronRight 
+  ShieldCheck, LayoutDashboard, BrainCircuit, Users, CheckCircle2, ChevronRight, Moon, Sun
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 function AnimatedCounter({ end, suffix = "", text }) {
   const [count, setCount] = useState(0);
@@ -42,6 +43,8 @@ function AnimatedCounter({ end, suffix = "", text }) {
 }
 
 export default function Landing() {
+  const { theme, toggleTheme } = useTheme();
+
   // Animation Variants
   const fadeUp = {
     hidden: { opacity: 0, y: 30 },
@@ -85,11 +88,19 @@ export default function Landing() {
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="flex items-center gap-4"
+          className="flex items-center gap-2 sm:gap-4 flex-shrink-0"
         >
+          <button
+            onClick={toggleTheme}
+            className="p-2.5 rounded-full bg-slate-200/50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 hover:bg-brand-500/10 hover:text-brand-600 dark:hover:text-brand-400 transition-all border border-slate-300/50 dark:border-white/5 active:scale-95"
+            aria-label="Toggle Theme"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
+          </button>
+
           <Link 
             to="/login"
-            className="group relative px-6 py-2.5 rounded-full overflow-hidden bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-sm tracking-wide transition-transform hover:scale-105 active:scale-95 shadow-xl shadow-slate-900/20 dark:shadow-white/10"
+            className="group relative px-4 sm:px-6 py-2 sm:py-2.5 rounded-full overflow-hidden bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-xs sm:text-sm tracking-wide transition-transform hover:scale-[1.03] active:scale-95 shadow-xl shadow-slate-900/20 dark:shadow-white/10"
           >
             <span className="relative z-10 flex items-center gap-2">
               Access Institutional Node <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
