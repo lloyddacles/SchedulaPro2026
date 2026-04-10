@@ -66,6 +66,13 @@
 }
 
 /* ── Ghost Mode Drag-and-Drop Feedback ── */
+@keyframes shakeWarning {
+  0%, 100% { transform: scale(1.02) translateX(0); }
+  25% { transform: scale(1.02) translateX(-4px) rotate(-1deg); }
+  50% { transform: scale(1.02) translateX(4px) rotate(1deg); }
+  75% { transform: scale(1.02) translateX(-4px) rotate(-1deg); }
+}
+
 .fc-event-dragging {
   opacity: 0.9 !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
@@ -73,19 +80,26 @@
   transition: transform 0.1s ease, background-color 0.1s ease, border-color 0.1s ease !important;
 }
 
-/* Invalid Drop Target (Conflict) */
-.fc-event-dragging.fc-not-allowed, 
-.fc-event-dragging.fc-not-allowed * {
-  background-color: rgba(239, 68, 68, 0.9) !important; /* Red 500 */
+/* Invalid Drop Target (Conflict - Ghost Mode Red Flash) */
+.fc-event-dragging.fc-not-allowed {
+  background-color: rgba(239, 68, 68, 0.95) !important;
   border-color: rgb(220, 38, 38) !important;
+  color: white !important;
+  animation: shakeWarning 0.35s ease-in-out infinite !important;
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.6) !important;
+}
+.fc-event-dragging.fc-not-allowed * {
   color: white !important;
 }
 
-/* Valid Drop Target */
-.fc-event-dragging:not(.fc-not-allowed),
-.fc-event-dragging:not(.fc-not-allowed) * {
-  background-color: rgba(34, 197, 94, 0.9) !important; /* Green 500 */
+/* Valid Drop Target (Ghost Mode Green Glow) */
+.fc-event-dragging:not(.fc-not-allowed) {
+  background-color: rgba(34, 197, 94, 0.95) !important;
   border-color: rgb(22, 163, 74) !important;
+  color: white !important;
+  box-shadow: 0 0 25px rgba(34, 197, 94, 0.4) !important;
+}
+.fc-event-dragging:not(.fc-not-allowed) * {
   color: white !important;
 }
 /* Mobile: ensure page content areas don't overflow */
