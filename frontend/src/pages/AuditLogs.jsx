@@ -4,7 +4,8 @@ import api from '../api';
 import { 
   Shield, Clock, HardDrive, TerminalSquare, Search, 
   Activity, ArrowUpRight, Filter, Download, UserCheck, 
-  Fingerprint, ChevronRight, X, AlertCircle
+  Fingerprint, ChevronRight, X, AlertCircle, PlusCircle,
+  RefreshCw, Archive
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
