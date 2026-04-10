@@ -8,7 +8,14 @@ const router = express.Router();
 router.get('/', async (req: any, res: Response) => {
   const isArchived = req.query.archived === 'true' ? 1 : 0;
   try {
-    const [rows] = await pool.query('SELECT * FROM programs WHERE is_archived = ? ORDER BY type ASC, code ASC', [isArchived]);
+    const [rows] = await pool.query(
+      `SELECT p.*, d.name as department_name, d.code as department_code 
+       FROM programs p 
+       LEFT JOIN departments d ON p.department_id = d.id 
+       WHERE p.is_archived = ? 
+       ORDER BY p.type ASC, p.code ASC`,
+      [isArchived]
+    );
     res.json(rows);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -16,14 +23,14 @@ router.get('/', async (req: any, res: Response) => {
 });
 
 router.post('/', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
-  const { code, name, type } = req.body;
+  const { code, name, type, department_id } = req.body;
   try {
     const [result]: any = await pool.query(
-      'INSERT INTO programs (code, name, type) VALUES (?, ?, ?)',
-      [code, name, type || 'College']
+      'INSERT INTO programs (code, name, type, department_id) VALUES (?, ?, ?, ?)',
+      [code, name, type || 'College', department_id || null]
     );
-    await logAudit('CREATE', 'Program', result.insertId, { code, name }, req.user.username);
-    res.status(201).json({ id: result.insertId, code, name, type });
+    await logAudit('CREATE', 'Program', result.insertId, { code, name, department_id }, req.user.username);
+    res.status(201).json({ id: result.insertId, code, name, type, department_id });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -60,13 +67,13 @@ router.post('/bulk-upload', authorizeRoles('admin', 'program_head', 'program_ass
 });
 
 router.put('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
-  const { code, name, type } = req.body;
+  const { code, name, type, department_id } = req.body;
   try {
     await pool.query(
-      'UPDATE programs SET code = ?, name = ?, type = ? WHERE id = ?',
-      [code, name, type, req.params.id]
+      'UPDATE programs SET code = ?, name = ?, type = ?, department_id = ? WHERE id = ?',
+      [code, name, type, department_id || null, req.params.id]
     );
-    await logAudit('UPDATE', 'Program', req.params.id as string, { code }, req.user.username);
+    await logAudit('UPDATE', 'Program', req.params.id as string, { code, department_id }, req.user.username);
     res.json({ message: 'Program updated' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
