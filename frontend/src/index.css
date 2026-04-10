@@ -67,17 +67,17 @@
 
 /* ── Ghost Mode Drag-and-Drop Feedback ── */
 @keyframes shakeWarning {
-  0%, 100% { transform: scale(1.02) translateX(0); }
-  25% { transform: scale(1.02) translateX(-4px) rotate(-1deg); }
-  50% { transform: scale(1.02) translateX(4px) rotate(1deg); }
-  75% { transform: scale(1.02) translateX(-4px) rotate(-1deg); }
+  0%, 100% { margin-left: 0; }
+  25% { margin-left: -4px; }
+  50% { margin-left: 4px; }
+  75% { margin-left: -4px; }
 }
 
 .fc-event-dragging {
   opacity: 0.9 !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
-  transform: scale(1.02);
-  transition: transform 0.1s ease, background-color 0.1s ease, border-color 0.1s ease !important;
+  /* CRITICAL: Do NOT transition transform or use transform here! FullCalendar needs it to track the mouse coordinates immediately. */
+  transition: background-color 0.1s ease, border-color 0.1s ease, box-shadow 0.1s ease !important;
 }
 
 /* Invalid Drop Target (Conflict - Ghost Mode Red Flash) */
@@ -85,8 +85,10 @@
   background-color: rgba(239, 68, 68, 0.95) !important;
   border-color: rgb(220, 38, 38) !important;
   color: white !important;
-  animation: shakeWarning 0.35s ease-in-out infinite !important;
   box-shadow: 0 0 25px rgba(239, 68, 68, 0.6) !important;
+}
+.fc-event-dragging.fc-not-allowed .fc-event-main {
+  animation: shakeWarning 0.35s ease-in-out infinite !important;
 }
 .fc-event-dragging.fc-not-allowed * {
   color: white !important;
