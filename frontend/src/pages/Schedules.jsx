@@ -939,45 +939,75 @@ export default function Schedules() {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Facility</label>
-                  <select className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 bg-gray-50 dark:bg-slate-700" value={formData.room} onChange={e => setFormData({...formData, room: e.target.value})} required>
+                  <select className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 bg-gray-50 dark:bg-slate-700 font-bold" value={formData.room} onChange={e => setFormData({...formData, room: e.target.value})} required>
                     <option value="">-- Select Room --</option>
-                    {Object.entries(
-                      rooms.reduce((acc, r) => {
-                        const campusName = campuses.find(c => c.id === r.campus_id)?.name || 'Unknown Campus';
-                        if (!acc[campusName]) acc[campusName] = [];
-                        acc[campusName].push(r);
-                        return acc;
-                      }, {})
-                    ).sort(([a], [b]) => a.localeCompare(b)).map(([campusName, campusRooms]) => (
-                      <optgroup key={campusName} label={campusName}>
-                        {campusRooms.map(r => (
-                          <option key={r.id} value={r.name}>{r.name} ({r.type}) — Cap: {r.capacity || '?'}</option>
-                        ))}
-                      </optgroup>
-                    ))}
+                    {(() => {
+                      const activeLoad = loads.find(l => l.id === Number(formData.teaching_load_id));
+                      const sectionDeptId = activeLoad?.program_department_id;
+
+                      return Object.entries(
+                        rooms.reduce((acc, r) => {
+                          const campusName = campuses.find(c => c.id === r.campus_id)?.name || 'Unknown Campus';
+                          if (!acc[campusName]) acc[campusName] = [];
+                          acc[campusName].push(r);
+                          return acc;
+                        }, {})
+                      ).sort(([a], [b]) => a.localeCompare(b)).map(([campusName, campusRooms]) => (
+                        <optgroup key={campusName} label={campusName}>
+                          {campusRooms.map(r => {
+                            const isHomeRoom = sectionDeptId && Number(r.department_id) === Number(sectionDeptId);
+                            return (
+                              <option key={r.id} value={r.name} className={isHomeRoom ? 'font-black text-brand-600' : ''}>
+                                {isHomeRoom ? '★ ' : ''}{r.name} ({r.type}) {isHomeRoom ? '[Home Room]' : r.department_code ? `[${r.department_code}]` : ''} — Cap: {r.capacity || '?'}
+                              </option>
+                            );
+                          })}
+                        </optgroup>
+                      ));
+                    })()}
                   </select>
                 </div>
               </div>
-              {/* ── Capacity Match Indicator (Phase 1) ─────────────────────── */}
+              {/* ── Context-Aware Optimization Indicator (Phase 3) ──────────── */}
               {(() => {
                 const load = loads.find(l => l.id === Number(formData.teaching_load_id));
                 const room = rooms.find(r => r.name === formData.room);
-                if (!load || !room || !room.capacity) return null;
+                if (!load || !room) return null;
+
                 const section = sections.find(s => s.id === load.section_id);
                 const enrollment = section?.student_count || 0;
-                const capacity = room.capacity;
-                const ratio = enrollment / capacity;
+                const capacity = room.capacity || 0;
+                const ratio = capacity > 0 ? enrollment / capacity : 0;
+                
                 const isOver = ratio > 1;
                 const isTight = ratio > 0.9 && ratio <= 1;
-                const color = isOver ? 'red' : isTight ? 'amber' : 'emerald';
-                const label = isOver ? '🔴 Overflowed' : isTight ? '🟡 Tight Fit' : '🟢 Fits';
-                const bgClass = isOver ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:text-red-400' : isTight ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400';
+                const isHomeRoom = Number(load.program_department_id) === Number(room.department_id);
+                const isForeignRoom = room.department_id && !isHomeRoom;
+
                 return (
-                  <div className={`flex items-center justify-between px-4 py-3 rounded-xl border text-xs font-bold ${bgClass}`}>
-                    <span>{label} — {enrollment} students / {capacity} seats</span>
-                    <div className="h-2 w-24 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${isOver ? 'bg-red-500' : isTight ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(ratio * 100, 100)}%` }} />
-                    </div>
+                  <div className="space-y-2">
+                     <div className={`flex items-center justify-between px-4 py-3 rounded-xl border text-xs font-bold ${
+                       isOver ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:text-red-400' 
+                       : isTight ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400' 
+                       : 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'
+                     }`}>
+                        <span>{isOver ? '🔴 Overflowed' : isTight ? '🟡 Tight Fit' : '🟢 Fits'} — {enrollment} / {capacity} seats</span>
+                        <div className="h-2 w-24 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${isOver ? 'bg-red-500' : isTight ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(ratio * 100, 100)}%` }} />
+                        </div>
+                     </div>
+                     
+                     {isHomeRoom && (
+                       <div className="flex items-center gap-2 px-4 py-2 bg-brand-50 border border-brand-200 text-brand-700 dark:bg-brand-900/20 dark:border-brand-800 dark:text-brand-400 rounded-xl text-[10px] font-black uppercase tracking-widest animate-pulse">
+                         <Sparkles className="w-3 h-3" /> Home Room Advantage: Optimized Assignment
+                       </div>
+                     )}
+                     
+                     {isForeignRoom && (
+                       <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-400 rounded-xl text-[10px] font-black uppercase tracking-widest">
+                         <ShieldAlert className="w-3 h-3 text-amber-500" /> Cross-Departmental Venue: Consult {room.department_code} Dean
+                       </div>
+                     )}
                   </div>
                 );
               })()}

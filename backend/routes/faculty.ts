@@ -15,6 +15,7 @@ router.get('/', async (req: Request, res: Response, next: express.NextFunction) 
   try {
     let query = `
       SELECT f.*, p.code as program_code, p.name as program_name, c.name as campus_name,
+             d.name as department_name, d.code as department_code,
              (SELECT JSON_ARRAYAGG(subject_id) FROM faculty_specializations WHERE faculty_id = f.id) as specializations_array,
              (SELECT COALESCE(SUM(s.required_hours), 0) 
               FROM teaching_loads tl 
@@ -24,6 +25,7 @@ router.get('/', async (req: Request, res: Response, next: express.NextFunction) 
       FROM faculty f
       LEFT JOIN programs p ON f.program_id = p.id
       LEFT JOIN campuses c ON f.campus_id = c.id
+      LEFT JOIN departments d ON f.department_id = d.id
       WHERE f.is_archived = ?
     `;
     const params: any[] = term_id ? [term_id, isArchived] : [isArchived];
@@ -42,14 +44,14 @@ router.get('/', async (req: Request, res: Response, next: express.NextFunction) 
 });
 
 router.post('/', authorizeRoles('admin', 'program_head', 'program_assistant'), validate(facultySchema), async (req: any, res: Response, next: express.NextFunction) => {
-  const { full_name, program_id, campus_id, employment_type, max_teaching_hours, specializations, department } = req.body;
+  const { full_name, program_id, campus_id, employment_type, max_teaching_hours, specializations, department_id } = req.body;
 
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
     const [result]: any = await connection.query(
-      'INSERT INTO faculty (full_name, program_id, campus_id, employment_type, max_teaching_hours, department) VALUES (?, ?, ?, ?, ?, ?)',
-      [full_name, program_id || 1, campus_id || null, employment_type || 'Regular', max_teaching_hours || 24, department || 'General Education']
+      'INSERT INTO faculty (full_name, program_id, campus_id, employment_type, max_teaching_hours, department_id) VALUES (?, ?, ?, ?, ?, ?)',
+      [full_name, program_id || 1, campus_id || null, employment_type || 'Regular', max_teaching_hours || 24, department_id || null]
     );
     const facultyId = result.insertId;
 
@@ -71,14 +73,14 @@ router.post('/', authorizeRoles('admin', 'program_head', 'program_assistant'), v
 });
 
 router.put('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), validate(facultySchema), async (req: any, res: Response, next: express.NextFunction) => {
-  const { full_name, program_id, campus_id, employment_type, max_teaching_hours, specializations, department } = req.body;
+  const { full_name, program_id, campus_id, employment_type, max_teaching_hours, specializations, department_id } = req.body;
   const facultyId = req.params.id;
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
     const [updResult]: any = await connection.query(
-      'UPDATE faculty SET full_name = ?, program_id = ?, campus_id = ?, employment_type = ?, max_teaching_hours = ?, department = ? WHERE id = ?',
-      [full_name, program_id, campus_id || null, employment_type, max_teaching_hours, department, facultyId]
+      'UPDATE faculty SET full_name = ?, program_id = ?, campus_id = ?, employment_type = ?, max_teaching_hours = ?, department_id = ? WHERE id = ?',
+      [full_name, program_id, campus_id || null, employment_type, max_teaching_hours, department_id || null, facultyId]
     );
 
     if (updResult.affectedRows === 0) throw new ApiError(404, 'Faculty not found', 'NOT_FOUND');
@@ -129,19 +131,22 @@ router.post('/bulk-upload', authorizeRoles('admin', 'program_head', 'program_ass
     // Mapping maps
     const [programs]: any = await connection.query('SELECT id, code from programs');
     const [campuses]: any = await connection.query('SELECT id, name from campuses');
+    const [departments]: any = await connection.query('SELECT id, code from departments');
     
     const programMap = new Map(programs.map((p: any) => [p.code.toUpperCase(), p.id]));
     const campusMap = new Map(campuses.map((c: any) => [c.name.toUpperCase(), c.id]));
+    const deptMap = new Map(departments.map((d: any) => [d.code.toUpperCase(), d.id]));
 
     for (const fac of faculty) {
-      const { full_name, program_code, campus_name, employment_type, max_teaching_hours, department } = fac;
+      const { full_name, program_code, campus_name, employment_type, max_teaching_hours, department_code } = fac;
       
       const pId = programMap.get(program_code?.toUpperCase()) || 1;
       const cId = campusMap.get(campus_name?.toUpperCase()) || null;
+      const dId = deptMap.get(department_code?.toUpperCase()) || null;
 
       await connection.query(
-        'INSERT INTO faculty (full_name, program_id, campus_id, employment_type, max_teaching_hours, department) VALUES (?, ?, ?, ?, ?, ?)',
-        [full_name, pId, cId, employment_type || 'Regular', max_teaching_hours || 24, department || 'General Education']
+        'INSERT INTO faculty (full_name, program_id, campus_id, employment_type, max_teaching_hours, department_id) VALUES (?, ?, ?, ?, ?, ?)',
+        [full_name, pId, cId, employment_type || 'Regular', max_teaching_hours || 24, dId]
       );
     }
 

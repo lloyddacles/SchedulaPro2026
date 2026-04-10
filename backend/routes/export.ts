@@ -7,12 +7,13 @@ router.get('/faculty-loads', async (req: Request, res: Response) => {
   try {
     const term_id = req.query.term_id;
     let query = `
-      SELECT f.full_name, f.department, f.employment_type, f.max_teaching_hours,
+      SELECT f.full_name, d.name as department, f.employment_type, f.max_teaching_hours,
              s.subject_code, s.subject_name, s.units, s.required_hours,
              p.code as program, sec.year_level, sec.name as section,
              tl.status as load_status
       FROM teaching_loads tl
       JOIN faculty f ON tl.faculty_id = f.id
+      LEFT JOIN departments d ON f.department_id = d.id
       JOIN subjects s ON tl.subject_id = s.id
       JOIN sections sec ON tl.section_id = sec.id
       JOIN programs p ON sec.program_id = p.id

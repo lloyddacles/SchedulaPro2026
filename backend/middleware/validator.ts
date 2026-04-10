@@ -98,18 +98,19 @@ export const roomSchema = z.object({
   type: z.enum(['Lecture', 'Computer Lab', 'Science Lab', 'Kitchen', 'Court', 'Engineering Lab', 'Laboratory', 'Field']).default('Lecture'),
   capacity: z.coerce.number().int().min(1).default(40),
   campus_id: nullableId,
+  department_id: nullableId,
   notes: z.string().optional(),
   status: z.string().default('active')
 });
 
 export const facultySchema = z.object({
   full_name: z.string().min(2, "Full name is required"),
-  department: z.string().min(2, "Department is required"),
+  department_id: nullableId,
   specialization: z.string().optional(),
   max_teaching_hours: z.coerce.number().int().min(0).default(24),
   program_id: nullableId,
   campus_id: nullableId,
-  employment_type: z.enum(['Regular', 'Part-time', 'Contractual']).default('Regular'),
+  employment_type: z.enum(['Regular', 'Part-time', 'Contractual', 'Probationary']).default('Regular'),
   specializations: z.array(z.coerce.number().int().positive()).optional()
 });
 

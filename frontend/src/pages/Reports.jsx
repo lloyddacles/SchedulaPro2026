@@ -31,28 +31,42 @@ const truncate = (str, n) => (str.length > n ? str.substr(0, n - 1) + '...' : st
 export default function Reports() {
   const { activeTermId, terms } = useScheduleStore();
   const reportRef = useRef(null);
+  const [selectedDeptId, setSelectedDeptId] = useState('');
+
+  const { data: departments = [] } = useQuery({
+    queryKey: ['departments'],
+    queryFn: async () => (await api.get('/departments')).data
+  });
 
   const { data: facultyLoads, isLoading: loadingFac } = useQuery({
-    queryKey: ['reportFaculty', activeTermId],
-    queryFn: async () => (await api.get('/reports/faculty-workloads', { params: { term_id: activeTermId }})).data,
+    queryKey: ['reportFaculty', activeTermId, selectedDeptId],
+    queryFn: async () => (await api.get('/reports/faculty-workloads', { 
+      params: { term_id: activeTermId, department_id: selectedDeptId }
+    })).data,
     enabled: !!activeTermId
   });
 
   const { data: roomUtil, isLoading: loadingRoom } = useQuery({
-    queryKey: ['reportRooms', activeTermId],
-    queryFn: async () => (await api.get('/reports/room-utilization', { params: { term_id: activeTermId }})).data,
+    queryKey: ['reportRooms', activeTermId, selectedDeptId],
+    queryFn: async () => (await api.get('/reports/room-utilization', { 
+      params: { term_id: activeTermId, department_id: selectedDeptId }
+    })).data,
     enabled: !!activeTermId
   });
 
   const { data: programDist, isLoading: loadingProg } = useQuery({
-    queryKey: ['reportPrograms', activeTermId],
-    queryFn: async () => (await api.get('/reports/program-distribution', { params: { term_id: activeTermId }})).data,
+    queryKey: ['reportPrograms', activeTermId, selectedDeptId],
+    queryFn: async () => (await api.get('/reports/program-distribution', { 
+      params: { term_id: activeTermId, department_id: selectedDeptId }
+    })).data,
     enabled: !!activeTermId
   });
 
   const { data: overallStats, isLoading: loadingOverall } = useQuery({
-    queryKey: ['reportOverall', activeTermId],
-    queryFn: async () => (await api.get('/reports/overall-stats', { params: { term_id: activeTermId }})).data,
+    queryKey: ['reportOverall', activeTermId, selectedDeptId],
+    queryFn: async () => (await api.get('/reports/overall-stats', { 
+      params: { term_id: activeTermId, department_id: selectedDeptId }
+    })).data,
     enabled: !!activeTermId
   });
 
@@ -69,10 +83,12 @@ export default function Reports() {
       overallStats
     };
 
+    const deptName = departments.find(d => d.id == selectedDeptId)?.name || 'All Departments';
+
     generateAnalyticsPDF(
       data, 
-      term.name, 
-      'Main Campus', // Could be dynamic from settings if needed
+      `${term.name} (${deptName})`, 
+      'Main Campus', 
       'CARD-MRI Development Institute, Inc.' 
     );
   };
@@ -126,9 +142,24 @@ export default function Reports() {
           <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white font-display tracking-tight flex items-center gap-4">
             <Activity className="w-10 h-10 text-brand-600" /> Administrative Analytics
           </h1>
-          <p className="mt-2 text-gray-500 dark:text-slate-400 font-medium text-lg">
-            System pulse for <span className="text-brand-600 dark:text-brand-400 font-bold">{terms.find(t => t.id === activeTermId)?.name}</span>
-          </p>
+          <div className="flex items-center gap-3 mt-2">
+            <p className="text-gray-500 dark:text-slate-400 font-medium text-lg">
+              System pulse for <span className="text-brand-600 dark:text-brand-400 font-bold">{terms.find(t => t.id === activeTermId)?.name}</span>
+            </p>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 ml-4 print:hidden">
+              <Building2 className="w-4 h-4 text-gray-400" />
+              <select 
+                value={selectedDeptId} 
+                onChange={(e) => setSelectedDeptId(e.target.value)}
+                className="bg-transparent text-xs font-black text-gray-700 dark:text-white outline-none min-w-[180px] uppercase tracking-tighter"
+              >
+                <option value="">Global Performance</option>
+                {departments.map(d => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
         <div className="flex items-center gap-3 print:hidden">
           <button onClick={handlePrint} className="glass flex items-center gap-2 px-6 py-3 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-white rounded-2xl hover:bg-white/50 dark:hover:bg-slate-800/50 transition shadow-sm font-bold text-sm">

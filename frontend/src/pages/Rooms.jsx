@@ -90,7 +90,7 @@ export default function Rooms() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
-  const [formData, setFormData] = useState({ name: '', type: 'Lecture', capacity: 40, campus_id: '', status: 'active' });
+  const [formData, setFormData] = useState({ name: '', type: 'Lecture', capacity: 40, campus_id: '', department_id: '', status: 'active' });
   const [error, setError] = useState('');
   
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -109,6 +109,11 @@ export default function Rooms() {
   const { data: campuses = [] } = useQuery({
     queryKey: ['campuses'],
     queryFn: async () => (await api.get('/campuses')).data
+  });
+
+  const { data: departments = [] } = useQuery({
+    queryKey: ['departments'],
+    queryFn: async () => (await api.get('/departments')).data
   });
 
   const createMutation = useMutation({
@@ -147,12 +152,12 @@ export default function Rooms() {
   const closeModal = () => {
     setIsModalOpen(false);
     setIsEditing(false);
-    setFormData({ name: '', type: 'Lecture', capacity: 40, campus_id: '', status: 'active' });
+    setFormData({ name: '', type: 'Lecture', capacity: 40, campus_id: '', department_id: '', status: 'active' });
     setError('');
   };
 
   const openEditModal = (r) => {
-    setFormData({ name: r.name, type: r.type, capacity: r.capacity, campus_id: r.campus_id || '', status: r.status || 'active' });
+    setFormData({ name: r.name, type: r.type, capacity: r.capacity, campus_id: r.campus_id || '', department_id: r.department_id || '', status: r.status || 'active' });
     setCurrentId(r.id);
     setIsEditing(true);
     setIsModalOpen(true);
@@ -160,8 +165,9 @@ export default function Rooms() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (isEditing) updateMutation.mutate(formData);
-    else createMutation.mutate(formData);
+    const payload = { ...formData, department_id: formData.department_id || null };
+    if (isEditing) updateMutation.mutate(payload);
+    else createMutation.mutate(payload);
   };
 
   const groupedRooms = useMemo(() => {
@@ -186,7 +192,7 @@ export default function Rooms() {
         <div className="flex items-center gap-3">
           <BulkActions 
             entity="rooms"
-            columns={['name', 'type', 'capacity', 'campus_name', 'notes']}
+            columns={['name', 'type', 'capacity', 'campus_name', 'department_code', 'notes']}
           />
           <button 
             onClick={() => setShowArchived(!showArchived)} 
@@ -271,7 +277,9 @@ export default function Rooms() {
                     </div>
                     <div>
                       <h3 className="text-2xl font-black text-slate-900 dark:text-white font-display leading-tight">{r.name}</h3>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">{r.type}</p>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">
+                        {r.type} {r.department_code && <span className="text-brand-500 dark:text-brand-400">| {r.department_code}</span>}
+                      </p>
                     </div>
                   </div>
 
@@ -368,6 +376,19 @@ export default function Rooms() {
                     ))}
                   </select>
                 </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Assign to Department (Optional)</label>
+                  <select 
+                    className="w-full border-2 border-slate-100 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 outline-none focus:border-brand-500 bg-white dark:bg-slate-900 dark:text-white font-bold"
+                    value={formData.department_id} 
+                    onChange={e => setFormData({...formData, department_id: e.target.value})}
+                  >
+                    <option value="">-- Institutional Shared --</option>
+                    {departments.map(d => (
+                      <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
+                    ))}
+                  </select>
+                </div>
                 <div>
                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Type</label>
                   <select 
@@ -381,6 +402,7 @@ export default function Rooms() {
                     <option value="Kitchen">Culinary Kitchen</option>
                     <option value="Court">Gym / Court / Field</option>
                     <option value="Engineering Lab">Engineering Lab</option>
+                    <option value="Laboratory">General Laboratory</option>
                   </select>
                 </div>
                 <div>

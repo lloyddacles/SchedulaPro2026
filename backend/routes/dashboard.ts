@@ -44,10 +44,11 @@ router.get('/summary', async (req: Request, res: Response) => {
     `, termCampParams);
 
     const queryFacultyLoads = `
-      SELECT f.id, f.full_name, f.department, f.max_teaching_hours,
+      SELECT f.id, f.full_name, d.name as department, f.max_teaching_hours,
              COUNT(tl.id) as subjects_count,
              COALESCE(SUM(s.required_hours), 0) as total_assigned_hours
       FROM faculty f
+      LEFT JOIN departments d ON f.department_id = d.id
       LEFT JOIN teaching_loads tl ON f.id = tl.faculty_id ${term_id ? `AND tl.term_id = ?` : ''}
       LEFT JOIN subjects s ON tl.subject_id = s.id
       WHERE f.is_archived = FALSE ${fCampFilter}
@@ -57,10 +58,11 @@ router.get('/summary', async (req: Request, res: Response) => {
 
     // Department Stats (active faculty only)
     const [deptStats]: any = await pool.query(`
-      SELECT department, COUNT(*) as value 
-      FROM faculty 
-      WHERE department IS NOT NULL AND department != '' AND is_archived = FALSE ${campFilter}
-      GROUP BY department
+      SELECT d.name as department, COUNT(*) as value 
+      FROM faculty f
+      JOIN departments d ON f.department_id = d.id
+      WHERE f.is_archived = FALSE ${fCampFilter}
+      GROUP BY d.name
     `, campParams);
 
     // Unassigned Subjects (active subjects only)

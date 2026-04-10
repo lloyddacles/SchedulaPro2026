@@ -28,13 +28,18 @@ export default function Faculty() {
   const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', type: 'danger', onConfirm: () => {} });
   
   const [formData, setFormData] = useState({
-    full_name: '', program_id: 1, campus_id: '', specializations: [], max_teaching_hours: 24, employment_type: 'Regular', department: ''
+    full_name: '', program_id: 1, campus_id: '', specializations: [], max_teaching_hours: 24, employment_type: 'Regular', department_id: ''
   });
 
   const queryClient = useQueryClient();
   const { activeTermId } = useScheduleStore();
 
   // ── Queries ──────────────────────────────────────────────────────────────
+  const { data: departments = [] } = useQuery({
+    queryKey: ['departments'],
+    queryFn: async () => (await api.get('/departments')).data
+  });
+
   const { data: programs = [] } = useQuery({ 
     queryKey: ['programs'], 
     queryFn: async () => (await api.get('/programs')).data 
@@ -103,7 +108,7 @@ export default function Faculty() {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const openAddModal = () => {
-    setFormData({ full_name: '', program_id: 1, campus_id: '', specializations: [], max_teaching_hours: 24, employment_type: 'Regular', department: '' });
+    setFormData({ full_name: '', program_id: 1, campus_id: '', specializations: [], max_teaching_hours: 24, employment_type: 'Regular', department_id: '' });
     setIsEditing(false);
     setIsModalOpen(true);
   };
@@ -116,7 +121,7 @@ export default function Faculty() {
       specializations: fac.specializations_array || [], 
       max_teaching_hours: fac.max_teaching_hours,
       employment_type: fac.employment_type || 'Regular',
-      department: fac.department || ''
+      department_id: fac.department_id || ''
     });
     setCurrentId(fac.id);
     setIsEditing(true);
@@ -131,8 +136,9 @@ export default function Faculty() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (isEditing) updateMutation.mutate(formData);
-    else createMutation.mutate(formData);
+    const payload = { ...formData, department_id: formData.department_id || null };
+    if (isEditing) updateMutation.mutate(payload);
+    else createMutation.mutate(payload);
   };
 
   const EMPLOYMENT_DEFAULTS = { 'Regular': 24, 'Probationary': 24, 'Contractual': 24, 'Part-time': 15 };
@@ -148,7 +154,7 @@ export default function Faculty() {
     const term = search.toLowerCase();
     const matchesSearch = f.full_name.toLowerCase().includes(term) || 
       (f.program_code && f.program_code.toLowerCase().includes(term)) ||
-      (f.department && f.department.toLowerCase().includes(term));
+      (f.department_name && f.department_name.toLowerCase().includes(term));
     
     const matchesEmployment = !selectedEmploymentType || f.employment_type === selectedEmploymentType;
     return matchesSearch && matchesEmployment;
@@ -160,7 +166,7 @@ export default function Faculty() {
       if (groupingMode === 'program') {
         key = !fac.program_code ? 'General / Unassigned Faculty' : `${fac.program_code} - ${fac.program_name}`;
       } else {
-        key = fac.department || 'No Department Assigned';
+        key = fac.department_name || 'No Department Assigned';
       }
       if (!acc[key]) acc[key] = [];
       acc[key].push(fac);
@@ -179,9 +185,9 @@ export default function Faculty() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white font-display flex items-center gap-3">
-            <Users className="w-8 h-8 text-brand-600" /> Faculty Roster
+            <Users className="w-8 h-8 text-brand-600" /> Personnel Audit
           </h1>
-          <p className="mt-1 text-gray-500 dark:text-slate-400">Manage teaching loads, specializations, and availability.</p>
+          <p className="mt-1 text-gray-500 dark:text-slate-400">Institutional Faculty Roster with collegiate mapping.</p>
         </div>
         <div className="flex items-center gap-3">
           <button 
@@ -194,7 +200,7 @@ export default function Faculty() {
             <div className="flex items-center gap-3">
               <BulkActions 
                 entity="faculty"
-                columns={['full_name', 'program_code', 'campus_name', 'employment_type', 'max_teaching_hours', 'department']}
+                columns={['full_name', 'program_code', 'campus_name', 'employment_type', 'max_teaching_hours', 'department_code']}
               />
               <button onClick={openAddModal} className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white rounded-xl font-bold shadow-lg shadow-brand-500/20 hover:bg-brand-700 transition transform hover:-translate-y-0.5">
                 <Plus className="w-5 h-5" /> Add Instructor
@@ -281,7 +287,7 @@ export default function Faculty() {
           </div>
           <input
             type="text"
-            placeholder="Quick search by name or dept..."
+            placeholder="Search by name, program or dept..."
             className="block w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all text-sm font-medium shadow-sm"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -381,9 +387,6 @@ export default function Faculty() {
                                           message: `This will erase ${f.full_name} and all their historical data from the system. This cannot be undone.`,
                                           type: 'danger',
                                           onConfirm: () => {
-                                            // Backend doesn't have a hard delete for faculty yet, but we'll use deleteMutation 
-                                            // if we decide to implement it, or just archival for now.
-                                            // To follow the audit, we'll suggest a hard delete route if needed.
                                             deleteMutation.mutate(f.id); 
                                           }
                                         });
@@ -417,13 +420,13 @@ export default function Faculty() {
                           
                           <div className="flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/50 p-3 rounded-2xl border border-gray-100 dark:border-slate-700/50 mt-1">
                             <div className="flex flex-col">
-                              <span className="text-[9px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">Specializations</span>
+                              <span className="text-[9px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">Collegiate Entity</span>
                               <span className="text-xs font-bold text-brand-600 dark:text-brand-400">
-                                {f.specializations_array?.length ? `${f.specializations_array.length} Approved Subjects` : 'None Mapped'}
+                                {f.department_name || 'Generic Administrative'}
                               </span>
                             </div>
                             <div className="flex flex-col text-right">
-                              <span className="text-[9px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">Program</span>
+                              <span className="text-[9px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">Base Program</span>
                               <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{f.program_code || 'Gen-Ed'}</span>
                             </div>
                           </div>
@@ -444,8 +447,8 @@ export default function Faculty() {
           <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden transform border border-white/20 dark:border-slate-800">
             <div className="px-8 py-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50/30 dark:bg-slate-800/30">
               <div>
-                <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{isEditing ? 'Edit Profile' : 'Add Instructor'}</h3>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Faculty Record Management</p>
+                <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{isEditing ? 'Modify Personnel' : 'Add Instructor'}</h3>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Institutional Audit Record</p>
               </div>
               <button onClick={closeModal} className="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-slate-800 text-gray-400 hover:text-gray-900 hover:shadow-md transition-all border border-gray-100 dark:border-slate-700"><X className="w-6 h-6" /></button>
             </div>
@@ -464,8 +467,17 @@ export default function Faculty() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2 pl-1">College / Department</label>
-                    <input required type="text" className="w-full border border-gray-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 bg-gray-50/50 dark:bg-slate-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none transition-all font-bold" value={formData.department} onChange={e => setFormData({...formData, department: e.target.value})} placeholder="e.g. School of Business" />
+                    <label className="block text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2 pl-1">Assign to College / Department</label>
+                    <select 
+                      className="w-full border border-gray-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 bg-gray-50/50 dark:bg-slate-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none transition-all font-bold"
+                      value={formData.department_id}
+                      onChange={e => setFormData({...formData, department_id: e.target.value})}
+                    >
+                      <option value="">-- Generic Institutional --</option>
+                      {departments.map(d => (
+                        <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
