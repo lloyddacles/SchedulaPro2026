@@ -196,39 +196,51 @@ export default function Schedules() {
     enabled: isModalOpen && !!formData.teaching_load_id && !!formData.room
   });
 
-  const checkSlotCollision = (day, sAttempt, eAttempt, load, roomName, ignoreScheduleId = null) => {
-    // 1. Conflict Checks
-    const conflict = schedules.find(sch => {
-      if (ignoreScheduleId && sch.id === ignoreScheduleId) return false;
-      if (sch.day_of_week !== day) return false;
-      
-      const parseTime = (t) => { const [h, m] = t.split(':').map(Number); return h + m / 60; };
-      const sSch = parseTime(sch.start_time);
-      const eSch = parseTime(sch.end_time);
-      
-      if (!(sSch < eAttempt && eSch > sAttempt)) return false;
+  const checkSlotCollision = (day, sAttempt, eAttempt, load, roomName, ignoreScheduleId) => {
+    if (!load) return false;
 
-      const loadFacs = [load.faculty_id, load.co_faculty_id_1, load.co_faculty_id_2].filter(Boolean);
-      const schFacsIds = [sch.faculty_id, sch.co_faculty_id_1, sch.co_faculty_id_2].filter(Boolean);
-      const isSameFaculty = loadFacs.some(tf => schFacsIds.includes(tf));
-      const isSameSection = sch.section_id === load.section_id;
-      const isSameRoom = roomName && sch.room.toLowerCase() === roomName.toLowerCase();
+    // Allocate load array once to avoid heavy GC cycling thousands of times during a single drag operation
+    const loadFacs = [];
+    if (load.faculty_id) loadFacs.push(load.faculty_id);
+    if (load.co_faculty_id_1) loadFacs.push(load.co_faculty_id_1);
+    if (load.co_faculty_id_2) loadFacs.push(load.co_faculty_id_2);
 
-      return isSameFaculty || isSameSection || isSameRoom;
-    });
+    // 1. Conflict Checks using ultra-fast native loops (no high-order functions to block the Thread during drag)
+    for (let i = 0; i < schedules.length; i++) {
+        const sch = schedules[i];
+        if (ignoreScheduleId && sch.id === ignoreScheduleId) continue;
+        if (sch.day_of_week !== day) continue;
 
-    if (conflict) return true;
+        // Perform instant Math operations instead of .split(':').map(Number) to save thousands of frames per sec
+        const sSch = parseInt(sch.start_time.substring(0, 2), 10) + parseInt(sch.start_time.substring(3, 5), 10) / 60;
+        const eSch = parseInt(sch.end_time.substring(0, 2), 10) + parseInt(sch.end_time.substring(3, 5), 10) / 60;
+        
+        if (!(sSch < eAttempt && eSch > sAttempt)) continue;
 
-    // 2. Blackout Checks
-    const facultyBlackouts = blackouts.filter(b => [load.faculty_id, load.co_faculty_id_1, load.co_faculty_id_2].filter(Boolean).includes(b.faculty_id) && b.day_of_week === day);
-    const isBlackedOut = facultyBlackouts.some(b => {
-        const parseTimeLocal = (t) => { const [h, m] = t.split(':').map(Number); return h + m / 60; };
-        const bStart = parseTimeLocal(b.start_time);
-        const bEnd = parseTimeLocal(b.end_time);
-        return (bStart < eAttempt && bEnd > sAttempt);
-    });
+        let isSameFaculty = false;
+        if (sch.faculty_id && loadFacs.includes(sch.faculty_id)) isSameFaculty = true;
+        else if (sch.co_faculty_id_1 && loadFacs.includes(sch.co_faculty_id_1)) isSameFaculty = true;
+        else if (sch.co_faculty_id_2 && loadFacs.includes(sch.co_faculty_id_2)) isSameFaculty = true;
 
-    return isBlackedOut;
+        const isSameSection = sch.section_id === load.section_id;
+        const isSameRoom = roomName && sch.room && sch.room.toLowerCase() === roomName.toLowerCase();
+
+        if (isSameFaculty || isSameSection || isSameRoom) return true; // Hard Collision Detected
+    }
+
+    // 2. Blackout Checks using high-performance loop
+    for (let i = 0; i < blackouts.length; i++) {
+        const b = blackouts[i];
+        if (b.day_of_week !== day) continue;
+        if (!loadFacs.includes(b.faculty_id)) continue;
+
+        const bStart = parseInt(b.start_time.substring(0, 2), 10) + parseInt(b.start_time.substring(3, 5), 10) / 60;
+        const bEnd = parseInt(b.end_time.substring(0, 2), 10) + parseInt(b.end_time.substring(3, 5), 10) / 60;
+        
+        if (bStart < eAttempt && bEnd > sAttempt) return true; // Faculty Break Conflict
+    }
+
+    return false;
   };
 
   const handleAutoSuggest = async () => {
