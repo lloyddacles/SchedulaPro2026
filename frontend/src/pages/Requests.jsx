@@ -39,6 +39,11 @@ export default function Requests() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['requests'] })
   });
 
+  const endorseMutation = useMutation({
+    mutationFn: (id) => api.put(`/requests/${id}/endorse`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['requests'] })
+  });
+
   if (isLoading) return <div className="flex justify-center items-center h-[50vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div></div>;
 
   return (
@@ -103,6 +108,18 @@ export default function Requests() {
                       <div className="text-xs text-gray-500 dark:text-slate-400 font-bold mt-1 bg-gray-100/80 dark:bg-slate-700/50 px-2 py-0.5 rounded inline-block">
                          {req.day_of_week} {req.start_time.substring(0,5)} - {req.end_time.substring(0,5)} <span className="opacity-50 mx-1">|</span> Rm {req.room}
                       </div>
+
+                      {req.request_type === 'MAKEUP' && req.target_day && (
+                        <div className="mt-3 p-3 bg-brand-50/50 dark:bg-brand-900/10 rounded-2xl border border-brand-100 dark:border-brand-800 animate-pulse-subtle">
+                           <p className="text-[9px] font-black text-brand-600 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                              <Sparkles className="w-3 h-3" /> Target Synchronized Slot
+                           </p>
+                           <div className="text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                              {req.target_day} {req.target_start_time.substring(0,5)} - {req.target_end_time.substring(0,5)}
+                           </div>
+                           <div className="text-[10px] font-medium text-slate-500 mt-0.5">Room {req.target_room} {req.event_date ? `(On ${new Date(req.event_date).toLocaleDateString()})` : '(Recurring)'}</div>
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-5">
                       <span className={`px-2.5 py-1 text-[10px] font-black tracking-widest rounded-lg uppercase ${req.request_type === 'DROP' ? 'bg-rose-100/80 text-rose-700 border border-rose-200/50 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800' : 'bg-amber-100/80 text-amber-700 border border-amber-200/50 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'}`}>
@@ -118,7 +135,9 @@ export default function Requests() {
                     </td>
                     <td className="px-6 py-5">
                       {req.status === 'PENDING' ? (
-                        <span className="flex items-center gap-1.5 text-[11px] font-black tracking-wide text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/50 px-2.5 py-1.5 rounded-xl w-fit"><Clock className="w-3.5 h-3.5"/> UNRESOLVED</span>
+                        <span className="flex items-center gap-1.5 text-[11px] font-black tracking-wide text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/50 px-2.5 py-1.5 rounded-xl w-fit"><Clock className="w-3.5 h-3.5"/> SUBMITTED</span>
+                      ) : req.status === 'ENDORSED' ? (
+                        <span className="flex items-center gap-1.5 text-[11px] font-black tracking-wide text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-100 dark:border-amber-800/50 px-2.5 py-1.5 rounded-xl w-fit"><AlertCircle className="w-3.5 h-3.5"/> ENDORSED</span>
                       ) : req.status === 'APPROVED' ? (
                         <span className="flex items-center gap-1.5 text-[11px] font-black tracking-wide text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800/50 px-2.5 py-1.5 rounded-xl w-fit"><CheckCircle className="w-3.5 h-3.5"/> APPROVED</span>
                       ) : (
@@ -126,28 +145,47 @@ export default function Requests() {
                       )}
                     </td>
                     <td className="px-6 py-5 text-right w-[140px]">
-                      {req.status === 'PENDING' && isHead ? (
+                      {(req.status === 'PENDING' || req.status === 'ENDORSED') ? (
                         <div className="flex justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-sm">
-                          <button onClick={() => { 
-                            setConfirmConfig({
-                              title: 'Approve Request?',
-                              message: `Executing this will forcefully DELETE the live Schedule block for ${req.subject_code}, mathematically vacating the slot system-wide. This action is irreversible once finalized.`,
-                              type: 'success',
-                              onConfirm: () => approveMutation.mutate(req.id)
-                            });
-                            setIsConfirmModalOpen(true);
-                          }} className="p-2 border border-emerald-200 dark:border-emerald-700/50 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-500 dark:hover:bg-emerald-600 hover:text-white dark:hover:text-white rounded-xl shadow-sm transition-all hover:scale-110" title="Force Execution (Approve)">
-                            <CheckCircle className="w-4 h-4"/>
-                          </button>
+                          {user?.role === 'program_assistant' && req.status === 'PENDING' && (
+                            <button onClick={() => { 
+                              setConfirmConfig({
+                                title: 'Endorse Recovery Request?',
+                                message: `You are endorsing this recovery slot. It will be forwarded to the Program Head for final matrix execution.`,
+                                type: 'success',
+                                onConfirm: () => endorseMutation.mutate(req.id)
+                              });
+                              setIsConfirmModalOpen(true);
+                            }} className="p-2 border border-blue-200 dark:border-blue-700/50 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white dark:hover:text-white rounded-xl shadow-sm transition-all hover:scale-110" title="Endorse Request">
+                              <Sparkles className="w-4 h-4"/>
+                            </button>
+                          )}
+                          
+                          {(user?.role === 'admin' || user?.role === 'program_head') && (
+                            <button onClick={() => { 
+                              setConfirmConfig({
+                                title: 'Final Approval?',
+                                message: req.request_type === 'MAKEUP' 
+                                  ? `Executing this will programmatically INSERT the new recovery block into the Master Matrix for ${req.subject_code}.`
+                                  : `Executing this will forcefully DELETE the live Schedule block for ${req.subject_code}.`,
+                                type: 'success',
+                                onConfirm: () => approveMutation.mutate(req.id)
+                              });
+                              setIsConfirmModalOpen(true);
+                            }} className="p-2 border border-emerald-200 dark:border-emerald-700/50 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-500 dark:hover:bg-emerald-600 hover:text-white dark:hover:text-white rounded-xl shadow-sm transition-all hover:scale-110" title="Final Execution">
+                              <CheckCircle className="w-4 h-4"/>
+                            </button>
+                          )}
+                          
                           <button onClick={() => { 
                             setConfirmConfig({
                               title: 'Reject Request?',
-                              message: `Deny this transaction configuration. The faculty schedule for ${req.subject_code} will remain unchanged, and the request will be moved to the resolved queue.`,
+                              message: `Deny this transaction configuration. The request will be moved to the resolved queue.`,
                               type: 'danger',
                               onConfirm: () => rejectMutation.mutate(req.id)
                             });
                             setIsConfirmModalOpen(true);
-                          }} className="p-2 border border-red-200 dark:border-red-700/50 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 hover:bg-red-500 dark:hover:bg-red-600 hover:text-white dark:hover:text-white rounded-xl shadow-sm transition-all hover:scale-110" title="Deny Transaction (Reject)">
+                          }} className="p-2 border border-red-200 dark:border-red-700/50 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 hover:bg-red-500 dark:hover:bg-red-600 hover:text-white dark:hover:text-white rounded-xl shadow-sm transition-all hover:scale-110" title="Deny Transaction">
                             <XCircle className="w-4 h-4"/>
                           </button>
                         </div>

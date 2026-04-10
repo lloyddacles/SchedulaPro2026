@@ -92,7 +92,7 @@ router.get('/check-conflict', authorizeRoles('admin', 'program_head', 'program_a
     next(error);
   }
 });
-router.get('/suggest-slots', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: Request, res: Response, next: express.NextFunction) => {
+router.get('/suggest-slots', authorizeRoles('admin', 'program_head', 'program_assistant', 'faculty'), async (req: Request, res: Response, next: express.NextFunction) => {
   const { teaching_load_id, term_id, preferred_room } = req.query;
 
   if (!teaching_load_id || !term_id) {
@@ -103,7 +103,8 @@ router.get('/suggest-slots', authorizeRoles('admin', 'program_head', 'program_as
     const suggestions = await ScheduleService.suggestAlternativeSlots(pool, {
       teachingLoadId: Number(teaching_load_id),
       termId: Number(term_id),
-      preferredRoom: preferred_room as string | undefined
+      preferredRoom: preferred_room as string | undefined,
+      limit: 10 // Increase limit for recovery search
     });
     res.json(suggestions);
   } catch (error: any) {

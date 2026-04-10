@@ -534,7 +534,7 @@ export default function Schedules() {
          backgroundColor: isDraft ? 'rgba(124, 58, 237, 0.1)' : colors.bg,
          borderColor: isDraft ? '#a78bfa' : colors.border,
          textColor: isDraft ? '#a78bfa' : '#fff',
-         classNames: isDraft ? ['ghost-draft-event'] : [],
+         classNames: [...(isDraft ? ['ghost-draft-event'] : []), ...(sch.is_makeup ? ['makeup-event-block'] : [])],
          extendedProps: { raw: sch }
        };
     }),
@@ -586,11 +586,23 @@ export default function Schedules() {
     const profs = [sch.faculty_name, sch.co_faculty_1_name, sch.co_faculty_2_name].filter(Boolean).map(shortenName).join(' & ');
 
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full p-0.5 text-center leading-[1.1] overflow-hidden group cursor-pointer">
+      <div className="flex flex-col items-center justify-center h-full w-full p-0.5 text-center leading-[1.1] overflow-hidden group cursor-pointer relative">
+        {sch.is_makeup && (
+           <div className="absolute top-0 right-0 p-0.5 z-10">
+              <div className="bg-white/90 dark:bg-slate-900/90 text-[7px] font-black text-brand-600 px-1 rounded shadow-sm flex items-center gap-0.5">
+                 <Sparkles className="w-1.5 h-1.5" /> RECOVERY
+              </div>
+           </div>
+        )}
         <div className="font-black text-[10px] sm:text-[11px] md:text-xs tracking-tight uppercase leading-none mb-0.5">{sch.subject_code}</div>
         <div className="font-medium text-[8px] sm:text-[9px] md:text-[10px] opacity-95 line-clamp-2 px-0.5 mb-1">{sch.subject_name}</div>
         <div className="flex flex-col gap-0.5 w-full mt-auto">
-          <div className="text-[7px] sm:text-[8px] md:text-[9px] font-bold bg-white/20 rounded py-0.5 truncate uppercase">{sch.program_code}-{sch.year_level}{sch.section_name}</div>
+          <div className="text-[7px] sm:text-[8px] md:text-[9px] font-bold bg-white/20 rounded py-0.5 truncate uppercase">
+            {sch.program_code}-{sch.year_level}{sch.section_name}
+            {sch.is_makeup && sch.event_date && (
+               <span className="ml-1 opacity-70">[{new Date(sch.event_date).toLocaleDateString([], {month:'short', day:'numeric'})}]</span>
+            )}
+          </div>
           <div className="text-[7px] sm:text-[8px] md:text-[9px] font-semibold opacity-90 truncate italic">{profs}</div>
           <div className="text-[7px] sm:text-[8px] md:text-[9px] font-bold bg-black/10 rounded py-0.5 truncate">{sch.room}</div>
         </div>

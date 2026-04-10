@@ -62,7 +62,7 @@ export const changePasswordSchema = z.object({
 
 export const userSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
-  email: z.string().email("Invalid email address").optional().or(z.literal("")),
+  email: z.string().email("Invalid email address").min(1, "Institutional email is required"),
   password: z.string().min(6, "Password must be at least 6 characters").optional(),
   role: z.enum(['admin', 'viewer', 'program_head', 'program_assistant', 'faculty']).default('faculty'),
   faculty_id: nullableId
@@ -128,8 +128,14 @@ export const teachingLoadSchema = z.object({
 
 export const scheduleRequestSchema = z.object({
   schedule_id: requiredId,
-  request_type: z.enum(['DROP', 'SWAP', 'CHANGE_ROOM', 'CHANGE_TIME', 'OTHER']),
-  reason_text: z.string().min(5, "Justification must be at least 5 characters")
+  request_type: z.enum(['DROP', 'SWAP', 'CHANGE_ROOM', 'CHANGE_TIME', 'OTHER', 'MAKEUP']),
+  reason_text: z.string().min(5, "Justification must be at least 5 characters"),
+  target_day: z.string().optional(),
+  target_start_time: z.string().optional(),
+  target_end_time: z.string().optional(),
+  target_room: z.string().optional(),
+  is_recurring: z.coerce.boolean().optional().default(true),
+  event_date: z.string().optional()
 });
 
 export const subjectSchema = z.object({

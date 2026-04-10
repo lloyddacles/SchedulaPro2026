@@ -310,12 +310,12 @@ export default function Login() {
                 className="space-y-8"
               >
                 <div className="text-center lg:text-left">
-                  <h2 className="text-4xl font-black text-gray-900 dark:text-white font-display mb-3 tracking-tighter">Identity Recovery</h2>
-                  <p className="text-gray-500 dark:text-slate-400 font-medium">Synchronize your access keys via institutional email verification.</p>
+                  <h2 className="text-4xl font-black text-gray-900 dark:text-white font-display mb-3 tracking-tighter">Identity Sync</h2>
+                  <p className="text-gray-500 dark:text-slate-400 font-medium leading-relaxed caps">Synchronize your institutional access matrix through secure email verification.</p>
                 </div>
 
                 {error && (
-                  <div className="bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900 rounded-2xl p-4 flex items-center gap-3 text-sm font-bold text-red-600 dark:text-red-400">
+                  <div className="bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900 rounded-2xl p-4 flex items-center gap-3 text-sm font-bold text-red-600 dark:text-red-400 animate-shake">
                     <Info className="w-5 h-5 flex-shrink-0" />
                     <span>{error}</span>
                   </div>
@@ -325,26 +325,29 @@ export default function Login() {
                   {recoveryStep === 'identify' && (
                     <motion.form 
                       key="step-id"
-                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                      onSubmit={handleForgotPassword} className="space-y-5"
+                      initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }}
+                      onSubmit={handleForgotPassword} className="space-y-6"
                     >
                       <div className="space-y-2">
-                        <label className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">Registered Email</label>
-                        <input
-                          type="email"
-                          required
-                          className="block w-full px-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-gray-800 dark:text-white placeholder-gray-300"
-                          placeholder="name@institution.edu"
-                          value={recoveryEmail}
-                          onChange={(e) => setRecoveryEmail(e.target.value)}
-                        />
+                        <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">Registered Institutional Email</label>
+                        <div className="group relative">
+                          <input
+                            type="email"
+                            required
+                            className="block w-full px-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-gray-800 dark:text-white placeholder-gray-300 shadow-sm"
+                            placeholder="name@institution.edu"
+                            value={recoveryEmail}
+                            onChange={(e) => setRecoveryEmail(e.target.value)}
+                          />
+                        </div>
                       </div>
                       <button
                         type="submit"
                         disabled={recoveryLoading}
-                        className="w-full py-5 px-6 rounded-2xl bg-brand-600 text-white font-black uppercase tracking-widest shadow-xl hover:-translate-y-1 transition-all disabled:opacity-50"
+                        className="w-full relative py-5 px-6 rounded-2xl bg-slate-900 dark:bg-brand-600 text-white font-black uppercase tracking-widest shadow-xl hover:-translate-y-1 active:scale-95 transition-all overflow-hidden disabled:opacity-50"
                       >
-                        {recoveryLoading ? 'Generating OTP...' : 'Dispatch Reset OTP'}
+                        <div className="absolute inset-0 bg-gradient-to-r from-brand-600 to-indigo-600 opacity-0 hover:opacity-100 transition-opacity -z-10" />
+                        {recoveryLoading ? 'Generating Secure Matrix...' : 'Dispatch Verification Key'}
                       </button>
                     </motion.form>
                   )}
@@ -352,27 +355,32 @@ export default function Login() {
                   {recoveryStep === 'verify' && (
                     <motion.form 
                       key="step-verify"
-                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                      onSubmit={handleVerifyOtp} className="space-y-5"
+                      initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }}
+                      onSubmit={handleVerifyOtp} className="space-y-6"
                     >
-                      <div className="space-y-2 text-center">
-                        <label className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">Verification Matrix Code</label>
+                      <div className="space-y-4 text-center">
+                        <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">Institutional Matrix Token</label>
                         <input
                           type="text"
                           required
                           maxLength={6}
-                          className="block w-full px-6 py-6 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-black text-4xl text-center tracking-[1em] text-brand-600 dark:text-brand-400"
+                          className="block w-full px-4 py-8 bg-gray-50 dark:bg-slate-900 border-2 border-brand-100 dark:border-brand-900/50 rounded-[2.5rem] focus:ring-8 focus:ring-brand-500/5 focus:border-brand-500 transition-all outline-none font-black text-5xl text-center tracking-[0.5em] text-brand-600 dark:text-brand-400 shadow-inner"
                           placeholder="000000"
                           value={recoveryOtp}
                           onChange={(e) => setRecoveryOtp(e.target.value.replace(/\D/g, ''))}
                         />
-                        <p className="text-[10px] text-gray-400 font-bold uppercase pt-2">Check your email for the 6-digit sync code</p>
+                        <div className="flex flex-col items-center gap-2">
+                           <div className="px-3 py-1 bg-brand-50 dark:bg-brand-900/20 rounded-full flex items-center gap-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-ping" />
+                              <span className="text-[10px] text-brand-600 dark:text-brand-400 font-black uppercase">Vetting Inbox...</span>
+                           </div>
+                        </div>
                       </div>
                       <button
                         type="submit"
-                        className="w-full py-5 px-6 rounded-2xl bg-brand-600 text-white font-black uppercase tracking-widest shadow-xl hover:-translate-y-1 transition-all"
+                        className="w-full py-5 px-6 rounded-2xl bg-brand-600 text-white font-black uppercase tracking-widest shadow-2xl shadow-brand-500/20 hover:-translate-y-1 transition-all"
                       >
-                        Verify Identity
+                        Authorize Transition
                       </button>
                     </motion.form>
                   )}
@@ -380,38 +388,44 @@ export default function Login() {
                   {recoveryStep === 'reset' && (
                     <motion.form 
                       key="step-reset"
-                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                      onSubmit={handleResetPassword} className="space-y-5"
+                      initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }}
+                      onSubmit={handleResetPassword} className="space-y-6"
                     >
-                      <div className="space-y-2">
-                        <label className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">New Matrix Key</label>
-                        <input
-                          type="password"
-                          required
-                          minLength={6}
-                          className="block w-full px-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-gray-800 dark:text-white placeholder-gray-300"
-                          placeholder="••••••••••••"
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                        />
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">New Terminal Secret</label>
+                          <input
+                            type="password"
+                            required
+                            minLength={6}
+                            className="block w-full px-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-gray-800 dark:text-white placeholder-gray-300"
+                            placeholder="••••••••••••"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                          />
+                        </div>
                       </div>
                       <button
                         type="submit"
                         disabled={recoveryLoading}
-                        className="w-full py-5 px-6 rounded-2xl bg-brand-600 text-white font-black uppercase tracking-widest shadow-xl hover:-translate-y-1 transition-all disabled:opacity-50"
+                        className="w-full py-5 px-6 rounded-2xl bg-brand-600 text-white font-black uppercase tracking-widest shadow-2xl shadow-brand-500/20 hover:-translate-y-1 transition-all disabled:opacity-50"
                       >
-                        {recoveryLoading ? 'Synchronizing...' : 'Set Final Credentials'}
+                        {recoveryLoading ? 'Resyncing Credentials...' : 'Finalize Identity Reset'}
                       </button>
                     </motion.form>
                   )}
                 </AnimatePresence>
 
-                <button 
-                  onClick={() => { setShowRecovery(false); setRecoveryStep('identify'); setError(''); }}
-                  className="w-full text-center text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-brand-500 transition-colors"
-                >
-                  Return to Main Terminal
-                </button>
+                <div className="pt-4">
+                  <button 
+                    onClick={() => { setShowRecovery(false); setRecoveryStep('identify'); setError(''); }}
+                    className="w-full flex items-center justify-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-brand-500 transition-colors group"
+                  >
+                    <div className="w-5 h-[1px] bg-gray-200 group-hover:bg-brand-500 transition-colors" />
+                    Back to Terminal
+                    <div className="w-5 h-[1px] bg-gray-200 group-hover:bg-brand-500 transition-colors" />
+                  </button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

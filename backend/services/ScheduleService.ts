@@ -555,8 +555,8 @@ export class ScheduleService {
         }
       }
     }
-
     return suggestions;
+  }
   /**
    * Phase 3: Atomic Batch Sync — Commit entire Ghost Mode draft efficiently
    * Performs all updates, creations, and deletions in a single transaction.

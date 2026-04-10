@@ -27,7 +27,17 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 router.post('/', validate(scheduleRequestSchema), async (req: any, res: Response) => {
-  const { schedule_id, request_type, reason_text } = req.body;
+  const { 
+    schedule_id, 
+    request_type, 
+    reason_text, 
+    target_day, 
+    target_start_time, 
+    target_end_time, 
+    target_room, 
+    is_recurring, 
+    event_date 
+  } = req.body;
   const faculty_id = req.user.faculty_id;
 
   if (!faculty_id) {
@@ -35,22 +45,45 @@ router.post('/', validate(scheduleRequestSchema), async (req: any, res: Response
   }
 
   try {
-    await pool.query(
-      'INSERT INTO schedule_requests (faculty_id, schedule_id, request_type, reason) VALUES (?, ?, ?, ?)',
-      [faculty_id, schedule_id, request_type, reason_text]
-    );
-    res.status(201).json({ message: 'Request submitted successfully.' });
+    const query = `
+      INSERT INTO schedule_requests (
+        faculty_id, schedule_id, request_type, reason, 
+        target_day, target_start_time, target_end_time, target_room, 
+        is_recurring, event_date
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    const params = [
+      faculty_id, schedule_id, request_type, reason_text,
+      target_day || null, target_start_time || null, target_end_time || null, target_room || null,
+      is_recurring === undefined ? true : is_recurring, event_date || null
+    ];
+    
+    await pool.query(query, params);
+    res.status(201).json({ message: 'Recovery matrix request submitted for endorsement.' });
   } catch (error: any) {
     res.status(500).json({ message: 'Fatal exception registering transaction request.', error: error.message });
   }
 });
 
-router.put('/:id/:action', authorizeRoles('admin', 'program_head'), async (req: Request, res: Response) => {
+router.put('/:id/:action', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   const { id, action } = req.params as { id: string, action: string };
   
-  if (!['approve', 'reject'].includes(action)) return res.status(400).json({ message: 'Invalid administrative execution payload.' });
+  if (!['approve', 'reject', 'endorse'].includes(action)) {
+    return res.status(400).json({ message: 'Invalid administrative execution payload.' });
+  }
 
-  const status = action === 'approve' ? 'APPROVED' : 'REJECTED';
+  // Role validation for 'approve' (only admin/head)
+  if (action === 'approve' && req.user.role === 'program_assistant') {
+    return res.status(403).json({ message: 'Access denied: Program Assistants can only endorse, not approve.' });
+  }
+
+  // Role validation for 'endorse' (assistant or above)
+  const statusMap: Record<string, string> = {
+    approve: 'APPROVED',
+    reject: 'REJECTED',
+    endorse: 'ENDORSED'
+  };
+  const status = statusMap[action];
 
   const connection = await pool.getConnection();
   try {
@@ -77,7 +110,27 @@ router.put('/:id/:action', authorizeRoles('admin', 'program_head'), async (req: 
          targetFaculty = reqObj.full_name;
          
          if (status === 'APPROVED') {
-            await connection.query(`DELETE FROM schedules WHERE id = ?`, [reqObj.schedule_id]);
+            if (reqObj.request_type === 'MAKEUP') {
+               // Execute the recommended slot insertion
+               const [srDetails]: [any[], any] = await connection.query(`
+                 SELECT target_day, target_start_time, target_end_time, target_room, is_recurring, event_date, schedule_id 
+                 FROM schedule_requests WHERE id = ?`, [id]);
+               
+               if (srDetails.length > 0) {
+                  const det = srDetails[0];
+                  // Get teaching_load_id from the original schedule
+                  const [origSch]: [any[], any] = await connection.query(`SELECT teaching_load_id FROM schedules WHERE id = ?`, [det.schedule_id]);
+                  if (origSch.length > 0) {
+                     await connection.query(
+                        'INSERT INTO schedules (teaching_load_id, day_of_week, start_time, end_time, room, is_makeup, event_date) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                        [origSch[0].teaching_load_id, det.target_day, det.target_start_time, det.target_end_time, det.target_room, 1, det.event_date]
+                     );
+                  }
+               }
+            } else {
+               // Standard DROP logic
+               await connection.query(`DELETE FROM schedules WHERE id = ?`, [reqObj.schedule_id]);
+            }
          }
                   try {
              // System Notification

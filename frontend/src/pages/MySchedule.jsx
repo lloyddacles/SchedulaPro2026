@@ -11,6 +11,7 @@ import {
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { generateProfessionalPDF } from '../utils/pdfGenerator';
+import MakeUpWizard from '../components/MakeUpWizard';
 
 const WorkloadDetails = ({ workload, percent }) => {
   if (!workload) return null;
@@ -73,6 +74,8 @@ export default function MySchedule() {
   const [reqType, setReqType] = useState('DROP');
   const [reason, setReason] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [wizardSch, setWizardSch] = useState(null);
   
   // Advisory View states
   const [viewType, setViewType] = useState(initialView); // 'personal' | 'advisory'
@@ -508,6 +511,18 @@ export default function MySchedule() {
                     <button onClick={()=>setReqType('SWAP')} className={`py-4 rounded-2xl font-black uppercase tracking-widest text-xs border-2 transition-all ${reqType === 'SWAP' ? 'bg-brand-600 text-white border-brand-600 shadow-xl shadow-brand-500/20' : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-700'}`}>Sub Swap</button>
                  </div>
 
+                 <button 
+                   onClick={() => {
+                     setWizardSch(selectedSch);
+                     setIsModalOpen(false);
+                     setIsWizardOpen(true);
+                   }}
+                   className="w-full py-4 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-2xl font-black uppercase tracking-widest text-xs border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-500 hover:text-white transition-all flex items-center justify-center gap-2 group"
+                 >
+                   <Sparkles className="w-4 h-4 group-hover:animate-pulse text-brand-500" />
+                   Intelligent Make-up Finder
+                 </button>
+
                  <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Request Justification</label>
                     <textarea value={reason} onChange={(e)=>setReason(e.target.value)} className="w-full border-2 border-slate-100 dark:border-slate-700 rounded-[1.5rem] p-5 min-h-[140px] bg-slate-50 dark:bg-slate-900 dark:text-white outline-none focus:border-brand-500 font-bold text-sm transition-all" placeholder="Enter explicit constraints requiring this structural modification..."></textarea>
@@ -521,6 +536,13 @@ export default function MySchedule() {
               </div>
            </div>
         </div>
+      )}
+
+      {isWizardOpen && wizardSch && (
+        <MakeUpWizard 
+          schedule={wizardSch} 
+          onClose={() => setIsWizardOpen(false)} 
+        />
       )}
     </div>
   );

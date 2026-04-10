@@ -16,7 +16,7 @@ const ROLE_CONFIG = {
   viewer:            { label: 'Faculty / Viewer',  color: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700', icon: Eye },
 };
 
-const DEFAULT_FORM = { username: '', password: '', role: 'program_assistant', faculty_id: '' };
+const DEFAULT_FORM = { username: '', email: '', password: '', role: 'program_assistant', faculty_id: '' };
 
 export default function UsersManagement() {
   const queryClient = useQueryClient();
@@ -60,6 +60,28 @@ export default function UsersManagement() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
   });
 
+  const sendResetMutation = useMutation({
+    mutationFn: (id) => api.post(`/users/${id}/send-reset`),
+    onSuccess: (res) => {
+      setConfirmConfig({
+        title: 'Recovery Dispatched',
+        message: res.data.message,
+        type: 'success',
+        onConfirm: () => setIsConfirmModalOpen(false)
+      });
+      setIsConfirmModalOpen(true);
+    },
+    onError: (err) => {
+      setConfirmConfig({
+        title: 'Dispatch Failed',
+        message: err.response?.data?.error || 'Could not send recovery email.',
+        type: 'danger',
+        onConfirm: () => setIsConfirmModalOpen(false)
+      });
+      setIsConfirmModalOpen(true);
+    }
+  });
+
   const openAdd = () => {
     setFormData(DEFAULT_FORM);
     setIsEditing(false);
@@ -69,7 +91,7 @@ export default function UsersManagement() {
   };
 
   const openEdit = (u) => {
-    setFormData({ username: u.username, password: '', role: u.role, faculty_id: u.faculty_id || '' });
+    setFormData({ username: u.username, email: u.email || '', password: '', role: u.role, faculty_id: u.faculty_id || '' });
     setCurrentId(u.id);
     setIsEditing(true);
     setModalError('');
@@ -85,7 +107,7 @@ export default function UsersManagement() {
     e.preventDefault();
     setModalError('');
     if (isEditing) {
-      const payload = { role: formData.role, faculty_id: formData.faculty_id || null, username: formData.username };
+      const payload = { role: formData.role, faculty_id: formData.faculty_id || null, username: formData.username, email: formData.email };
       if (formData.password) payload.password = formData.password;
       updateMutation.mutate(payload);
     } else {
@@ -243,8 +265,9 @@ export default function UsersManagement() {
                             {u.username.substring(0, 2)}
                           </div>
                           <div>
-                            <div className="font-bold text-gray-900 dark:text-white text-base">{u.username}</div>
-                            <div className={`mt-1 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border ${cfg.color}`}>
+                            <div className="font-bold text-gray-900 dark:text-white text-base leading-tight">{u.username}</div>
+                            <div className="text-[10px] font-semibold text-gray-400 dark:text-slate-500 mb-1">{u.email || 'No email registered'}</div>
+                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border ${cfg.color}`}>
                               <RoleIcon className="w-3 h-3" /> {cfg.label}
                             </div>
                           </div>
@@ -277,6 +300,24 @@ export default function UsersManagement() {
                             title="Edit Account"
                           >
                             <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setConfirmConfig({
+                                title: 'Reset Identity Key?',
+                                message: `Dispatch an institutional Verification Matrix Code to "${u.email}"? This allows the user to securely regain access and synchronize their credentials.`,
+                                type: 'brand',
+                                onConfirm: () => {
+                                  sendResetMutation.mutate(u.id);
+                                  setIsConfirmModalOpen(false);
+                                }
+                              });
+                              setIsConfirmModalOpen(true);
+                            }}
+                            className="p-2 rounded-xl text-amber-600 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:hover:bg-amber-900/40 transition-colors shadow-sm border border-amber-100 dark:border-amber-800"
+                            title="Send Recovery OTP"
+                          >
+                            <KeyRound className="w-4 h-4" />
                           </button>
                           {u.role !== 'admin' && (
                             <button
@@ -354,7 +395,7 @@ export default function UsersManagement() {
               )}
 
               <div>
-                <label className="block text-xs font-black uppercase tracking-widest text-gray-500 dark:text-slate-400 mb-2">Identity</label>
+                <label className="block text-xs font-black uppercase tracking-widest text-gray-500 dark:text-slate-400 mb-2">Institutional ID</label>
                 <input
                   required
                   type="text"
@@ -363,6 +404,18 @@ export default function UsersManagement() {
                   value={formData.username}
                   onChange={e => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/\s/g, '') })}
                   placeholder="e.g. jdoe"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-widest text-gray-500 dark:text-slate-400 mb-2">Registered Email</label>
+                <input
+                  required
+                  type="email"
+                  className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 bg-gray-50 dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500 text-sm font-bold transition-all"
+                  value={formData.email}
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="name@institution.edu"
                 />
               </div>
 
