@@ -387,7 +387,7 @@ export default function Landing() {
           <div className="flex flex-col lg:flex-row items-center gap-16">
             <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-[3rem] overflow-hidden border-4 border-white/5 flex-shrink-0 shadow-2xl rotate-3 scale-95 hover:rotate-0 hover:scale-100 transition-all duration-700 relative group">
                <div className="absolute inset-0 bg-brand-500/10 group-hover:bg-transparent z-10 transition-all" />
-               <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80" alt="Founder" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000" />
+               <img src="/assets/images/founder.jpg" alt="Founder" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000" />
             </div>
             <div className="space-y-6 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-500/10 text-brand-400 text-[10px] font-black uppercase tracking-[0.3em] border border-brand-500/20">
