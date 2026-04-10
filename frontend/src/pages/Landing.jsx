@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
-  ArrowRight, CalendarCheck, Layers, Zap, 
-  ShieldCheck, LayoutDashboard, BrainCircuit, Users, CheckCircle2, ChevronRight, Moon, Sun
+  ArrowRight, CalendarCheck, Layers, Zap, ShieldCheck, 
+  LayoutDashboard, BrainCircuit, Users, CheckCircle2, 
+  ChevronRight, Moon, Sun, AlertTriangle, Sparkles, 
+  ShieldAlert, History, MousePointer2, BarChart3
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -119,23 +121,26 @@ export default function Landing() {
           variants={staggerContainer}
           className="space-y-8 flex flex-col items-center"
         >
-          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-brand-500/30 bg-brand-500/10 backdrop-blur-md text-brand-700 dark:text-brand-400 text-xs font-black uppercase tracking-widest shadow-lg shadow-brand-500/10">
-            <Zap className="w-4 h-4 fill-brand-500/50" /> Enterprise-Grade AI Deployment Module
+          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-brand-500/30 bg-brand-500/10 backdrop-blur-md text-brand-700 dark:text-brand-400 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-500/10">
+            <Sparkles className="w-4 h-4 text-brand-500" /> Administrative Relief Module
           </motion.div>
           
-          <motion.h1 variants={fadeUp} className="text-5xl sm:text-6xl md:text-8xl font-black tracking-tighter leading-[1.05] text-transparent bg-clip-text bg-gradient-to-br from-slate-900 via-slate-700 to-slate-500 dark:from-white dark:via-slate-200 dark:to-slate-500 pb-2 max-w-5xl">
-            Meet the Scheduler <br className="hidden md:block"/>
-            of the <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 via-indigo-500 to-violet-500">Future.</span>
+          <motion.h1 variants={fadeUp} className="text-5xl sm:text-6xl md:text-8xl font-black tracking-tighter leading-[1] text-transparent bg-clip-text bg-gradient-to-br from-slate-900 via-slate-700 to-slate-500 dark:from-white dark:via-slate-200 dark:to-slate-500 pb-2 max-w-5xl">
+            Stop fighting <br className="hidden md:block"/>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 via-indigo-500 to-violet-500">Spreadsheets.</span>
           </motion.h1>
 
           <motion.p variants={fadeUp} className="max-w-2xl text-lg md:text-xl text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
-            Eradicate double-booking and operational bottlenecks with SchedulaPro's intelligent constraint formulation matrix. Designed exclusively for cutting-edge educational institutions.
+            SchedulaPro transforms manual logistics into an elegant mathematical certainty. Reclaim hundreds of administrative hours with the industry's most advanced constraint-formulation matrix.
           </motion.p>
 
-          <motion.div variants={fadeUp} className="pt-6 w-full flex justify-center">
-            <Link to="/login" className="px-8 py-5 rounded-2xl bg-gradient-to-r from-brand-500 to-indigo-600 text-white font-black text-sm uppercase tracking-widest shadow-2xl shadow-brand-500/30 hover:shadow-brand-500/50 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
-              <LayoutDashboard className="w-5 h-5" /> Initialize Dashboard
+          <motion.div variants={fadeUp} className="pt-6 w-full flex flex-col sm:flex-row justify-center gap-4">
+            <Link to="/login" className="px-8 py-5 rounded-2xl bg-slate-950 dark:bg-white text-white dark:text-slate-900 font-black text-xs uppercase tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
+              <LayoutDashboard className="w-5 h-5" /> Experience Scheduling Zen
             </Link>
+            <button className="px-8 py-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-black text-xs uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+              Watch Product Film
+            </button>
           </motion.div>
 
           {/* Dynamic Metrics Counter */}
@@ -150,35 +155,132 @@ export default function Landing() {
         </motion.div>
       </main>
 
-      {/* Epic Dashboard Mockup Presentation */}
-      <section className="relative z-20 px-6 pb-32 max-w-[1400px] mx-auto">
-        <motion.div 
-          initial={{ opacity: 0, y: 100 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="relative rounded-[2rem] border border-slate-200 dark:border-white/10 bg-slate-100/50 dark:bg-slate-900/50 p-2 sm:p-4 backdrop-blur-xl shadow-2xl shadow-brand-900/20 group overflow-hidden"
-        >
-          {/* Decorative browser bar */}
-          <div className="absolute top-0 left-0 w-full h-12 bg-white/50 dark:bg-slate-950/50 border-b border-slate-200 dark:border-white/5 flex items-center px-4 gap-2 z-10 backdrop-blur-md">
-            <div className="w-3 h-3 rounded-full bg-rose-400" />
-            <div className="w-3 h-3 rounded-full bg-amber-400" />
-            <div className="w-3 h-3 rounded-full bg-emerald-400" />
-            <div className="ml-4 flex-1 h-6 bg-slate-200/50 dark:bg-white/5 rounded-md max-w-sm flex items-center px-3">
-              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">schedulapro.internal.network</span>
+      {/* ── Section: The Scheduling Crisis (Pain Points) ────────────────────── */}
+      <section className="relative z-10 py-32 px-6 overflow-hidden">
+        <div className="max-w-6xl mx-auto">
+          <motion.div 
+             initial={{ opacity: 0, y: 30 }}
+             whileInView={{ opacity: 1, y: 0 }}
+             viewport={{ once: true }}
+             className="text-center mb-20 space-y-4"
+          >
+             <h2 className="text-sm font-black text-brand-500 uppercase tracking-[0.4em] mb-4">The Status Quo</h2>
+             <h3 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter">Scheduling shouldn't feel like <br /><span className="text-red-500 underline decoration-wavy decoration-2 underline-offset-8">Administrative Warfare.</span></h3>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+             {[
+               { icon: ShieldAlert, color: "red", title: "Excel Hell", desc: "Hidden overlaps in static spreadsheets that only reveal themselves when the semester starts." },
+               { icon: History, color: "amber", title: "Clerical Decay", desc: "Wasting 80+ hours of high-value administrative time on manual data entry and conflict hunting." },
+               { icon: Users, color: "orange", title: "Personnel Burnout", desc: "Inefficient loads and awkward gaps that frustrate faculty and lower institutional morale." }
+             ].map((pain, i) => (
+               <motion.div 
+                 key={i} 
+                 initial={{ opacity: 0, y: 20 }}
+                 whileInView={{ opacity: 1, y: 0 }}
+                 viewport={{ once: true }}
+                 transition={{ delay: i * 0.1 }}
+                 className="p-10 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[3rem] shadow-sm relative group overflow-hidden"
+               >
+                 <div className={`absolute top-0 right-0 w-24 h-24 bg-${pain.color}-500/5 blur-3xl rounded-full -mr-12 -mt-12 group-hover:bg-${pain.color}-500/20 transition-all`} />
+                 <div className={`w-14 h-14 rounded-2xl bg-${pain.color}-50 dark:bg-${pain.color}-950/30 flex items-center justify-center text-${pain.color}-500 mb-8 border border-${pain.color}-100 dark:border-${pain.color}-900/50 shadow-inner`}>
+                    <pain.icon className="w-7 h-7" />
+                 </div>
+                 <h4 className="text-xl font-black text-slate-900 dark:text-white mb-4 uppercase tracking-tight">{pain.title}</h4>
+                 <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed italic">"{pain.desc}"</p>
+               </motion.div>
+             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Section: The Resolution (Problem vs Solution Visual) ────────────── */}
+      <section className="relative z-10 py-32 bg-slate-100 dark:bg-slate-950/50 border-y border-slate-200 dark:border-slate-900">
+         <div className="max-w-[1400px] mx-auto px-6">
+            <div className="flex flex-col lg:flex-row items-center gap-16">
+               <div className="flex-1 space-y-8">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                    <MousePointer2 className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter leading-tight">
+                    From Chaos to <br />
+                    <span className="text-emerald-500">Conflict-Free Harmony.</span>
+                  </h3>
+                  <p className="text-lg text-slate-600 dark:text-slate-400 font-medium leading-relaxed max-w-xl italic border-l-4 border-emerald-500/30 pl-6">
+                    "Our intelligent matrix doesn't just list data—it understands it. It dynamically calculates thousands of permutation constraints in milliseconds to ensure not a single room or professor is double-booked."
+                  </p>
+                  <div className="pt-4 grid grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <p className="text-2xl font-black text-slate-900 dark:text-white">99%</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Error Reduction</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-2xl font-black text-slate-900 dark:text-white">80hrs+</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Saved per Semester</p>
+                    </div>
+                  </div>
+               </div>
+
+               <motion.div 
+                 initial={{ opacity: 0, scale: 0.9 }}
+                 whileInView={{ opacity: 1, scale: 1 }}
+                 viewport={{ once: true }}
+                 className="flex-1 rounded-[3rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-[0_32px_128px_rgba(0,0,0,0.1)] group"
+               >
+                 <img 
+                   src="/Users/lloyd.dacles/.gemini/antigravity/brain/daaef2ba-49fd-4e61-8b5c-d516c70410ca/scheduling_conflict_resolution_mockup_1775800940911.png" 
+                   alt="Conflict Resolution Demonstration" 
+                   className="w-full rounded-[2.5rem] grayscale group-hover:grayscale-0 transition-all duration-1000"
+                 />
+               </motion.div>
+            </div>
+         </div>
+      </section>
+
+      {/* ── Section: Institutional Intelligence (Executive Dashboard) ────────── */}
+      <section className="relative z-10 py-32">
+        <div className="max-w-[1400px] mx-auto px-6">
+          <div className="flex flex-col-reverse lg:flex-row items-center gap-16">
+            <motion.div 
+               initial={{ opacity: 0, x: -50 }}
+               whileInView={{ opacity: 1, x: 0 }}
+               viewport={{ once: true }}
+               className="flex-1 rounded-[3rem] overflow-hidden border border-slate-200 dark:border-white/10 shadow-2xl relative"
+            >
+               <img 
+                 src="/Users/lloyd.dacles/.gemini/antigravity/brain/daaef2ba-49fd-4e61-8b5c-d516c70410ca/institutional_health_analytics_mockup_1775800955604.png" 
+                 alt="Institutional Health Monitoring" 
+                 className="w-full"
+               />
+               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 to-transparent" />
+            </motion.div>
+
+            <div className="flex-1 space-y-8">
+               <div className="w-12 h-12 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-500">
+                 <BarChart3 className="w-6 h-6" />
+               </div>
+               <h3 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter leading-tight">
+                 Executive <br />
+                 <span className="text-brand-500">Institutional Wisdom.</span>
+               </h3>
+               <p className="text-lg text-slate-600 dark:text-slate-400 font-medium leading-relaxed max-w-xl">
+                 SchedulaPro provides high-level observability for administrators. Track campus-wide utilization, personnel efficiency, and system health from a single, high-fidelity command center.
+               </p>
+               <ul className="space-y-4 pt-4">
+                  {[
+                    "Departmental Efficiency Heatmaps",
+                    "Personnel Load Balancing Intelligence",
+                    "Room Classification Utilization Metrics",
+                    "Global Institutional Health Scoring"
+                  ].map((feat, i) => (
+                    <li key={i} className="flex items-center gap-3 text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">
+                      <CheckCircle2 className="w-5 h-5 text-brand-500" /> {feat}
+                    </li>
+                  ))}
+               </ul>
             </div>
           </div>
-          
-          <img 
-            src="/assets/images/dashboard_mockup.png" 
-            alt="SchedulaPro Interface Simulation" 
-            className="w-full rounded-[1.5rem] mt-10 shadow-inner brightness-105 contrast-105 group-hover:scale-[1.01] transition-transform duration-700" 
-            onError={(e) => {
-              e.target.src = "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=2000&q=80";
-              e.target.className = "w-full rounded-[1.5rem] mt-10 shadow-inner opacity-80 mix-blend-luminosity hover:mix-blend-normal transition-all duration-700";
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1c] via-transparent to-transparent opacity-40 pointer-events-none" />
-        </motion.div>
+        </div>
       </section>
 
       {/* Advanced AI Matrix Deep-Dive */}
@@ -274,29 +376,37 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Creator Showcase */}
-      <section className="relative z-20 py-24 bg-brand-950 dark:bg-slate-950 border-y border-white/10 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-900/20 to-indigo-900/20" />
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-brand-500/10 blur-[100px] rounded-full mix-blend-screen" />
+      {/* ── Section: The Vision (Creator Narrative) ─────────────────────────── */}
+      <section className="relative z-20 py-32 bg-slate-950 overflow-hidden border-y border-white/5">
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-900/20 to-indigo-900/20 opacity-40" />
+        <div className="absolute top-0 right-0 w-full h-full opacity-10 pointer-events-none grayscale brightness-50 contrast-125 mix-blend-overlay">
+           <img src="/Users/lloyd.dacles/.gemini/antigravity/brain/daaef2ba-49fd-4e61-8b5c-d516c70410ca/scheduling_zen_hero_bg_1775800971766.png" className="w-full h-full object-cover" />
+        </div>
         
-        <div className="max-w-5xl mx-auto px-6 relative z-10 flex flex-col md:flex-row items-center gap-12 text-center md:text-left">
-          <div className="w-48 h-48 sm:w-56 sm:h-56 rounded-full overflow-hidden border-4 border-brand-500/30 flex-shrink-0 shadow-2xl shadow-brand-500/20 relative">
-             <div className="absolute inset-0 bg-brand-500/20 mix-blend-overlay z-10" />
-             <img src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=500&q=80" alt="Architect" className="w-full h-full object-cover filter contrast-125" />
-          </div>
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/20 text-brand-400 text-[10px] font-black uppercase tracking-[0.2em]">
-              Primary Architect & Owner
+        <div className="max-w-[1400px] mx-auto px-6 relative z-10">
+          <div className="flex flex-col lg:flex-row items-center gap-16">
+            <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-[3rem] overflow-hidden border-4 border-white/5 flex-shrink-0 shadow-2xl rotate-3 scale-95 hover:rotate-0 hover:scale-100 transition-all duration-700 relative group">
+               <div className="absolute inset-0 bg-brand-500/10 group-hover:bg-transparent z-10 transition-all" />
+               <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80" alt="Founder" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000" />
             </div>
-            <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tighter">
-              Mr. Lloyd Christopher F. Dacles<span className="text-brand-400">, MIS</span>
-            </h2>
-            <p className="text-xl text-brand-100/80 font-semibold tracking-wide">
-              LDRaidmax Systems & Software Laboratory
-            </p>
-            <p className="text-sm text-slate-400 max-w-xl font-medium leading-relaxed pt-2">
-              "SchedulaPro was engineered to eliminate extreme hours of clerical overlap. It transforms a painful logistical nightmare into an elegant, automated mathematical certainty. Built for the modern educational ecosystem."
-            </p>
+            <div className="space-y-6 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-500/10 text-brand-400 text-[10px] font-black uppercase tracking-[0.3em] border border-brand-500/20">
+                A Message from the Architect
+              </div>
+              <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-tight">
+                "SchedulaPro was built to reclaim the human element <br className="hidden xl:block"/> 
+                of <span className="text-brand-500 underline decoration-brand-500/30 underline-offset-8">Academic Leadership.</span>"
+              </h2>
+              <div className="space-y-4 max-w-3xl">
+                <p className="text-lg text-slate-400 font-medium leading-relaxed">
+                  I started this project after years of seeing administrators trapped in endless spreadsheet cycles. SchedulaPro isn't just software—it's a mission to eliminate clerical fatigue and replace it with mathematical certainty.
+                </p>
+                <div className="pt-4">
+                  <p className="text-2xl font-black text-white tracking-tight">Mr. Lloyd Christopher F. Dacles<span className="text-brand-400">, MIS</span></p>
+                  <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">LDRaidmax Systems & Software Laboratory</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
