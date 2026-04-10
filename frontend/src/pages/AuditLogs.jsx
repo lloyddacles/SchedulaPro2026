@@ -12,6 +12,7 @@ import jsPDF from 'jspdf';
 
 export default function AuditLogs() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedLog, setSelectedLog] = useState(null);
   
   const { data, isLoading } = useQuery({
     queryKey: ['auditLogs'],
@@ -101,8 +102,18 @@ export default function AuditLogs() {
     doc.save(`system_audit_report_${new Date().getTime()}.pdf`);
   };
 
+  const getLogIcon = (action) => {
+    if (!action) return <Activity className="w-5 h-5 text-gray-400" />;
+    if (action.includes('CREATE')) return <PlusCircle className="w-5 h-5 text-emerald-500" />;
+    if (action.includes('UPDATE')) return <RefreshCw className="w-5 h-5 text-amber-500" />;
+    if (action.includes('DELETE')) return <Archive className="w-5 h-5 text-red-500" />;
+    if (action.includes('APPROVE')) return <UserCheck className="w-5 h-5 text-blue-500" />;
+    return <Activity className="w-5 h-5 text-gray-400" />;
+  };
+
   return (
-    <div className="space-y-8 pb-20">
+    <div className="space-y-8 pb-20 relative">
+      {/* ── Page Header ────────────────────────────────────────────────────── */}
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
         <div>
           <h1 className="text-4xl font-black text-gray-900 dark:text-white font-display tracking-tight flex items-center gap-3">
@@ -131,87 +142,6 @@ export default function AuditLogs() {
       </div>
 
       {/* ── Operational Intelligence Cards ────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-         <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} transition={{delay: 0.1}} className="p-6 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[2rem] shadow-sm flex items-center justify-between">
-            <div className="space-y-1">
-               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Velocity</p>
-               <h3 className="text-2xl font-black text-gray-900 dark:text-white">{lastHourLogs} Ops/hr</h3>
-            </div>
-            <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center">
-               <Activity className="w-6 h-6 text-emerald-500" />
-            </div>
-         </motion.div>
-
-         <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} transition={{delay: 0.2}} className="p-6 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[2rem] shadow-sm flex items-center justify-between">
-            <div className="space-y-1">
-               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Lead Operator</p>
-               <h3 className="text-2xl font-black text-gray-900 dark:text-white truncate max-w-[120px]">{leadAdmin}</h3>
-            </div>
-            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center">
-               <UserCheck className="w-6 h-6 text-blue-500" />
-            </div>
-         </motion.div>
-
-         <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} transition={{delay: 0.3}} className="p-6 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[2rem] shadow-sm flex items-center justify-between">
-            <div className="space-y-1">
-               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Hot Entity</p>
-               <h3 className="text-2xl font-black text-gray-900 dark:text-white truncate max-w-[120px]">{hotEntity}</h3>
-            </div>
-            <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center">
-               <Fingerprint className="w-6 h-6 text-amber-500" />
-            </div>
-         </motion.div>
-
-         <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} transition={{delay: 0.4}} className="p-6 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[2rem] shadow-sm flex items-center justify-between">
-            <div className="space-y-1">
-               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">System Health</p>
-               <h3 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 uppercase">Optimal</h3>
-            </div>
-            <div className="w-12 h-12 bg-brand-50 dark:bg-brand-900/20 rounded-2xl flex items-center justify-center">
-               <Shield className="w-6 h-6 text-brand-600 dark:text-brand-400" />
-            </div>
-         </motion.div>
-      </div>
-
-  const [selectedLog, setSelectedLog] = useState(null);
-
-  const getLogIcon = (action) => {
-    if (action.includes('CREATE')) return <PlusCircle className="w-5 h-5 text-emerald-500" />;
-    if (action.includes('UPDATE')) return <RefreshCw className="w-5 h-5 text-amber-500" />;
-    if (action.includes('DELETE')) return <Archive className="w-5 h-5 text-red-500" />;
-    if (action.includes('APPROVE')) return <UserCheck className="w-5 h-5 text-blue-500" />;
-    return <Activity className="w-5 h-5 text-gray-400" />;
-  };
-
-  return (
-    <div className="space-y-8 pb-20 relative">
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
-        <div>
-          <h1 className="text-4xl font-black text-gray-900 dark:text-white font-display tracking-tight flex items-center gap-3">
-             Audit Trail <span className="text-sm font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-full whitespace-nowrap border border-emerald-200 dark:border-emerald-800/50">Production Ledger</span>
-          </h1>
-          <div className="flex items-center gap-3 mt-2">
-            <span className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] rounded-md border border-slate-200 dark:border-slate-700">
-               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Monitoring
-            </span>
-            <p className="text-sm text-gray-500 dark:text-slate-400 font-medium italic">Immutable cryptographic record of all administrative state-shifts.</p>
-          </div>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-           <button 
-             onClick={exportToPDF}
-             className="flex-1 xl:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-700 dark:text-slate-300 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95"
-           >
-              <Download className="w-4 h-4 text-brand-500" /> Professional Export
-           </button>
-           <div className="flex-1 xl:flex-none flex items-center gap-2 px-5 py-3 bg-slate-950 dark:bg-brand-600 text-white rounded-2xl shadow-xl shadow-brand-500/20 border border-transparent">
-              <TerminalSquare className="w-5 h-5 text-emerald-400" /> 
-              <span className="font-mono text-xs font-black tracking-[0.2em] uppercase">{data?.total || 0} Registered Traces</span>
-           </div>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
          <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} transition={{delay: 0.1}} className="p-6 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[2rem] shadow-sm flex items-center justify-between">
             <div className="space-y-1">
