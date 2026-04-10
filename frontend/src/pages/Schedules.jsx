@@ -2,11 +2,17 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api';
 import useScheduleStore from '../store/useScheduleStore';
-import { PlusCircle, Trash2, Calendar, AlertCircle, X, Printer, Download, Sparkles, RotateCcw, ShieldAlert, RefreshCw } from 'lucide-react';
+import { 
+  PlusCircle, Trash2, Calendar, AlertCircle, X, Printer, 
+  Download, Sparkles, RotateCcw, ShieldAlert, RefreshCw, 
+  Ghost, Save, Database, ArrowRightLeft, History
+} from 'lucide-react';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import ConfirmModal from '../components/ConfirmModal';
+import GhostCommitBar from '../components/GhostCommitBar';
+import useGhostStore from '../store/useGhostStore';
 import { generateProfessionalPDF } from '../utils/pdfGenerator';
 import toast from 'react-hot-toast';
 
@@ -47,6 +53,10 @@ export default function Schedules() {
   const [popoverState, setPopoverState] = useState({ isOpen: false, data: null, position: { top: 0, left: 0 } });
   const [smartSuggestions, setSmartSuggestions] = useState([]);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
+  const [isCommittingGhost, setIsCommittingGhost] = useState(false);
+
+  // ── Ghost Mode Logic ───────────────────────────────────────────────────
+  const { isGhostMode, stagedSchedules, toggleGhostMode, stageUpdate, stageDelete, getDiff, discardDraft } = useGhostStore();
   
   // ── Responsive View State ────────────────────────────────────────────────
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -291,11 +301,22 @@ export default function Schedules() {
       teaching_load_id: Number(formData.teaching_load_id)
     };
 
+    if (isGhostMode) {
+      stageUpdate(submissionData);
+      setIsModalOpen(false);
+      toast.success(`Staged: ${loads.find(l => l.id === submissionData.teaching_load_id)?.subject_code}`, { 
+        icon: '👻',
+        style: { background: '#1e293b', color: '#fff', border: '1px solid #7c3aed' }
+      });
+      return;
+    }
+
     if (isEditingSchedule) updateMutation.mutate({ id: selectedScheduleId, ...submissionData });
     else createMutation.mutate(submissionData);
   };
 
-  let displayedSchedules = schedules;
+  let displayedSchedules = isGhostMode ? stagedSchedules : schedules;
+  
   if (selectedProgramId) displayedSchedules = displayedSchedules.filter(s => s.program_id === Number(selectedProgramId));
   
   if (selectedFacultyId) {
@@ -307,6 +328,11 @@ export default function Schedules() {
   }
   else if (selectedSectionId) displayedSchedules = displayedSchedules.filter(s => s.section_id === Number(selectedSectionId));
   else if (selectedRoomName) displayedSchedules = displayedSchedules.filter(s => s.room === selectedRoomName);
+
+  // Remove blocks pending deletion in Ghost Mode
+  if (isGhostMode) {
+    displayedSchedules = displayedSchedules.filter(s => !s.isPendingDelete);
+  }
 
   const handlePrint = () => window.print();
 
@@ -364,22 +390,55 @@ export default function Schedules() {
       const newDayOfWeek = newDayMap[info.event.start.getDay()];
       const padTime = d => d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0') + ':00';
       
+      const updatedData = {
+        ...oldSch,
+        day_of_week: newDayOfWeek,
+        start_time: padTime(info.event.start),
+        end_time: padTime(info.event.end)
+      };
+
+      if (isGhostMode) {
+        stageUpdate(updatedData);
+        toast.success(`Staged move: ${oldSch.subject_code} to ${newDayOfWeek}`, { 
+          icon: '👻',
+          style: { background: '#1e293b', color: '#fff', border: '1px solid #7c3aed' }
+        });
+        return;
+      }
+
       setConfirmConfig({
         title: 'Reschedule Class Block?',
         message: `Move ${oldSch.subject_code} to ${newDayOfWeek} starting at ${info.event.start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}?`,
         type: 'indigo',
         onConfirm: () => {
-          updateMutation.mutate({
-             id: oldSch.id, teaching_load_id: oldSch.teaching_load_id,
-             room: oldSch.room, day_of_week: newDayOfWeek,
-             start_time: padTime(info.event.start), end_time: padTime(info.event.end)
-          }, {
+          updateMutation.mutate(updatedData, {
              onError: (err) => { setError(err.response?.data?.error?.details || err.response?.data?.error?.message || err.message); info.revert(); }
           });
         },
         onCancel: () => info.revert()
       });
       setIsConfirmModalOpen(true);
+  };
+
+  const handleGhostCommit = async () => {
+    setIsCommittingGhost(true);
+    const diff = getDiff();
+    try {
+      const res = await api.post('/schedules/batch-sync', {
+        term_id: activeTermId,
+        updates: diff.updated,
+        creates: diff.created,
+        deletes: diff.deleted.map(s => s.id)
+      });
+      queryClient.invalidateQueries(['schedules']);
+      discardDraft();
+      toast.success(res.data.message || 'Draft synchronized successfully!');
+    } catch (err) {
+      setError(err.response?.data?.error?.message || 'Ghost Sync failed. Check for concurrent conflicts.');
+      toast.error('Sync failed. See error log.');
+    } finally {
+      setIsCommittingGhost(false);
+    }
   };
 
   const dayMap = { 'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6 };
@@ -466,13 +525,16 @@ export default function Schedules() {
     ...displayedSchedules.map(sch => {
        const colors = getProgramColor(sch.program_code);
        const dateStr = weekDates[dayMap[sch.day_of_week]];
+       const isDraft = sch.isDraft;
        return {
          id: sch.id.toString(),
          title: sch.subject_code,
          start: `${dateStr}T${sch.start_time}`,
          end: `${dateStr}T${sch.end_time}`,
-         backgroundColor: colors.bg,
-         borderColor: colors.border,
+         backgroundColor: isDraft ? 'rgba(124, 58, 237, 0.1)' : colors.bg,
+         borderColor: isDraft ? '#a78bfa' : colors.border,
+         textColor: isDraft ? '#a78bfa' : '#fff',
+         classNames: isDraft ? ['ghost-draft-event'] : [],
          extendedProps: { raw: sch }
        };
     }),
@@ -652,6 +714,17 @@ export default function Schedules() {
               }} disabled={autoScheduleMutation.isPending} className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition h-[42px] flex-1 sm:flex-none">
                 <Sparkles className="w-4 h-4" /> <span className="hidden sm:inline">Auto</span>
             </button>
+            <button 
+              onClick={() => toggleGhostMode(schedules)} 
+              className={`flex items-center justify-center gap-2 px-4 sm:px-5 py-2 rounded-xl font-bold shadow-lg transition h-[42px] flex-1 sm:flex-none border
+                ${isGhostMode 
+                  ? 'bg-brand-500/10 text-brand-500 border-brand-500/30' 
+                  : 'bg-white dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-slate-50'
+                }`}
+            >
+              <Ghost className={`w-4 h-4 ${isGhostMode ? 'animate-pulse' : ''}`} /> 
+              <span className="hidden sm:inline">{isGhostMode ? 'Ghost Layer Active' : 'Ghost Mode'}</span>
+            </button>
             <button onClick={() => { setError(''); setIsEditingSchedule(false); setSelectedScheduleId(null); setFormData({ teaching_load_id: '', day_of_week: 'Monday', start_time: '08:00', end_time: '09:00', room: '' }); setIsModalOpen(true); }} className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2 bg-brand-600 text-white rounded-xl font-bold shadow-lg hover:bg-brand-700 transition h-[42px] flex-1 sm:flex-none">
               <PlusCircle className="w-4 h-4" /> <span className="hidden sm:inline">Book Slot</span>
             </button>
@@ -735,6 +808,13 @@ export default function Schedules() {
                .fc-col-header-cell-cushion { font-size: 11px; font-weight: 800; color: #111827; padding: 10px 0; text-transform: uppercase; }
                .fc-event-main { padding: 0 !important; }
                .fc-event { border: 1px solid rgba(0,0,0,0.05) !important; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+                /* GHOST DRAFT STYLING */
+                .ghost-draft-event {
+                  border: 2px dashed #a78bfa !important;
+                  box-shadow: 0 0 15px rgba(139, 92, 246, 0.2) !important;
+                  background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(167, 139, 250, 0.05) 5px, rgba(167, 139, 250, 0.05) 10px);
+                }
                 /* ROW EXPANSION: Expand downward for more space */
                 .fc-timegrid-slot { height: 3.5rem !important; }
                 .fc-timegrid-slot-label { vertical-align: top !important; padding-top: 4px !important; }
@@ -1060,6 +1140,15 @@ export default function Schedules() {
                   <button 
                     type="button" 
                     onClick={() => { 
+                      if (isGhostMode) {
+                        stageDelete(selectedScheduleId);
+                        setIsModalOpen(false);
+                        toast.success(`Staged removal`, { 
+                          icon: '👻',
+                          style: { background: '#1e293b', color: '#fff', border: '1px solid #ef4444' }
+                        });
+                        return;
+                      }
                       setConfirmConfig({
                         title: 'Delete this Block?',
                         message: 'Are you sure you want to remove this specific class assignment? This teaching load will return to the unassigned pool.',
@@ -1099,6 +1188,8 @@ export default function Schedules() {
           </div>
         </div>
       )}
+      {/* GHOST MODE COMMAND CENTER */}
+      <GhostCommitBar onCommit={handleGhostCommit} isCommitting={isCommittingGhost} />
     </div>
   );
 }

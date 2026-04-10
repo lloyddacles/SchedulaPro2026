@@ -557,5 +557,75 @@ export class ScheduleService {
     }
 
     return suggestions;
+  /**
+   * Phase 3: Atomic Batch Sync — Commit entire Ghost Mode draft efficiently
+   * Performs all updates, creations, and deletions in a single transaction.
+   */
+  static async batchSync(poolOrConn: any, params: {
+    termId: number;
+    updates: any[];   // { id, day_of_week covers, start_time, end_time, room, teaching_load_id }
+    creates: any[];   // { day_of_week, start_time, end_time, room, teaching_load_id }
+    deletes: number[]; // IDs to delete
+  }): Promise<{ success: boolean; message: string; audit_ids?: number[] }> {
+    const { termId, updates, creates, deletes } = params;
+    
+    // Start atomic transaction
+    await poolOrConn.query('START TRANSACTION');
+
+    try {
+      // 1. Process Deletions
+      if (deletes.length > 0) {
+        await poolOrConn.query('DELETE FROM schedules WHERE id IN (?)', [deletes]);
+      }
+
+      // 2. Process Updates with real-time validation
+      for (const upd of updates) {
+        const result = await this.validatePlacement(poolOrConn, {
+          teachingLoadId: upd.teaching_load_id,
+          dayOfWeek: upd.day_of_week,
+          startTime: upd.start_time,
+          endTime: upd.end_time,
+          room: upd.room,
+          termId,
+          excludeScheduleId: upd.id
+        });
+
+        if (!result.valid) {
+          throw new Error(`Batch validation failed for Update: ${result.message} - ${result.details}`);
+        }
+
+        await poolOrConn.query(
+          'UPDATE schedules SET day_of_week = ?, start_time = ?, end_time = ?, room = ? WHERE id = ?',
+          [upd.day_of_week, upd.start_time, upd.end_time, upd.room, upd.id]
+        );
+      }
+
+      // 3. Process Creations with real-time validation
+      for (const crt of creates) {
+        const result = await this.validatePlacement(poolOrConn, {
+          teachingLoadId: crt.teaching_load_id,
+          dayOfWeek: crt.day_of_week,
+          startTime: crt.start_time,
+          endTime: crt.end_time,
+          room: crt.room,
+          termId
+        });
+
+        if (!result.valid) {
+          throw new Error(`Batch validation failed for Creation: ${result.message} - ${result.details}`);
+        }
+
+        await poolOrConn.query(
+          'INSERT INTO schedules (teaching_load_id, day_of_week, start_time, end_time, room) VALUES (?, ?, ?, ?, ?)',
+          [crt.teaching_load_id, crt.day_of_week, crt.start_time, crt.end_time, crt.room]
+        );
+      }
+
+      await poolOrConn.query('COMMIT');
+      return { success: true, message: 'Ghost Layer successfully committed to production ledger.' };
+    } catch (error: any) {
+      await poolOrConn.query('ROLLBACK');
+      return { success: false, message: error.message };
+    }
   }
 }

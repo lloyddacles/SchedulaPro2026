@@ -332,4 +332,41 @@ router.post('/auto-schedule', authorizeRoles('admin', 'program_head'), validate(
   }
 });
 
+// ── BATCH SYNC ENDPOINT (GHOST MODE COMMIT) ──────────────────────────────────
+router.post('/batch-sync', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response, next: express.NextFunction) => {
+  const { term_id, updates, creates, deletes } = req.body;
+  
+  if (!term_id) {
+    return next(new ApiError(400, 'Term ID is required for batch synchronization.', 'BAD_REQUEST'));
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    const result = await ScheduleService.batchSync(connection, {
+      termId: Number(term_id),
+      updates: updates || [],
+      creates: creates || [],
+      deletes: deletes || []
+    });
+
+    if (!result.success) {
+      throw new ApiError(400, result.message, 'BATCH_SYNC_FAILURE');
+    }
+
+    await logAudit('STAGING_COMMIT', 'Schedule', null, { 
+      modified: (updates?.length || 0) + (creates?.length || 0) + (deletes?.length || 0),
+      summary: `Ghost Mode sync: ${updates?.length || 0} updated, ${creates?.length || 0} created, ${deletes?.length || 0} deleted.`
+    }, req.user.username);
+
+    res.json({ message: result.message });
+
+    // Global refresh signal for all connected administrators
+    req.io.emit('schedule_updated', { action: 'batch_sync', term_id });
+  } catch (error: any) {
+    next(error);
+  } finally {
+    connection.release();
+  }
+});
+
 export default router;
