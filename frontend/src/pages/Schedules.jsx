@@ -97,11 +97,15 @@ export default function Schedules() {
     if (!socket || !isConnected) return;
 
     const handleUpdate = (data) => {
-      // Real-time update received
-      
-      // If the update has a specific campus_id and it matches our filter (or we are in Master View)
+      // Real-time update received: Invalidate schedules
       if (!data.campus_id || !selectedCampusId || Number(data.campus_id) === Number(selectedCampusId)) {
         queryClient.invalidateQueries(['schedules']);
+      }
+      
+      // If it's a global structural reset, invalidate loads and other matrices
+      if (data?.action === 'reset') {
+        queryClient.invalidateQueries(['loads']);
+        queryClient.invalidateQueries(['schedules']); // Broad invalidation
       }
     };
 

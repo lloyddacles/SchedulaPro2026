@@ -145,7 +145,14 @@ export default function MySchedule() {
 
   useEffect(() => {
     if (!socket || !isConnected) return;
-    const handleUpdate = () => queryClient.invalidateQueries(['my-schedules']);
+    const handleUpdate = (payload) => {
+      queryClient.invalidateQueries(['my-schedules']);
+      queryClient.invalidateQueries(['my-workload']);
+      // If it's a reset, aggressively clear everything
+      if (payload?.action === 'reset') {
+        queryClient.invalidateQueries(['my-advisory-sections']);
+      }
+    };
     socket.on('schedule_updated', handleUpdate);
     return () => socket.off('schedule_updated', handleUpdate);
   }, [socket, isConnected, queryClient]);
