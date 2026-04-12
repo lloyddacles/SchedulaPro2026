@@ -18,47 +18,21 @@ interface ScheduleQuery {
   section_id?: string;
 }
 
-router.get('/', async (req: Request<{}, {}, {}, ScheduleQuery>, res: Response, next: express.NextFunction) => {
+router.get('/suggest-slots', authorizeRoles('admin', 'program_head', 'program_assistant', 'faculty'), async (req: Request, res: Response, next: express.NextFunction) => {
+  const { teaching_load_id, term_id, preferred_room } = req.query;
+
+  if (!teaching_load_id || !term_id) {
+    return res.status(400).json({ message: 'teaching_load_id and term_id are required.' });
+  }
+
   try {
-    const { faculty_id, term_id, campus_id, section_id } = req.query;
-    let query = `
-      SELECT sch.id, sch.teaching_load_id, sch.day_of_week, sch.start_time, sch.end_time, sch.room,
-             tl.faculty_id, tl.co_faculty_id_1, tl.co_faculty_id_2, tl.subject_id, tl.term_id, tl.section_id, tl.status,
-             f.full_name as faculty_name,
-             f2.full_name as co_faculty_1_name,
-             f3.full_name as co_faculty_2_name,
-             s.subject_code, s.subject_name,
-             sec.name as section_name, sec.year_level, p.code as program_code, p.id as program_id,
-             rm.campus_id as room_campus_id
-      FROM schedules sch
-      JOIN teaching_loads tl ON sch.teaching_load_id = tl.id
-      JOIN faculty f ON tl.faculty_id = f.id
-      LEFT JOIN faculty f2 ON tl.co_faculty_id_1 = f2.id
-      LEFT JOIN faculty f3 ON tl.co_faculty_id_2 = f3.id
-      JOIN subjects s ON tl.subject_id = s.id
-      JOIN sections sec ON tl.section_id = sec.id
-      JOIN programs p ON sec.program_id = p.id
-      LEFT JOIN rooms rm ON sch.room = rm.name
-    `;
-    const params: (string | number)[] = [];
-    const conditions = ["tl.status != 'archived'"];
-
-    if (faculty_id) {
-      conditions.push('(tl.faculty_id = ? OR tl.co_faculty_id_1 = ? OR tl.co_faculty_id_2 = ?)'); 
-      params.push(faculty_id, faculty_id, faculty_id);
-    }
-    if (term_id) { conditions.push('tl.term_id = ?'); params.push(term_id); }
-    if (campus_id) { conditions.push('rm.campus_id = ?'); params.push(campus_id); }
-    if (section_id) { conditions.push('tl.section_id = ?'); params.push(section_id); }
-
-    if (conditions.length > 0) {
-      query += ` WHERE ` + conditions.join(' AND ');
-    }
-
-    query += ` ORDER BY sch.day_of_week ASC, sch.start_time ASC`;
-
-    const [rows] = await pool.query(query, params);
-    res.json(rows);
+    const suggestions = await ScheduleService.suggestAlternativeSlots(pool, {
+      teachingLoadId: Number(teaching_load_id),
+      termId: Number(term_id),
+      preferredRoom: preferred_room as string | undefined,
+      limit: 10 // Increase limit for recovery search
+    });
+    res.json(suggestions);
   } catch (error: any) {
     next(error);
   }
@@ -92,21 +66,49 @@ router.get('/check-conflict', authorizeRoles('admin', 'program_head', 'program_a
     next(error);
   }
 });
-router.get('/suggest-slots', authorizeRoles('admin', 'program_head', 'program_assistant', 'faculty'), async (req: Request, res: Response, next: express.NextFunction) => {
-  const { teaching_load_id, term_id, preferred_room } = req.query;
 
-  if (!teaching_load_id || !term_id) {
-    return res.status(400).json({ message: 'teaching_load_id and term_id are required.' });
-  }
-
+router.get('/', async (req: Request<{}, {}, {}, ScheduleQuery>, res: Response, next: express.NextFunction) => {
   try {
-    const suggestions = await ScheduleService.suggestAlternativeSlots(pool, {
-      teachingLoadId: Number(teaching_load_id),
-      termId: Number(term_id),
-      preferredRoom: preferred_room as string | undefined,
-      limit: 10 // Increase limit for recovery search
-    });
-    res.json(suggestions);
+    const { faculty_id, term_id, campus_id, section_id } = req.query;
+    let query = `
+      SELECT sch.id, sch.teaching_load_id, sch.day_of_week, sch.start_time, sch.end_time, sch.room,
+             tl.faculty_id, tl.co_faculty_id_1, tl.co_faculty_id_2, tl.subject_id, tl.term_id, tl.section_id, tl.status,
+             f.full_name as faculty_name,
+             f2.full_name as co_faculty_1_name,
+             f3.full_name as co_faculty_2_name,
+             s.subject_code, s.subject_name,
+             sec.name as section_name, sec.year_level, p.code as program_code, p.id as program_id,
+             rm.campus_id as room_campus_id,
+             sch.is_makeup, sch.event_date
+      FROM schedules sch
+      JOIN teaching_loads tl ON sch.teaching_load_id = tl.id
+      JOIN faculty f ON tl.faculty_id = f.id
+      LEFT JOIN faculty f2 ON tl.co_faculty_id_1 = f2.id
+      LEFT JOIN faculty f3 ON tl.co_faculty_id_2 = f3.id
+      JOIN subjects s ON tl.subject_id = s.id
+      JOIN sections sec ON tl.section_id = sec.id
+      JOIN programs p ON sec.program_id = p.id
+      LEFT JOIN rooms rm ON sch.room = rm.name
+    `;
+    const params: (string | number)[] = [];
+    const conditions = ["tl.status != 'archived'"];
+
+    if (faculty_id) {
+      conditions.push('(tl.faculty_id = ? OR tl.co_faculty_id_1 = ? OR tl.co_faculty_id_2 = ?)'); 
+      params.push(faculty_id, faculty_id, faculty_id);
+    }
+    if (term_id) { conditions.push('tl.term_id = ?'); params.push(term_id); }
+    if (campus_id) { conditions.push('rm.campus_id = ?'); params.push(campus_id); }
+    if (section_id) { conditions.push('tl.section_id = ?'); params.push(section_id); }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ` + conditions.join(' AND ');
+    }
+
+    query += ` ORDER BY sch.day_of_week ASC, sch.start_time ASC`;
+
+    const [rows] = await pool.query(query, params);
+    res.json(rows);
   } catch (error: any) {
     next(error);
   }

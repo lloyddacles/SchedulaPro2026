@@ -506,22 +506,33 @@ export default function MySchedule() {
                     </div>
                  </div>
                  
-                 <div className="grid grid-cols-2 gap-4">
-                    <button onClick={()=>setReqType('DROP')} className={`py-4 rounded-2xl font-black uppercase tracking-widest text-xs border-2 transition-all ${reqType === 'DROP' ? 'bg-brand-600 text-white border-brand-600 shadow-xl shadow-brand-500/20' : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-700'}`}>Drop Load</button>
-                    <button onClick={()=>setReqType('SWAP')} className={`py-4 rounded-2xl font-black uppercase tracking-widest text-xs border-2 transition-all ${reqType === 'SWAP' ? 'bg-brand-600 text-white border-brand-600 shadow-xl shadow-brand-500/20' : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-700'}`}>Sub Swap</button>
-                 </div>
-
-                 <button 
-                   onClick={() => {
-                     setWizardSch(selectedSch);
-                     setIsModalOpen(false);
-                     setIsWizardOpen(true);
-                   }}
-                   className="w-full py-4 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-2xl font-black uppercase tracking-widest text-xs border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-500 hover:text-white transition-all flex items-center justify-center gap-2 group"
-                 >
-                   <Sparkles className="w-4 h-4 group-hover:animate-pulse text-brand-500" />
-                   Intelligent Make-up Finder
-                 </button>
+                 <div className="grid grid-cols-3 gap-3">
+                     <button 
+                        onClick={()=>setReqType('DROP')} 
+                        className={`py-6 rounded-3xl font-black uppercase tracking-widest text-[10px] border-2 transition-all flex flex-col items-center gap-2 ${reqType === 'DROP' ? 'bg-brand-600 text-white border-brand-600 shadow-xl shadow-brand-500/20' : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-700 hover:border-brand-500/30'}`}
+                     >
+                        <ShieldAlert className="w-5 h-5" />
+                        DROP
+                     </button>
+                     <button 
+                        onClick={()=>setReqType('SWAP')} 
+                        className={`py-6 rounded-3xl font-black uppercase tracking-widest text-[10px] border-2 transition-all flex flex-col items-center gap-2 ${reqType === 'SWAP' ? 'bg-brand-600 text-white border-brand-600 shadow-xl shadow-brand-500/20' : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-700 hover:border-brand-500/30'}`}
+                     >
+                        <ArrowRightLeft className="w-5 h-5" />
+                        SWAP
+                     </button>
+                     <button 
+                        onClick={() => {
+                           setWizardSch(selectedSch);
+                           setIsModalOpen(false);
+                           setIsWizardOpen(true);
+                        }}
+                        className="py-6 rounded-3xl font-black uppercase tracking-widest text-[10px] border-2 bg-indigo-50/50 dark:bg-indigo-900/10 text-indigo-600 border-indigo-100 dark:border-indigo-800/50 hover:bg-indigo-500 hover:text-white transition-all flex flex-col items-center gap-2 group"
+                     >
+                        <Sparkles className="w-5 h-5 group-hover:animate-pulse" />
+                        MAKE-UP
+                     </button>
+                  </div>
 
                  <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Request Justification</label>
