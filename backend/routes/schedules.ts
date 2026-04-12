@@ -18,7 +18,7 @@ interface ScheduleQuery {
   section_id?: string;
 }
 
-router.get('/suggest-slots', authorizeRoles('admin', 'program_head', 'program_assistant', 'faculty'), async (req: Request, res: Response, next: express.NextFunction) => {
+router.get('/suggest-slots', authorizeRoles('admin', 'program_head', 'program_assistant', 'faculty', 'viewer'), async (req: Request, res: Response, next: express.NextFunction) => {
   const { teaching_load_id, term_id, preferred_room } = req.query;
 
   if (!teaching_load_id || !term_id) {
