@@ -6,7 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import useScheduleStore from '../store/useScheduleStore';
 import { 
   Calendar, Printer, X, ShieldAlert, Sparkles, AlertCircle, 
-  TrendingUp, Users, Clock, MapPin, CheckCircle2, RefreshCw, Award, BookOpen, History 
+  TrendingUp, Users, Clock, MapPin, CheckCircle2, RefreshCw, 
+  Award, BookOpen, History, ArrowRightLeft 
 } from 'lucide-react';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';

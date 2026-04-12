@@ -79,7 +79,8 @@ router.get('/', async (req: Request<{}, {}, {}, ScheduleQuery>, res: Response, n
              s.subject_code, s.subject_name,
              sec.name as section_name, sec.year_level, p.code as program_code, p.id as program_id,
              rm.campus_id as room_campus_id,
-             sch.is_makeup, sch.event_date
+             sch.is_makeup, sch.event_date,
+             s.required_hours
       FROM schedules sch
       JOIN teaching_loads tl ON sch.teaching_load_id = tl.id
       JOIN faculty f ON tl.faculty_id = f.id
