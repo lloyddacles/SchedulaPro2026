@@ -166,6 +166,7 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 const PORT = process.env.PORT || 5001;
+console.log(` [DEPLOYMENT SYNC]: Initializing Institutional Matrix (v1.0.8-rev.B) [${new Date().toISOString()}]`);
 
 import { ApiError } from './utils/ApiError.js';
 
