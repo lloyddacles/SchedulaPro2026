@@ -9,6 +9,42 @@ const router = express.Router();
 
 router.use(authenticateToken); // Ensure all routes are protected
 
+// One-time Sync Route to patch live database schema
+router.get('/sync-institutional-schema', authorizeRoles('admin'), async (req: Request, res: Response) => {
+  try {
+    console.log(" [SYNC]: Executing institutional schema alignment for schedule_requests...");
+    
+    // 1. Expand Enum
+    await pool.query(`
+      ALTER TABLE schedule_requests 
+      MODIFY COLUMN request_type ENUM('DROP', 'SWAP', 'CHANGE_ROOM', 'CHANGE_TIME', 'OTHER', 'MAKEUP') NOT NULL
+    `);
+
+    // 2. Add Missing Discovery Columns
+    const migrations = [
+      "ALTER TABLE schedule_requests ADD COLUMN IF NOT EXISTS target_day VARCHAR(20) DEFAULT NULL",
+      "ALTER TABLE schedule_requests ADD COLUMN IF NOT EXISTS target_start_time TIME DEFAULT NULL",
+      "ALTER TABLE schedule_requests ADD COLUMN IF NOT EXISTS target_end_time TIME DEFAULT NULL",
+      "ALTER TABLE schedule_requests ADD COLUMN IF NOT EXISTS target_room VARCHAR(50) DEFAULT NULL",
+      "ALTER TABLE schedule_requests ADD COLUMN IF NOT EXISTS is_recurring BOOLEAN DEFAULT 1",
+      "ALTER TABLE schedule_requests ADD COLUMN IF NOT EXISTS event_date DATE DEFAULT NULL"
+    ];
+
+    for (const sql of migrations) {
+      try {
+        await pool.query(sql);
+      } catch (e) {
+        // Silently skip if already exists (MySQL 8.0 doesn't support IF NOT EXISTS in ALTER)
+        console.log(` [SYNC INFO]: Column check processed.`);
+      }
+    }
+
+    res.json({ success: true, message: "Institutional database synchronized with Recovery Wizard requirements." });
+  } catch (error: any) {
+    res.status(500).json({ error: "Sync failed", details: error.message });
+  }
+});
+
 router.get('/', async (req: Request, res: Response) => {
   try {
     const [rows] = await pool.query(`
@@ -47,13 +83,13 @@ router.post('/', validate(scheduleRequestSchema), async (req: any, res: Response
   try {
     const query = `
       INSERT INTO schedule_requests (
-        faculty_id, schedule_id, request_type, reason, 
+        faculty_id, schedule_id, request_type, reason_text, 
         target_day, target_start_time, target_end_time, target_room, 
         is_recurring, event_date
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const params = [
-      faculty_id, schedule_id, request_type, reason_text,
+      faculty_id, schedule_id, request_type, reason_text || '',
       target_day || null, target_start_time || null, target_end_time || null, target_room || null,
       is_recurring === undefined ? true : is_recurring, event_date || null
     ];

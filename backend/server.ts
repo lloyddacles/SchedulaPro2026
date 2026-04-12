@@ -116,7 +116,11 @@ app.use((req: any, res: Response, next: NextFunction) => {
 });
 
 // Public Routes
-app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/api/health', (req, res) => res.json({ 
+  status: 'ok', 
+  version: 'v1.0.8-FIX-A',
+  timestamp: new Date().toISOString() 
+}));
 
 import { seed } from './seed.js';
 app.get('/api/setup', async (req, res) => {
