@@ -35,7 +35,10 @@ export const authenticateToken = (req: any, res: Response, next: NextFunction) =
 export const authorizeRoles = (...roles: string[]) => (req: any, res: Response, next: NextFunction) => {
   if (!req.user) return res.status(401).json({ message: 'User not authenticated' });
   
-  if (!roles.includes(req.user.role)) {
+  const userRole = (req.user.role || '').toLowerCase();
+  const allowedRoles = roles.map(r => r.toLowerCase());
+
+  if (!allowedRoles.includes(userRole)) {
     return res.status(403).json({ 
       message: 'Access denied: Insufficient permissions',
       required: roles,
