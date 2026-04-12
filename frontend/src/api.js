@@ -32,7 +32,8 @@ api.interceptors.response.use(
       }
       localStorage.removeItem('token');
     } else if (error.response?.status === 403) {
-      toast.error('Access Denied: You do not have permission for this institutional recovery vector.');
+      const actualRole = error.response.data?.actual || 'Unknown';
+      toast.error(`Access Denied: You do not have permission for this institutional recovery vector. (Role: ${actualRole})`);
     } else if (error.response?.status !== 404 && !isLoginPath) {
       // Don't toast 404s or generic errors if we are on login page
       toast.error(message);
