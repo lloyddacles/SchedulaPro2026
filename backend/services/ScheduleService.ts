@@ -294,13 +294,14 @@ export class ScheduleService {
     };
 
     for (const sch of initialSchedules) {
+      if (!sch.start_time || !sch.end_time) continue;
       const s = this.parseTime(sch.start_time);
       const e = this.parseTime(sch.end_time);
-      const fIds = [sch.faculty_id, sch.co_faculty_id_1, sch.co_faculty_id_2].filter(Boolean) as number[];
+      const fIds = [sch.faculty_id, sch.co_faculty_id_1, sch.co_faculty_id_2].filter(id => id && id > 0) as number[];
       
       fIds.forEach(id => addBlock(facultyBusy, `${id}:${sch.day_of_week}`, s, e));
-      addBlock(roomBusy, `${sch.room}:${sch.day_of_week}`, s, e);
-      if (sch.section_id !== 1) addBlock(sectionBusy, `${sch.section_id}:${sch.day_of_week}`, s, e);
+      if (sch.room) addBlock(roomBusy, `${sch.room}:${sch.day_of_week}`, s, e);
+      if (sch.section_id && sch.section_id !== 1) addBlock(sectionBusy, `${sch.section_id}:${sch.day_of_week}`, s, e);
     }
 
     for (const b of blackouts) {
@@ -432,13 +433,23 @@ export class ScheduleService {
 
       // Filter and Sort rooms based on prioritization logic
       let roomsForLoad = rooms.filter(r => (load.room_type === 'Any' || !load.room_type || r.type === load.room_type) && r.campus_id === load.campus_id);
+      
+      if (roomsForLoad.length === 0) {
+        // Fallback: If no strict room_type matches, check for generic institutional type if 'Any'
+        if (!load.room_type || load.room_type === 'Any') {
+          roomsForLoad = rooms.filter(r => r.campus_id === load.campus_id);
+        }
+      }
+
       roomsForLoad.sort((a, b) => {
+        const aType = a.type || 'Lecture';
+        const bType = b.type || 'Lecture';
         if (isComputerSubject) {
-          if (a.type === 'Laboratory' && b.type !== 'Laboratory') return -1;
-          if (a.type !== 'Laboratory' && b.type === 'Laboratory') return 1;
+          if (aType === 'Laboratory' && bType !== 'Laboratory') return -1;
+          if (aType !== 'Laboratory' && bType === 'Laboratory') return 1;
         } else {
-          if (a.type === 'Lecture' && b.type !== 'Lecture') return -1;
-          if (a.type !== 'Lecture' && b.type === 'Lecture') return 1;
+          if (aType === 'Lecture' && bType !== 'Lecture') return -1;
+          if (aType !== 'Lecture' && bType === 'Lecture') return 1;
         }
         return 0;
       });

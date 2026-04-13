@@ -330,8 +330,13 @@ router.post('/auto-schedule', authorizeRoles('admin', 'program_head'), validate(
       });
     }
   } catch (error: any) {
+    console.error(' [Auto-Scheduler Failure]:', error);
     await connection.rollback();
-    next(error);
+    res.status(500).json({ 
+      error: 'Core Auto-Scheduler failed during execution.', 
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   } finally {
     connection.release();
   }
