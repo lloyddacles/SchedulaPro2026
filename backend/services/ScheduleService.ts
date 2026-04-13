@@ -54,7 +54,7 @@ export interface Schedule {
 export interface AutoScheduleResult {
   scheduled: number;
   failed: number;
-  failures: { subject: string; reason: string }[];
+  failures: { subject: string; teaching_load_id: number; program_code?: string; section_id: number; duration: number; reason: string }[];
   newlyMapped: Schedule[];
 }
 
@@ -474,7 +474,7 @@ export class ScheduleService {
     ];
 
     let newlyMapped: Schedule[] = [];
-    let failures: { subject: string; section_id: number; duration: number; reason: string }[] = [];
+    let failures: { subject: string; teaching_load_id: number; program_code: string; section_id: number; duration: number; reason: string }[] = [];
     let scheduledCount = 0;
 
     // Campus Isolation: track faculty_id -> campus_id (locked for this pass)
@@ -509,6 +509,8 @@ export class ScheduleService {
       if (campusLockReason) {
           failures.push({
               subject: load.subject_code,
+              teaching_load_id: load.teaching_load_id,
+              program_code: load.program_code,
               section_id: load.section_id,
               duration: totalRequired,
               reason: `Skipped: Campus Isolation (${campusLockReason})`
@@ -640,6 +642,8 @@ export class ScheduleService {
       if (!isPlaced) {
         failures.push({
           subject: load.subject_code,
+          teaching_load_id: load.teaching_load_id,
+          program_code: load.program_code,
           section_id: load.section_id,
           duration: remainingToSchedule,
           reason: `No valid slot found for ${remainingToSchedule.toFixed(1)}h remaining (Type: ${load.room_type || 'Any'}).`
