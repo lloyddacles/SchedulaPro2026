@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api';
 import { 
   Building, Plus, Archive, X, AlertCircle, RefreshCw, Edit2, 
-  MapPin, Users, Activity, Hammer, CheckCircle2, LayoutGrid, List
+  MapPin, Users, Activity, Hammer, CheckCircle2, LayoutGrid, List, RotateCcw
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ConfirmModal from '../components/ConfirmModal';
@@ -322,21 +322,31 @@ export default function Rooms() {
                       </button>
                     </div>
                     
-                    <button 
-                      onClick={() => { 
-                        setConfirmConfig({
-                          title: 'Archive Facility?',
-                          message: `Are you sure you want to archive room ${r.name}? This will remove it from scheduling availability.`,
-                          type: 'danger',
-                          onConfirm: () => deleteMutation.mutate(r.id)
-                        });
-                        setIsConfirmModalOpen(true);
-                      }}
-                      className="p-2 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-xl hover:bg-red-100 transition-colors"
-                      title="Archive Room"
-                    >
-                      <Archive className="w-5 h-5" />
-                    </button>
+                    {showArchived ? (
+                      <button 
+                        onClick={() => restoreMutation.mutate(r.id)}
+                        className="p-2 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-xl hover:bg-emerald-100 transition-colors"
+                        title="Restore Facility"
+                      >
+                        <RotateCcw className="w-5 h-5" />
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => { 
+                          setConfirmConfig({
+                            title: 'Archive Facility?',
+                            message: `Are you sure you want to archive room ${r.name}? This will remove it from scheduling availability.`,
+                            type: 'danger',
+                            onConfirm: () => deleteMutation.mutate(r.id)
+                          });
+                          setIsConfirmModalOpen(true);
+                        }}
+                        className="p-2 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-xl hover:bg-red-100 transition-colors"
+                        title="Archive Room"
+                      >
+                        <Archive className="w-5 h-5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
