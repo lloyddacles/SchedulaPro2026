@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import { Users, PlusCircle, Archive, AlertCircle, X, RefreshCw, Edit2, Search, BookOpen, GraduationCap, ShieldAlert, Trash2 } from 'lucide-react';
 import { formatYearLevel } from '../utils/formatters';
@@ -190,20 +191,30 @@ export default function Sections() {
           { label: 'Deployed Programs', value: stats.programsCount, icon: BookOpen, color: 'indigo' },
           { label: 'Adviser Coverage', value: `${stats.adviserAssignmentRate}%`, icon: GraduationCap, color: 'emerald' },
           { label: 'Unassigned Cohorts', value: stats.unassignedAdvisers, icon: ShieldAlert, color: 'amber' }
-        ].map((stat, i) => (
-          <div key={i} className={`glass rounded-3xl p-5 border border-white/40 dark:border-slate-700/50 shadow-sm relative overflow-hidden group ${stat.label === 'Unassigned Cohorts' && stats.unassignedAdvisers > 0 ? 'bg-amber-50/50 dark:bg-amber-900/20' : ''}`}>
-            <div className={`absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 bg-${stat.color}-500/5 rounded-full transition-transform group-hover:scale-110`} />
-            <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-2xl bg-${stat.color}-50 dark:bg-${stat.color}-900/20 text-${stat.color}-600 dark:text-${stat.color}-400`}>
-                <stat.icon className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{stat.label}</p>
-                <p className={`text-2xl font-black ${stat.label === 'Unassigned Cohorts' && stats.unassignedAdvisers > 0 ? 'text-amber-600 dark:text-amber-500' : 'text-gray-900 dark:text-white'} leading-tight`}>{stat.value}</p>
+        ].map((stat, i) => {
+          const colorConfig = {
+            brand: 'bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400',
+            indigo: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400',
+            emerald: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400',
+            amber: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400'
+          };
+          const iconColor = colorConfig[stat.color] || colorConfig.brand;
+
+          return (
+            <div key={i} className={`glass rounded-3xl p-5 border border-white/40 dark:border-slate-700/50 shadow-sm relative overflow-hidden group ${stat.label === 'Unassigned Cohorts' && stats.unassignedAdvisers > 0 ? 'bg-amber-50/50 dark:bg-amber-900/20' : ''}`}>
+              <div className="absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 bg-current opacity-5 rounded-full transition-transform group-hover:scale-110" />
+              <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-2xl ${iconColor}`}>
+                  <stat.icon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{stat.label}</p>
+                  <p className={`text-2xl font-black ${stat.label === 'Unassigned Cohorts' && stats.unassignedAdvisers > 0 ? 'text-amber-600 dark:text-amber-500' : 'text-gray-900 dark:text-white'} leading-tight`}>{stat.value}</p>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="glass rounded-3xl shadow-sm border border-white/40 dark:border-slate-700/50 p-4 mb-2 bg-white/40 dark:bg-slate-900/30 flex flex-col sm:flex-row justify-between items-center gap-4">
