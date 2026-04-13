@@ -129,17 +129,17 @@ export default function Schedules() {
 
   const { data: loads = [] } = useQuery({ 
     queryKey: ['loads', activeTermId], 
-    queryFn: async () => (await api.get('/teaching-loads', { params: { term_id: activeTermId } })).data,
+    queryFn: async () => (await api.get('/teaching-loads', { params: { term_id: activeTermId } })).data || [],
     enabled: !!activeTermId
   });
 
-  const { data: faculty = [] } = useQuery({ queryKey: ['faculty'], queryFn: async () => (await api.get('/faculty')).data });
-  const { data: sections = [] } = useQuery({ queryKey: ['sections'], queryFn: async () => (await api.get('/sections')).data });
-  const { data: rooms = [] } = useQuery({ queryKey: ['rooms'], queryFn: async () => (await api.get('/rooms')).data });
-  const { data: programs = [] } = useQuery({ queryKey: ['programs'], queryFn: async () => (await api.get('/programs')).data });
-  const { data: blackouts = [] } = useQuery({ queryKey: ['blackouts'], queryFn: async () => (await api.get('/unavailability')).data });
-  const { data: terms = [] } = useQuery({ queryKey: ['terms'], queryFn: async () => (await api.get('/academic-terms')).data });
-  const { data: campuses = [] } = useQuery({ queryKey: ['campuses'], queryFn: async () => (await api.get('/campuses')).data });
+  const { data: faculty = [] } = useQuery({ queryKey: ['faculty'], queryFn: async () => (await api.get('/faculty')).data || [] });
+  const { data: sections = [] } = useQuery({ queryKey: ['sections'], queryFn: async () => (await api.get('/sections')).data || [] });
+  const { data: rooms = [] } = useQuery({ queryKey: ['rooms'], queryFn: async () => (await api.get('/rooms')).data || [] });
+  const { data: programs = [] } = useQuery({ queryKey: ['programs'], queryFn: async () => (await api.get('/programs')).data || [] });
+  const { data: blackouts = [] } = useQuery({ queryKey: ['blackouts'], queryFn: async () => (await api.get('/unavailability')).data || [] });
+  const { data: terms = [] } = useQuery({ queryKey: ['terms'], queryFn: async () => (await api.get('/academic-terms')).data || [] });
+  const { data: campuses = [] } = useQuery({ queryKey: ['campuses'], queryFn: async () => (await api.get('/campuses')).data || [] });
 
   // Reactive Integrity Scan: Ensure drafts always respect resource availability
   useEffect(() => {
@@ -349,23 +349,23 @@ export default function Schedules() {
     else createMutation.mutate(submissionData);
   };
 
-  let displayedSchedules = isGhostMode ? stagedSchedules : schedules;
+  let displayedSchedules = (isGhostMode ? stagedSchedules : (schedules || []));
   
-  if (selectedProgramId) displayedSchedules = displayedSchedules.filter(s => s.program_id === Number(selectedProgramId));
+  if (selectedProgramId) displayedSchedules = displayedSchedules?.filter(s => s.program_id === Number(selectedProgramId));
   
   if (selectedFacultyId) {
-    displayedSchedules = displayedSchedules.filter(s => 
+    displayedSchedules = displayedSchedules?.filter(s => 
       s.faculty_id === Number(selectedFacultyId) || 
       s.co_faculty_id_1 === Number(selectedFacultyId) || 
       s.co_faculty_id_2 === Number(selectedFacultyId)
     );
   }
-  else if (selectedSectionId) displayedSchedules = displayedSchedules.filter(s => s.section_id === Number(selectedSectionId));
-  else if (selectedRoomName) displayedSchedules = displayedSchedules.filter(s => s.room === selectedRoomName);
+  else if (selectedSectionId) displayedSchedules = displayedSchedules?.filter(s => s.section_id === Number(selectedSectionId));
+  else if (selectedRoomName) displayedSchedules = displayedSchedules?.filter(s => s.room === selectedRoomName);
 
   // Remove blocks pending deletion in Ghost Mode
   if (isGhostMode) {
-    displayedSchedules = displayedSchedules.filter(s => !s.isPendingDelete);
+    displayedSchedules = displayedSchedules?.filter(s => !s.isPendingDelete);
   }
 
   const handlePrint = () => window.print();
@@ -552,7 +552,7 @@ export default function Schedules() {
   };
 
   const fcEvents = [
-    ...displayedSchedules.map(sch => {
+    ...(displayedSchedules?.map(sch => {
        const colors = getProgramColor(sch.program_code);
        const dateStr = weekDates[dayMap[sch.day_of_week]];
        const isDraft = sch.isDraft;
@@ -573,7 +573,7 @@ export default function Schedules() {
          ],
          extendedProps: { raw: sch, isOrphan }
        };
-    }),
+    }) || []),
     ...(blackouts && !selectedSectionId ? blackouts.filter(b => selectedFacultyId ? b.faculty_id === Number(selectedFacultyId) : true).map(b => {
        const bDateStr = weekDates[dayMap[b.day_of_week]];
        return {
@@ -649,8 +649,8 @@ export default function Schedules() {
     );
   };
 
-  const totalApprovedLoads = loads.filter(l => l.status === 'approved').length;
-  const uniqueScheduledLoads = new Set(schedules.map(s => s.teaching_load_id)).size;
+  const totalApprovedLoads = (loads || []).filter(l => l.status === 'approved').length;
+  const uniqueScheduledLoads = new Set((schedules || []).map(s => s.teaching_load_id)).size;
   const completionPercentage = totalApprovedLoads > 0 ? Math.round((uniqueScheduledLoads / totalApprovedLoads) * 100) : 0;
 
   return (
@@ -680,19 +680,19 @@ export default function Schedules() {
           <div className="lg:hidden w-full flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
              <select value={selectedCampusId} onChange={e => setSelectedCampusId(e.target.value)} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 dark:text-slate-200 outline-none">
                <option value="">Campus</option>
-               {campuses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+               {campuses?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
              </select>
              <select value={selectedProgramId} onChange={e => setSelectedProgramId(e.target.value)} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 dark:text-slate-200 outline-none">
                <option value="">Program</option>
-               {programs.map(p => <option key={p.id} value={p.id}>{p.code}</option>)}
+               {programs?.map(p => <option key={p.id} value={p.id}>{p.code}</option>)}
              </select>
              <select value={selectedSectionId} onChange={e => { setSelectedSectionId(e.target.value); setSelectedFacultyId(''); setSelectedRoomName(''); }} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 dark:text-slate-200 outline-none">
                <option value="">Section</option>
-               {sections.filter(s => (selectedProgramId ? s.program_id === Number(selectedProgramId) : true) && (selectedCampusId ? s.campus_id === Number(selectedCampusId) : true)).map(s => <option key={s.id} value={s.id}>{s.program_code}-{s.year_level}{s.name}</option>)}
+               {sections?.filter(s => (selectedProgramId ? s.program_id === Number(selectedProgramId) : true) && (selectedCampusId ? s.campus_id === Number(selectedCampusId) : true))?.map(s => <option key={s.id} value={s.id}>{s.program_code}-{s.year_level}{s.name}</option>)}
              </select>
              <select value={selectedRoomName} onChange={e => { setSelectedRoomName(e.target.value); setSelectedFacultyId(''); setSelectedSectionId(''); }} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 dark:text-slate-200 outline-none">
                <option value="">Facility</option>
-               {rooms.filter(r => selectedCampusId ? r.campus_id === Number(selectedCampusId) : true).map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
+               {rooms?.filter(r => selectedCampusId ? r.campus_id === Number(selectedCampusId) : true)?.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
              </select>
           </div>
 

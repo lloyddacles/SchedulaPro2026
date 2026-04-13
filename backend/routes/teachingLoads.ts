@@ -59,8 +59,14 @@ router.get('/', async (req: Request, res: Response, next: express.NextFunction) 
 // ── POST create bulk teaching loads (always starts as 'draft') ────────────────
 router.post('/', authorizeRoles('admin', 'program_head', 'program_assistant'), validate(teachingLoadSchema), async (req: any, res: Response, next: express.NextFunction) => {
   const { faculty_id, co_faculty_id_1, co_faculty_id_2, subject_ids, term_id, section_id } = req.body;
-  const targetTermId = term_id || 1;
-  const targetSectionId = section_id || 1;
+  
+  // Hardening: Explicit numeric validation for critical load parameters
+  const targetTermId = Number(term_id) || 1;
+  const targetSectionId = Number(section_id) || 1;
+
+  if (isNaN(targetTermId) || isNaN(targetSectionId)) {
+    return next(new ApiError(400, 'Invalid Term ID or Section ID provided.', 'BAD_REQUEST'));
+  }
 
   const connection = await pool.getConnection();
   try {
@@ -356,6 +362,11 @@ router.patch('/bulk-reject', authorizeRoles('admin', 'program_head'), async (req
 router.put('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response, next: express.NextFunction) => {
   const { faculty_id, co_faculty_id_1, co_faculty_id_2, subject_id, section_id, term_id } = req.body;
   const loadId = req.params.id;
+  const targetTermId = Number(term_id);
+
+  if (isNaN(targetTermId) || isNaN(Number(loadId))) {
+    return next(new ApiError(400, 'Invalid Term ID or Load ID provided.', 'BAD_REQUEST'));
+  }
 
   const connection = await pool.getConnection();
   try {
@@ -378,7 +389,7 @@ router.put('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'),
       LEFT JOIN subjects sub ON tl.subject_id = sub.id
       WHERE f.id IN (${placeholders})
       GROUP BY f.id
-    `, [term_id, loadId, ...targetFacultyIds]);
+    `, [targetTermId, loadId, ...targetFacultyIds]);
 
     const [[subjectRow]]: [any[], any] = await connection.query('SELECT required_hours FROM subjects WHERE id = ?', [subject_id]);
     const reqHours = subjectRow ? Number(subjectRow.required_hours) : 0;

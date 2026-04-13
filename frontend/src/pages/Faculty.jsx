@@ -68,10 +68,11 @@ export default function Faculty() {
 
   // ── Stats Calculation ────────────────────────────────────────────────────
   const stats = React.useMemo(() => {
-    const total = faculty.length;
-    const overloaded = faculty.filter(f => Number(f.current_load) > Number(f.max_teaching_hours)).length;
-    const totalLoad = faculty.reduce((acc, f) => acc + (Number(f.current_load) || 0), 0);
-    const totalCapacity = faculty.reduce((acc, f) => acc + (Number(f.max_teaching_hours) || 0), 0);
+    const safeFaculty = faculty || [];
+    const total = safeFaculty.length;
+    const overloaded = safeFaculty.filter(f => Number(f.current_load) > Number(f.max_teaching_hours)).length;
+    const totalLoad = safeFaculty.reduce((acc, f) => acc + (Number(f.current_load) || 0), 0);
+    const totalCapacity = safeFaculty.reduce((acc, f) => acc + (Number(f.max_teaching_hours) || 0), 0);
     const utilization = totalCapacity > 0 ? Math.round((totalLoad / totalCapacity) * 100) : 0;
     
     return { total, overloaded, utilization };
@@ -155,11 +156,11 @@ export default function Faculty() {
   };
 
   // ── Logic ────────────────────────────────────────────────────────────────
-  const filteredFaculty = faculty.filter(f => {
+  const filteredFaculty = (faculty || []).filter(f => {
     const term = search.toLowerCase();
-    const matchesSearch = f.full_name.toLowerCase().includes(term) || 
-      (f.program_code && f.program_code.toLowerCase().includes(term)) ||
-      (f.department_name && f.department_name.toLowerCase().includes(term));
+    const matchesSearch = f.full_name?.toLowerCase().includes(term) || 
+      (f.program_code && f.program_code?.toLowerCase().includes(term)) ||
+      (f.department_name && f.department_name?.toLowerCase().includes(term));
     
     const matchesEmployment = !selectedEmploymentType || f.employment_type === selectedEmploymentType;
     return matchesSearch && matchesEmployment;
@@ -261,7 +262,7 @@ export default function Faculty() {
               className="bg-transparent text-xs font-bold text-gray-700 dark:text-white outline-none w-full sm:min-w-[120px]"
             >
               <option value="">All Campuses</option>
-              {campuses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {campuses?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 flex-1 sm:flex-none">
@@ -479,7 +480,7 @@ export default function Faculty() {
                       onChange={e => setFormData({...formData, department_id: e.target.value})}
                     >
                       <option value="">-- Generic Institutional --</option>
-                      {departments.map(d => (
+                      {departments?.map(d => (
                         <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
                       ))}
                     </select>
@@ -490,7 +491,7 @@ export default function Faculty() {
                       <label className="block text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2">Base Program</label>
                       <select required className="w-full border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3 bg-gray-50 dark:bg-slate-800 text-xs font-bold transition-all h-[52px]" value={formData.program_id} onChange={e => setFormData({...formData, program_id: Number(e.target.value)})}>
                         <option value="1">General Education</option>
-                        {programs.map(p => <option key={p.id} value={p.id}>{p.code} - {p.name}</option>)}
+                        {programs?.map(p => <option key={p.id} value={p.id}>{p.code} - {p.name}</option>)}
                       </select>
                     </div>
                     <div>
@@ -511,7 +512,7 @@ export default function Faculty() {
                     <label className="block text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2 pl-1">Target Campus</label>
                     <select required className="w-full border border-gray-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 bg-gray-50 dark:bg-slate-800 text-xs font-bold transition-all" value={formData.campus_id} onChange={e => setFormData({...formData, campus_id: e.target.value})}>
                       <option value="">Choose Operational Location</option>
-                      {campuses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      {campuses?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
 
@@ -526,7 +527,7 @@ export default function Faculty() {
                       <span className="text-[10px] text-brand-600 bg-brand-50 dark:bg-brand-900/30 px-2 py-0.5 rounded-full">{formData.specializations.length} Selected</span>
                     </label>
                     <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-4 border border-gray-100 dark:border-slate-800 rounded-2xl bg-gray-50/50 dark:bg-slate-900/50 custom-scrollbar shadow-inner">
-                      {subjects.map(s => (
+                      {subjects?.map(s => (
                         <label key={s.id} className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-brand-300 transition-all cursor-pointer shadow-sm group">
                           <input 
                             type="checkbox" 
@@ -534,7 +535,7 @@ export default function Faculty() {
                             checked={formData.specializations.includes(s.id)}
                             onChange={(e) => {
                               if (e.target.checked) setFormData({ ...formData, specializations: [...formData.specializations, s.id] });
-                              else setFormData({ ...formData, specializations: formData.specializations.filter(id => id !== s.id) });
+                              else setFormData({ ...formData, specializations: (formData.specializations || []).filter(id => id !== s.id) });
                             }}
                           />
                           <div className="flex flex-col">

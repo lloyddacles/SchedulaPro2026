@@ -7,18 +7,22 @@ const router = express.Router();
 router.get('/faculty-workloads', async (req: Request, res: Response) => {
   try {
     const { term_id, campus_id, department_id } = req.query;
-    if (!term_id) return res.status(400).json({ message: 'term_id is required' });
+    if (!term_id || isNaN(Number(term_id))) return res.status(400).json({ message: 'Valid term_id is required' });
+
+    const cleanTermId = Number(term_id);
+    const cleanCampusId = campus_id && !isNaN(Number(campus_id)) ? Number(campus_id) : null;
+    const cleanDeptId = department_id && !isNaN(Number(department_id)) ? Number(department_id) : null;
 
     let filter = '';
-    const params: any[] = [term_id];
+    const params: any[] = [cleanTermId];
 
-    if (campus_id) {
+    if (cleanCampusId) {
       filter += ' AND f.campus_id = ?';
-      params.push(campus_id);
+      params.push(cleanCampusId);
     }
-    if (department_id) {
+    if (cleanDeptId) {
       filter += ' AND f.department_id = ?';
-      params.push(department_id);
+      params.push(cleanDeptId);
     }
 
     const query = `
@@ -43,18 +47,22 @@ router.get('/faculty-workloads', async (req: Request, res: Response) => {
 router.get('/room-utilization', async (req: Request, res: Response) => {
   try {
     const { term_id, campus_id, department_id } = req.query;
-    if (!term_id) return res.status(400).json({ message: 'term_id is required' });
+    if (!term_id || isNaN(Number(term_id))) return res.status(400).json({ message: 'Valid term_id is required' });
+
+    const cleanTermId = Number(term_id);
+    const cleanCampusId = campus_id && !isNaN(Number(campus_id)) ? Number(campus_id) : null;
+    const cleanDeptId = department_id && !isNaN(Number(department_id)) ? Number(department_id) : null;
 
     let filter = '';
-    const params: any[] = [term_id];
+    const params: any[] = [cleanTermId];
 
-    if (campus_id) {
+    if (cleanCampusId) {
       filter += ' AND r.campus_id = ?';
-      params.push(campus_id);
+      params.push(cleanCampusId);
     }
-    if (department_id) {
+    if (cleanDeptId) {
       filter += ' AND r.department_id = ?';
-      params.push(department_id);
+      params.push(cleanDeptId);
     }
 
     const query = `
@@ -80,18 +88,22 @@ router.get('/room-utilization', async (req: Request, res: Response) => {
 router.get('/program-distribution', async (req: Request, res: Response) => {
   try {
     const { term_id, campus_id, department_id } = req.query;
-    if (!term_id) return res.status(400).json({ message: 'term_id is required' });
+    if (!term_id || isNaN(Number(term_id))) return res.status(400).json({ message: 'Valid term_id is required' });
+
+    const cleanTermId = Number(term_id);
+    const cleanCampusId = campus_id && !isNaN(Number(campus_id)) ? Number(campus_id) : null;
+    const cleanDeptId = department_id && !isNaN(Number(department_id)) ? Number(department_id) : null;
 
     let filter = '';
-    const params: any[] = [term_id];
+    const params: any[] = [cleanTermId];
 
-    if (campus_id) {
+    if (cleanCampusId) {
       filter += ' AND p.campus_id = ?';
-      params.push(campus_id);
+      params.push(cleanCampusId);
     }
-    if (department_id) {
+    if (cleanDeptId) {
       filter += ' AND p.department_id = ?';
-      params.push(department_id);
+      params.push(cleanDeptId);
     }
 
     const query = `
@@ -114,15 +126,18 @@ router.get('/program-distribution', async (req: Request, res: Response) => {
 router.get('/overall-stats', async (req: Request, res: Response) => {
   try {
     const { term_id, campus_id, department_id } = req.query;
-    if (!term_id) return res.status(400).json({ message: 'term_id is required' });
+    if (!term_id || isNaN(Number(term_id))) return res.status(400).json({ message: 'Valid term_id is required' });
 
-    const campParams = campus_id ? [campus_id] : [];
-    const deptParams = department_id ? [department_id] : [];
+    const cleanTermId = Number(term_id);
+    const cleanCampusId = campus_id && !isNaN(Number(campus_id)) ? Number(campus_id) : null;
+    const cleanDeptId = department_id && !isNaN(Number(department_id)) ? Number(department_id) : null;
+
+    const campParams = cleanCampusId ? [cleanCampusId] : [];
+    const deptParams = cleanDeptId ? [cleanDeptId] : [];
 
     // Filters per table
-    const fFilter = (campus_id ? ' AND f.campus_id = ?' : '') + (department_id ? ' AND f.department_id = ?' : '');
-    const rFilter = (campus_id ? ' AND r.campus_id = ?' : '') + (department_id ? ' AND r.department_id = ?' : '');
-    const tlFilter = (campus_id ? ' AND tl.campus_id = ?' : '') + (department_id ? ' AND f.department_id = ?' : '');
+    const fFilter = (cleanCampusId ? ' AND f.campus_id = ?' : '') + (cleanDeptId ? ' AND f.department_id = ?' : '');
+    const rFilter = (cleanCampusId ? ' AND r.campus_id = ?' : '') + (cleanDeptId ? ' AND r.department_id = ?' : '');
 
     // 1. Instructor Load balance
     const [facultyData]: any = await pool.query(`
