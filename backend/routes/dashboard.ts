@@ -7,15 +7,19 @@ router.get('/summary', async (req: Request, res: Response) => {
   try {
     const { term_id, campus_id } = req.query;
     
-    // Core parameters explicitly isolated by campus where applicable
-    const termFilter = term_id ? 'AND term_id = ?' : '';
-    const campFilter = campus_id ? 'AND campus_id = ?' : '';
-    const fCampFilter = campus_id ? 'AND f.campus_id = ?' : '';
-    const rCampFilter = campus_id ? 'AND r.campus_id = ?' : '';
-    const secCampFilter = campus_id ? 'AND sec.campus_id = ?' : '';
+    // Hardening: Ensure IDs are valid numbers or null to prevent NaN SQL injection
+    const cleanTermId = term_id && !isNaN(Number(term_id)) ? Number(term_id) : null;
+    const cleanCampusId = campus_id && !isNaN(Number(campus_id)) ? Number(campus_id) : null;
 
-    const termParams = term_id ? [term_id] : [];
-    const campParams = campus_id ? [campus_id] : [];
+    // Core parameters explicitly isolated by campus where applicable
+    const termFilter = cleanTermId ? 'AND term_id = ?' : '';
+    const campFilter = cleanCampusId ? 'AND campus_id = ?' : '';
+    const fCampFilter = cleanCampusId ? 'AND f.campus_id = ?' : '';
+    const rCampFilter = cleanCampusId ? 'AND r.campus_id = ?' : '';
+    const secCampFilter = cleanCampusId ? 'AND sec.campus_id = ?' : '';
+
+    const termParams = cleanTermId ? [cleanTermId] : [];
+    const campParams = cleanCampusId ? [cleanCampusId] : [];
     const termCampParams = [...termParams, ...campParams];
 
     // Counters — only active (non-archived) records natively filtered by campus

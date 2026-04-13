@@ -26,10 +26,17 @@ router.get('/suggest-slots', async (req: Request, res: Response, next: express.N
     return res.status(400).json({ message: 'teaching_load_id and term_id are required.' });
   }
 
+  const tId = Number(teaching_load_id);
+  const tmId = Number(term_id);
+
+  if (isNaN(tId) || isNaN(tmId)) {
+    return res.status(400).json({ message: 'Invalid teaching_load_id or term_id provided.' });
+  }
+
   try {
     const suggestions = await ScheduleService.suggestAlternativeSlots(pool, {
-      teachingLoadId: Number(teaching_load_id),
-      termId: Number(term_id),
+      teachingLoadId: tId,
+      termId: tmId,
       preferredRoom: preferred_room as string | undefined,
       limit: 10 // Increase limit for recovery search
     });
@@ -46,15 +53,22 @@ router.get('/check-conflict', authorizeRoles('admin', 'program_head', 'program_a
     return res.json({ conflict: false });
   }
 
+  const tlId = Number(teaching_load_id);
+  const sId = Number(schedule_id) || null;
+
+  if (isNaN(tlId) || (schedule_id && isNaN(Number(schedule_id)))) {
+    return res.status(400).json({ message: 'Invalid ID parameters provided.' });
+  }
+
   try {
     const result = await ScheduleService.validatePlacement(pool, {
-      teachingLoadId: Number(teaching_load_id),
+      teachingLoadId: tlId,
       dayOfWeek: day_of_week as string,
       startTime: start_time as string,
       endTime: end_time as string,
       room: room as string,
       termId: 0, 
-      excludeScheduleId: Number(schedule_id) || null
+      excludeScheduleId: sId
     });
     
     res.json({ 
@@ -354,10 +368,17 @@ router.get('/suggestions/:teachingLoadId', authorizeRoles('admin', 'program_head
     return next(new ApiError(400, 'Term ID is required for schedule suggestions.', 'BAD_REQUEST'));
   }
 
+  const tlId = Number(teachingLoadId);
+  const tmId = Number(term_id);
+
+  if (isNaN(tlId) || isNaN(tmId)) {
+    return next(new ApiError(400, 'Invalid Teaching Load ID or Term ID.', 'BAD_REQUEST'));
+  }
+
   try {
     const suggestions = await ScheduleService.suggestAlternativeSlots(pool, {
-      teachingLoadId: Number(teachingLoadId),
-      termId: Number(term_id),
+      teachingLoadId: tlId,
+      termId: tmId,
       limit: 8
     });
     res.json(suggestions);
@@ -388,8 +409,13 @@ router.post('/batch-sync', authorizeRoles('admin', 'program_head', 'program_assi
   try {
     await connection.beginTransaction();
 
+    const tmId = Number(term_id);
+    if (isNaN(tmId)) {
+      throw new ApiError(400, 'Invalid Term ID provided for sync.', 'BAD_REQUEST');
+    }
+
     const result = await ScheduleService.batchSync(connection, {
-      termId: Number(term_id),
+      termId: tmId,
       updates: updates || [],
       creates: creates || [],
       deletes: deletes || []
