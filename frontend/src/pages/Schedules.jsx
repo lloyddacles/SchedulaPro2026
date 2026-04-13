@@ -839,15 +839,16 @@ export default function Schedules() {
              <button onClick={() => { setError(''); setIsEditingSchedule(false); setSelectedScheduleId(null); setFormData({ teaching_load_id: '', day_of_week: 'Monday', start_time: '08:00', end_time: '09:00', room: '' }); setIsModalOpen(true); }} className="px-6 py-3 bg-brand-600 text-white font-bold rounded-xl shadow-lg hover:bg-brand-700 transition flex items-center gap-2 mx-auto"><PlusCircle className="w-5 h-5"/> Book Class</button>
            </div>
         ) : (
-          <ConflictResolutionPanel 
-        isOpen={isConflictPanelOpen}
-        onClose={() => setIsConflictPanelOpen(false)}
-        failures={schedulerFailures}
-        termId={activeTermId}
-        onResolveSuccessful={handleManualResolveSuccess}
-      />
+          <>
+            <ConflictResolutionPanel 
+              isOpen={isConflictPanelOpen}
+              onClose={() => setIsConflictPanelOpen(false)}
+              failures={schedulerFailures}
+              termId={activeTermId}
+              onResolveSuccessful={handleManualResolveSuccess}
+            />
 
-      <div ref={containerRef} className="glass rounded-[2rem] shadow-xl border border-white/40 overflow-hidden print:shadow-none print:border-none print:bg-white print:rounded-none relative">
+            <div ref={containerRef} className="glass rounded-[2rem] shadow-xl border border-white/40 overflow-hidden print:shadow-none print:border-none print:bg-white print:rounded-none relative">
         {isLoadingSchedules ? (
            <div className="flex justify-center items-center h-40"><RefreshCw className="animate-spin h-8 w-8 text-brand-600" /></div>
         ) : (displayedSchedules.length === 0 && (selectedFacultyId || selectedSectionId || selectedProgramId || selectedRoomName)) ? (
@@ -1041,7 +1042,7 @@ export default function Schedules() {
                </div>
              )}
           </div>
-        )}
+        </>)}
       </div>
 
       {isModalOpen && (
