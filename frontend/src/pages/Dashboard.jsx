@@ -365,11 +365,13 @@ export default function Dashboard() {
               <div className="lg:col-span-4 flex flex-col items-center justify-center p-6 bg-white/50 dark:bg-slate-800/40 rounded-[2rem] border border-white/40 dark:border-slate-700/30">
                 <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-6">Assignment Rate</p>
                 <div className="relative w-40 h-40">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadialBarChart cx="50%" cy="50%" innerRadius="70%" outerRadius="100%" barSize={12} data={[{ value: assignmentRate, fill: assignmentRate === 100 ? '#10b981' : assignmentRate > 60 ? '#3b82f6' : '#f59e0b' }]} startAngle={90} endAngle={-270}>
-                      <RadialBar dataKey="value" cornerRadius={10} background={{ fill: 'rgba(0,0,0,0.05)' }} />
-                    </RadialBarChart>
-                  </ResponsiveContainer>
+                  <div className="h-full w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadialBarChart cx="50%" cy="50%" innerRadius="70%" outerRadius="100%" barSize={12} data={[{ value: assignmentRate, fill: assignmentRate === 100 ? '#10b981' : assignmentRate > 60 ? '#3b82f6' : '#f59e0b' }]} startAngle={90} endAngle={-270}>
+                        <RadialBar dataKey="value" cornerRadius={10} background={{ fill: 'rgba(0,0,0,0.05)' }} />
+                      </RadialBarChart>
+                    </ResponsiveContainer>
+                  </div>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className="text-4xl font-black text-gray-900 dark:text-white tracking-tighter">{assignmentRate}<small className="text-xl">%</small></span>
                     <span className="text-[9px] font-bold text-gray-400 dark:text-slate-500 uppercase">Coverage</span>
@@ -382,7 +384,7 @@ export default function Dashboard() {
               <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-6 h-full">
                 <div className="flex flex-col h-full bg-white/50 dark:bg-slate-800/40 p-6 rounded-[2rem] border border-white/40 dark:border-slate-700/30 min-h-0">
                   <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-4">Employment Mix</p>
-                  <div className="flex-1 min-h-[160px] relative">
+                  <div className="flex-1 h-[160px] relative">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie data={empData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={8} dataKey="value" stroke="none">
@@ -403,7 +405,7 @@ export default function Dashboard() {
 
                 <div className="flex flex-col h-full bg-white/50 dark:bg-slate-800/40 p-6 rounded-[2rem] border border-white/40 dark:border-slate-700/30 min-h-0">
                   <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-4">Faculty Load Distribution</p>
-                  <div className="flex-1 min-h-[160px] relative">
+                  <div className="flex-1 h-[160px] relative">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie data={loadStatusData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={8} dataKey="value" stroke="none">

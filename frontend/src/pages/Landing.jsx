@@ -68,7 +68,7 @@ export default function Landing() {
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-600/20 blur-[120px] rounded-full mix-blend-screen animate-pulse-slow" />
         <div className="absolute top-[20%] right-[-10%] w-[30%] h-[50%] bg-indigo-600/20 blur-[130px] rounded-full mix-blend-screen animate-pulse-slow" style={{ animationDelay: '2s' }} />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.15] mix-blend-overlay"></div>
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PScwIDAgMjAwIDIwMCcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJz48ZmlsdGVyIGlkPSdub2lzZUZpbHRlcic+PGZlVHVyYnVsZW5jZSB0eXBlPSdmcmFjdGFsTm9pc2UnIGJhc2VGcmVxdWVuY3k9JzAuNjUnIG51bU9jdGF2ZXM9JzMnIHN0aXRjaFRpbGVzPSdzdGl0Y2gnLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWx0ZXI9J3VybCgjbm9pc2VGaWx0ZXInKScvPjwvc3ZnPg==')] opacity-[0.12] mix-blend-overlay"></div>
       </div>
 
       {/* Navigation */}
@@ -228,7 +228,7 @@ export default function Landing() {
                  className="flex-1 rounded-[3rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-[0_32px_128px_rgba(0,0,0,0.1)] group relative overflow-hidden"
                >
                  <img 
-                   src="https://images.unsplash.com/photo-1551288049-bbda4e238c71?auto=format&fit=crop&w=1200&q=80" 
+                   src="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=1200&q=80" 
                    alt="Conflict Resolution Demonstration" 
                    className="w-full rounded-[2.5rem] grayscale group-hover:grayscale-0 transition-all duration-1000 object-cover aspect-video"
                    onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80"; }}
@@ -250,10 +250,10 @@ export default function Landing() {
                className="flex-1 rounded-[3rem] overflow-hidden border border-slate-200 dark:border-white/10 shadow-2xl relative group"
             >
                <img 
-                 src="https://images.unsplash.com/photo-1504868584819-f8e90526354c?auto=format&fit=crop&w=1200&q=80" 
+                 src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80" 
                  alt="Institutional Health Monitoring" 
                  className="w-full grayscale group-hover:grayscale-0 transition-all duration-1000"
-                 onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1551288049-bbda4e238c71?auto=format&fit=crop&w=1200&q=80"; }}
+                 onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=1200&q=80"; }}
                />
                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 to-transparent opacity-60 group-hover:opacity-20 transition-opacity" />
             </motion.div>

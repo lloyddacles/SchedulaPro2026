@@ -223,7 +223,7 @@ export default function Reports() {
                   <BarChart3 className="w-6 h-6 text-brand-500" /> Faculty Load Distribution
                 </h3>
               </div>
-              <div className="h-[500px] relative min-h-0">
+              <div className="h-[500px] relative">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={horizontalFaculty} layout="vertical" margin={{ left: 140, right: 40, top: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#334155" opacity={0.1} />
@@ -255,7 +255,7 @@ export default function Reports() {
                   <Building2 className="w-6 h-6 text-emerald-500" /> Room Efficiency
                 </h3>
               </div>
-              <div className="h-[500px] relative min-h-0">
+              <div className="h-[500px] relative">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={horizontalRooms} layout="vertical" margin={{ left: 140, right: 40 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#334155" opacity={0.1} />
@@ -295,7 +295,7 @@ export default function Reports() {
                 </div>
               </div>
               <div className="flex flex-col lg:flex-row items-center gap-8">
-                <div className="h-[400px] flex-1 w-full relative min-h-0">
+                <div className="h-[400px] flex-1 w-full relative">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie 
