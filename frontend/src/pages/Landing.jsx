@@ -397,10 +397,10 @@ export default function Landing() {
                   <span className="text-[10px] font-black uppercase text-white tracking-[0.3em] opacity-0 group-hover:opacity-100 transition-opacity">Founding Architect</span>
                </div>
                <img 
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80" 
+                  src="/assets/images/founder.jpg" 
                   alt="Mr. Lloyd Christopher F. Dacles" 
                   className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000"
-                  onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80"; }}
+                  onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80"; }}
                />
             </div>
             <div className="space-y-6 text-center lg:text-left">
