@@ -52,7 +52,7 @@ router.get('/summary', async (req: Request, res: Response) => {
              COUNT(tl.id) as subjects_count,
              COALESCE(SUM(s.required_hours), 0) as total_assigned_hours
       FROM faculty f
-      LEFT JOIN departments d ON f.id = d.id
+      LEFT JOIN departments d ON f.department_id = d.id
       LEFT JOIN teaching_loads tl ON f.id = tl.faculty_id AND tl.status != 'archived' ${term_id ? `AND tl.term_id = ?` : ''}
       LEFT JOIN subjects s ON tl.subject_id = s.id
       WHERE f.is_archived = FALSE ${fCampFilter}
