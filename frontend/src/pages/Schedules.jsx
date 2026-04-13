@@ -56,6 +56,7 @@ export default function Schedules() {
   const [smartSuggestions, setSmartSuggestions] = useState([]);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
   const [isCommittingGhost, setIsCommittingGhost] = useState(false);
+  const [dragTarget, setDragTarget] = useState(null); // { day, sAttempt, eAttempt, status, message }
 
   // ── Ghost Mode Logic ───────────────────────────────────────────────────
   const { isGhostMode, stagedSchedules, toggleGhostMode, stageUpdate, stageDelete, getDiff, discardDraft, validateIntegrity, validationErrors } = useGhostStore();
@@ -241,50 +242,75 @@ export default function Schedules() {
   });
 
   const checkSlotCollision = (day, sAttempt, eAttempt, load, roomName, ignoreScheduleId) => {
-    if (!load) return false;
+    if (!load) return { collision: false };
 
-    // Allocate load array once to avoid heavy GC cycling thousands of times during a single drag operation
-    const loadFacs = [];
-    if (load.faculty_id) loadFacs.push(load.faculty_id);
-    if (load.co_faculty_id_1) loadFacs.push(load.co_faculty_id_1);
-    if (load.co_faculty_id_2) loadFacs.push(load.co_faculty_id_2);
+    const loadFacs = [load.faculty_id, load.co_faculty_id_1, load.co_faculty_id_2].filter(id => !!id && id > 0);
 
-    // 1. Conflict Checks using ultra-fast native loops (no high-order functions to block the Thread during drag)
     for (let i = 0; i < schedules.length; i++) {
         const sch = schedules[i];
         if (ignoreScheduleId && sch.id === ignoreScheduleId) continue;
         if (sch.day_of_week !== day) continue;
-
-        // Perform instant Math operations instead of .split(':').map(Number) to save thousands of frames per sec
         const sSch = parseInt(sch.start_time.substring(0, 2), 10) + parseInt(sch.start_time.substring(3, 5), 10) / 60;
         const eSch = parseInt(sch.end_time.substring(0, 2), 10) + parseInt(sch.end_time.substring(3, 5), 10) / 60;
-        
         if (!(sSch < eAttempt && eSch > sAttempt)) continue;
 
         let isSameFaculty = false;
         if (sch.faculty_id && loadFacs.includes(sch.faculty_id)) isSameFaculty = true;
         else if (sch.co_faculty_id_1 && loadFacs.includes(sch.co_faculty_id_1)) isSameFaculty = true;
         else if (sch.co_faculty_id_2 && loadFacs.includes(sch.co_faculty_id_2)) isSameFaculty = true;
+        if (isSameFaculty) return { collision: true, reason: 'Faculty Overlap' };
 
-        const isSameSection = sch.section_id === load.section_id;
-        const isSameRoom = roomName && sch.room && sch.room.toLowerCase() === roomName.toLowerCase();
-
-        if (isSameFaculty || isSameSection || isSameRoom) return true; // Hard Collision Detected
+        if (sch.section_id === load.section_id && sch.section_id !== 1) return { collision: true, reason: 'Cohort Conflict' };
+        if (roomName && sch.room && sch.room.toLowerCase() === roomName.toLowerCase()) return { collision: true, reason: 'Room Double-Book' };
     }
 
-    // 2. Blackout Checks using high-performance loop
     for (let i = 0; i < blackouts.length; i++) {
         const b = blackouts[i];
         if (b.day_of_week !== day) continue;
         if (!loadFacs.includes(b.faculty_id)) continue;
-
-        const bStart = parseInt(b.start_time.substring(0, 2), 10) + parseInt(b.start_time.substring(3, 5), 10) / 60;
-        const bEnd = parseInt(b.end_time.substring(0, 2), 10) + parseInt(b.end_time.substring(3, 5), 10) / 60;
-        
-        if (bStart < eAttempt && bEnd > sAttempt) return true; // Faculty Break Conflict
+        const bS = parseInt(b.start_time.substring(0, 2), 10) + parseInt(b.start_time.substring(3, 5), 10) / 60;
+        const bE = parseInt(b.end_time.substring(0, 2), 10) + parseInt(b.end_time.substring(3, 5), 10) / 60;
+        if (bS < eAttempt && bE > sAttempt) return { collision: true, reason: 'Faculty Blackout' };
     }
 
-    return false;
+    return { collision: false };
+  };
+
+  const verifyWellness = (day, sAttempt, eAttempt, load, ignoreScheduleId) => {
+    if (!load || !load.faculty_id) return { valid: true };
+    const facultyIds = [load.faculty_id, load.co_faculty_id_1, load.co_faculty_id_2].filter(id => !!id && id > 0);
+    
+    const dayMap = { 'Monday': 'Sunday', 'Tuesday': 'Monday', 'Wednesday': 'Tuesday', 'Thursday': 'Wednesday', 'Friday': 'Thursday', 'Saturday': 'Friday', 'Sunday': 'Saturday' };
+    const nextDayMap = { 'Monday': 'Tuesday', 'Tuesday': 'Wednesday', 'Wednesday': 'Thursday', 'Thursday': 'Friday', 'Friday': 'Saturday', 'Saturday': 'Sunday' };
+    const prevDay = dayMap[day];
+    const nextDay = nextDayMap[day];
+
+    let lastEnd = -1;
+    let nextStart = 99;
+
+    for (let i = 0; i < schedules.length; i++) {
+      const sch = schedules[i];
+      if (ignoreScheduleId && sch.id === ignoreScheduleId) continue;
+      if (!facultyIds.includes(sch.faculty_id) && !facultyIds.includes(sch.co_faculty_id_1) && !facultyIds.includes(sch.co_faculty_id_2)) continue;
+      
+      if (sch.day_of_week === prevDay) {
+        const e = parseInt(sch.end_time.substring(0, 2), 10) + parseInt(sch.end_time.substring(3, 5), 10) / 60;
+        if (e > lastEnd) lastEnd = e;
+      } else if (sch.day_of_week === nextDay) {
+        const s = parseInt(sch.start_time.substring(0, 2), 10) + parseInt(sch.start_time.substring(3, 5), 10) / 60;
+        if (s < nextStart) nextStart = s;
+      }
+    }
+
+    if (lastEnd > 0) {
+      const gap = (sAttempt + 24) - lastEnd;
+      if (gap < 10) return { valid: false, reason: `Rest Gap: ${gap.toFixed(1)}h (Prev)` };
+    }
+    if (nextStart < 30) {
+      const gap = (nextStart + 24) - eAttempt;
+      if (gap < 10) return { valid: false, reason: `Rest Gap: ${gap.toFixed(1)}h (Next)` };
+    }
+    return { valid: true };
   };
 
   const handleAutoSuggest = async () => {
@@ -508,24 +534,24 @@ export default function Schedules() {
          // Skip slots that span the entire 11 AM–2 PM window (impossible to have a 1-hr gap)
          if (sAttempt <= 11 && eAttempt >= 14) continue;
          
-         const isCollision = checkSlotCollision(day, sAttempt, eAttempt, load, formData.room, isEditingSchedule ? selectedScheduleId : null);
+          const { collision } = checkSlotCollision(day, sAttempt, eAttempt, load, formData.room, isEditingSchedule ? selectedScheduleId : null);
 
-         if (!isCollision) {
-             const formatTime = (t) => {
-                const hh = Math.floor(t).toString().padStart(2, '0');
-                const mm = (t % 1 === 0.5) ? '30' : '00';
-                return `${hh}:${mm}:00`;
-             };
-             const dateStr = weekDates[dayMap[day]];
-             blocks.push({
-               id: `ghost-${day}-${timeCode}`,
-               title: 'Valid Slot',
-               start: `${dateStr}T${formatTime(sAttempt)}`,
-               end: `${dateStr}T${formatTime(eAttempt)}`,
-               display: 'background',
-               backgroundColor: 'rgba(16, 185, 129, 0.4)' 
-             });
-         }
+          if (!collision) {
+              const formatTime = (t) => {
+                 const hh = Math.floor(t).toString().padStart(2, '0');
+                 const mm = (t % 1 === 0.5) ? '30' : '00';
+                 return `${hh}:${mm}:00`;
+              };
+              const dateStr = weekDates[dayMap[day]];
+              blocks.push({
+                id: `ghost-${day}-${timeCode}`,
+                title: 'Valid Slot',
+                start: `${dateStr}T${formatTime(sAttempt)}`,
+                end: `${dateStr}T${formatTime(eAttempt)}`,
+                display: 'background',
+                backgroundColor: 'rgba(16, 185, 129, 0.4)' 
+              });
+          }
       }
     }
     return blocks;
@@ -536,19 +562,27 @@ export default function Schedules() {
     const sTime = dropInfo.start;
     const eTime = dropInfo.end;
     const newDayOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][sTime.getDay()];
-    
     const raw = draggedEvent.extendedProps?.raw;
     if (!raw) return true;
+    const parse = (d) => d.getHours() + (d.getMinutes() / 60);
+    const sA = parse(sTime);
+    const eA = parse(eTime);
     
-    const parseTimeArg = (d) => d.getHours() + (d.getMinutes() / 60);
-    const sAttempt = parseTimeArg(sTime);
-    const eAttempt = parseTimeArg(eTime);
+    // Ghost Mode Predictive Feedback
+    const { collision, reason } = checkSlotCollision(newDayOfWeek, sA, eA, raw, raw.room, raw.id);
+    const wellness = verifyWellness(newDayOfWeek, sA, eA, raw, raw.id);
     
-    // Reject only if slot fully eliminates the 11 AM–2 PM lunch window (no 1-hr gap possible)
-    if (sAttempt <= 11 && eAttempt >= 14) return false;
+    setDragTarget({ 
+      day: newDayOfWeek, 
+      start: sA, 
+      end: eA, 
+      status: collision ? 'error' : (!wellness.valid ? 'warning' : 'success'),
+      message: collision ? reason : (!wellness.valid ? wellness.reason : 'Optimal Slot'),
+      isWellnessViolation: !wellness.valid
+    });
 
-    const isCollision = checkSlotCollision(newDayOfWeek, sAttempt, eAttempt, raw, raw.room, raw.id);
-    return !isCollision;
+    if (sA <= 11 && eA >= 14) return false;
+    return !collision;
   };
 
   const fcEvents = [
@@ -827,7 +861,7 @@ export default function Schedules() {
         onResolveSuccessful={handleManualResolveSuccess}
       />
 
-      <div ref={containerRef} className="glass rounded-[2rem] shadow-xl border border-white/40 overflow-hidden print:shadow-none print:border-none print:bg-white print:rounded-none relative">
+      <div ref={containerRef} className={`glass rounded-[2rem] shadow-xl border border-white/40 overflow-hidden print:shadow-none print:border-none print:bg-white print:rounded-none relative ${dragTarget ? `ghost-active ghost-status-${dragTarget.status}` : ''}`}>
         {isLoadingSchedules ? (
            <div className="flex justify-center items-center h-40"><RefreshCw className="animate-spin h-8 w-8 text-brand-600" /></div>
         ) : (displayedSchedules.length === 0 && (selectedFacultyId || selectedSectionId || selectedProgramId || selectedRoomName)) ? (
@@ -896,6 +930,11 @@ export default function Schedules() {
                 }
 
                  .fc-event { border: 1px solid rgba(0,0,0,0.1) !important; }
+
+                 /* DYNAMIC GHOST AURA */
+                 .ghost-status-success .fc-event-mirror { background-color: rgba(16, 185, 129, 0.4) !important; border-color: #10b981 !important; box-shadow: 0 0 25px rgba(16, 185, 129, 0.4) !important; filter: brightness(1.1); }
+                 .ghost-status-warning .fc-event-mirror { background-color: rgba(245, 158, 11, 0.4) !important; border-color: #f59e0b !important; box-shadow: 0 0 25px rgba(245, 158, 11, 0.4) !important; filter: brightness(1.1); }
+                 .ghost-status-error   .fc-event-mirror { background-color: rgba(244, 63, 94, 0.4) !important; border-color: #f43f5e !important; box-shadow: 0 0 25px rgba(244, 63, 94, 0.4) !important; filter: brightness(1.1); }
              `}</style>
 
              <FullCalendar
@@ -941,7 +980,35 @@ export default function Schedules() {
                 }}
                 height="auto"
                 slotDuration="00:30:00"
+                eventDragStart={() => setError('')}
+                eventDragStop={() => setTimeout(() => setDragTarget(null), 100)}
              />
+
+             {/* GHOST MODE PREDICTIVE TOOLTIP */}
+             <AnimatePresence>
+                {dragTarget && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] px-6 py-4 rounded-3xl shadow-2xl border flex items-center gap-4 backdrop-blur-md pointer-events-none ${
+                      dragTarget.status === 'error' ? 'bg-rose-600/90 border-rose-400 text-white' :
+                      dragTarget.status === 'warning' ? 'bg-amber-500/90 border-amber-300 text-white' :
+                      'bg-emerald-600/90 border-emerald-400 text-white'
+                    }`}
+                  >
+                    <div className="p-2 bg-white/20 rounded-xl">
+                      {dragTarget.status === 'error' ? <ShieldAlert className="w-5 h-5" /> : 
+                       dragTarget.status === 'warning' ? <AlertTriangle className="w-5 h-5" /> : 
+                       <Sparkles className="w-5 h-5" />}
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-0.5">Ghost Intelligence</p>
+                      <p className="text-sm font-black tracking-tight">{dragTarget.message}</p>
+                    </div>
+                  </motion.div>
+                )}
+             </AnimatePresence>
 
              {/* FLOATING ACTION POPOVER */}
              {popoverState.isOpen && popoverState.data && (
