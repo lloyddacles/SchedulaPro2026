@@ -3,13 +3,17 @@ import { Command } from 'cmdk';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { Search, Calendar, Users, BookOpen, Building2, LayoutDashboard, Database, PieChart, Moon, Sun, Inbox } from 'lucide-react';
+import { Search, Calendar, Users, BookOpen, Building2, LayoutDashboard, Database, PieChart, Moon, Sun, Inbox, GraduationCap } from 'lucide-react';
+import api from '../api';
 
 export default function CommandPalette() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [results, setResults] = useState({ faculty: [], rooms: [], programs: [] });
+  const [loading, setLoading] = useState(false);
 
   // Toggle the menu when ⌘K is pressed
   useEffect(() => {
@@ -23,6 +27,28 @@ export default function CommandPalette() {
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
   }, []);
+
+  // Handle Search Fetching
+  useEffect(() => {
+    if (searchQuery.length < 2) {
+      setResults({ faculty: [], rooms: [], programs: [] });
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const { data } = await api.get(`/search?q=${searchQuery}`);
+        setResults(data);
+      } catch (err) {
+        console.error('Palette Search Error:', err);
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const runCommand = (command) => {
     command();
@@ -51,19 +77,83 @@ export default function CommandPalette() {
           <div className="flex items-center w-full px-4 py-3 border-b border-gray-100 dark:border-slate-800">
             <Search className="w-5 h-5 text-gray-400" />
             <Command.Input 
-              autoFocus
-              className="w-full bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none ml-3 text-lg" 
-              placeholder="What do you need?" 
-            />
+               autoFocus
+               value={searchQuery}
+               onValueChange={setSearchQuery}
+               className="w-full bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none ml-3 text-lg font-medium" 
+               placeholder="Search faculty, rooms, programs..." 
+             />
             <div className="ml-auto text-xs text-gray-400 bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded border border-gray-200 dark:border-slate-700 font-mono tracking-widest shadow-sm">
               ESC
             </div>
           </div>
 
           <Command.List className="w-full max-h-[350px] overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-slate-700">
-            <Command.Empty className="py-6 text-center text-gray-500 dark:text-gray-400 text-sm">
-              No results found.
-            </Command.Empty>
+            <Command.Empty className="py-10 text-center flex flex-col items-center justify-center gap-3">
+               <div className="p-3 bg-gray-50 dark:bg-slate-800 rounded-full">
+                 <Search className="w-6 h-6 text-gray-300 dark:text-gray-600" />
+               </div>
+               <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+                 {loading ? 'Searching institutional matrix...' : 'No results found in current system.'}
+               </p>
+             </Command.Empty>
+
+            {/* Dynamic Results: Faculty */}
+            {results.faculty.length > 0 && (
+              <Command.Group heading="Faculty Matches" className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-slate-500 px-3 py-2">
+                {results.faculty.map((f) => (
+                  <Command.Item
+                    key={`fac-${f.id}`}
+                    onSelect={() => runCommand(() => navigate(`/faculty?search=${encodeURIComponent(f.name)}`))}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-brand-500 hover:text-white dark:hover:bg-brand-600 aria-selected:bg-brand-500 aria-selected:text-white transition-all group"
+                  >
+                    <div className="p-1.5 bg-gray-100 dark:bg-slate-800 rounded-lg group-hover:bg-brand-400/20">
+                      <Users className="w-3.5 h-3.5 text-gray-400 group-hover:text-white" />
+                    </div>
+                    <span>{f.name}</span>
+                    <span className="ml-auto text-[10px] opacity-60 font-medium">{f.email}</span>
+                  </Command.Item>
+                ))}
+              </Command.Group>
+            )}
+
+            {/* Dynamic Results: Rooms */}
+            {results.rooms.length > 0 && (
+              <Command.Group heading="Facility Matches" className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-slate-500 px-3 py-2">
+                {results.rooms.map((r) => (
+                  <Command.Item
+                    key={`room-${r.id}`}
+                    onSelect={() => runCommand(() => navigate(`/rooms?search=${encodeURIComponent(r.name)}`))}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-500 hover:text-white dark:hover:bg-emerald-600 aria-selected:bg-emerald-500 aria-selected:text-white transition-all group"
+                  >
+                    <div className="p-1.5 bg-gray-100 dark:bg-slate-800 rounded-lg group-hover:bg-emerald-400/20">
+                      <Building2 className="w-3.5 h-3.5 text-gray-400 group-hover:text-white" />
+                    </div>
+                    <span>{r.name}</span>
+                    <span className="ml-auto text-[10px] opacity-60 font-medium uppercase tracking-tighter">{r.type}</span>
+                  </Command.Item>
+                ))}
+              </Command.Group>
+            )}
+
+            {/* Dynamic Results: Programs */}
+            {results.programs.length > 0 && (
+              <Command.Group heading="Curricular Program Matches" className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-slate-500 px-3 py-2">
+                {results.programs.map((p) => (
+                  <Command.Item
+                    key={`prog-${p.id}`}
+                    onSelect={() => runCommand(() => navigate(`/teaching-loads?program=${encodeURIComponent(p.code)}`))}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-purple-500 hover:text-white dark:hover:bg-purple-600 aria-selected:bg-purple-500 aria-selected:text-white transition-all group"
+                  >
+                    <div className="p-1.5 bg-gray-100 dark:bg-slate-800 rounded-lg group-hover:bg-purple-400/20">
+                      <GraduationCap className="w-3.5 h-3.5 text-gray-400 group-hover:text-white" />
+                    </div>
+                    <span>{p.name}</span>
+                    <span className="ml-auto text-[10px] opacity-60 font-medium px-2 py-0.5 bg-gray-100 dark:bg-slate-800 rounded-md group-hover:bg-white/20">{p.code}</span>
+                  </Command.Item>
+                ))}
+              </Command.Group>
+            )}
 
             {isScheduler && (
               <Command.Group heading="Master Scheduling" className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-2 py-3">

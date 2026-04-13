@@ -264,17 +264,53 @@ export class ScheduleService {
       }
     }
 
-    // 6. Lunch Gap — only validate if the proposed class touches the lunch window (11:30 AM – 2:30 PM).
-    // A class entirely before 11:30 AM or entirely after 2:30 PM cannot affect the lunch break.
-    const L_START = 11.5; // 11:30 AM
-    const L_END = 14.5;   // 02:30 PM
-    const proposedOverlapsLunchWindow = sAttempt < L_END && eAttempt > L_START;
-    if (proposedOverlapsLunchWindow) {
-      const gapOk = await this.validateManualSlot(poolOrConn, { 
-        facultyIds: targetFacultyIds as number[], sectionId: sectionId as number, dayOfWeek, termId: targetTermId, startTime, endTime, excludeScheduleId 
-      });
-      if (!gapOk) {
-        return { valid: false, message: 'Flexible Lunch Required', details: 'No contiguous 1-hour break between 11:30 AM and 2:30 PM is available for this instructor/section on this day.' };
+    // 7. Institutional Rest Gap (10-Hour Rule)
+    // Ensures faculty have at least 10 hours of rest between the end of one day and start of the next.
+    if (targetFacultyIds.length > 0) {
+      const dayMap: Record<string, string> = {
+        'Monday': 'Sunday', 'Tuesday': 'Monday', 'Wednesday': 'Tuesday', 'Thursday': 'Wednesday', 
+        'Friday': 'Thursday', 'Saturday': 'Friday', 'Sunday': 'Saturday'
+      };
+      const nextDayMap: Record<string, string> = {
+        'Sunday': 'Monday', 'Monday': 'Tuesday', 'Tuesday': 'Wednesday', 'Wednesday': 'Thursday', 
+        'Thursday': 'Friday', 'Friday': 'Saturday', 'Saturday': 'Sunday'
+      };
+
+      const prevDay = dayMap[dayOfWeek];
+      const nextDay = nextDayMap[dayOfWeek];
+
+      // Check Previous Day Finish Time
+      const [prevSchedules]: [any[], any] = await poolOrConn.query(`
+        SELECT sch.end_time FROM schedules sch
+        JOIN teaching_loads tl ON sch.teaching_load_id = tl.id
+        WHERE (tl.faculty_id IN (${facPlaceholders}) OR tl.co_faculty_id_1 IN (${facPlaceholders}) OR tl.co_faculty_id_2 IN (${facPlaceholders}))
+          AND sch.day_of_week = ? AND tl.term_id = ? AND tl.status != 'archived'
+        ORDER BY sch.end_time DESC LIMIT 1
+      `, [...targetFacultyIds, ...targetFacultyIds, ...targetFacultyIds, prevDay, targetTermId]);
+
+      if (prevSchedules.length > 0) {
+        const lastEnd = this.parseTime(prevSchedules[0].end_time);
+        const gap = (sAttempt + 24) - lastEnd;
+        if (gap < 10) {
+          return { valid: false, message: 'Rest Gap Violation', details: `Instructor finished at ${prevSchedules[0].end_time.slice(0,5)} on ${prevDay}. Mandatory 10-hour rest required (Only ${gap.toFixed(1)}h gap).` };
+        }
+      }
+
+      // Check Next Day Start Time
+      const [nextSchedules]: [any[], any] = await poolOrConn.query(`
+        SELECT sch.start_time FROM schedules sch
+        JOIN teaching_loads tl ON sch.teaching_load_id = tl.id
+        WHERE (tl.faculty_id IN (${facPlaceholders}) OR tl.co_faculty_id_1 IN (${facPlaceholders}) OR tl.co_faculty_id_2 IN (${facPlaceholders}))
+          AND sch.day_of_week = ? AND tl.term_id = ? AND tl.status != 'archived'
+        ORDER BY sch.start_time ASC LIMIT 1
+      `, [...targetFacultyIds, ...targetFacultyIds, ...targetFacultyIds, nextDay, targetTermId]);
+
+      if (nextSchedules.length > 0) {
+        const nextStart = this.parseTime(nextSchedules[0].start_time);
+        const gap = (nextStart + 24) - eAttempt;
+        if (gap < 10) {
+          return { valid: false, message: 'Rest Gap Violation', details: `Instructor starts at ${nextSchedules[0].start_time.slice(0,5)} on ${nextDay}. Mandatory 10-hour rest required (Proposed end: ${endTime.slice(0,5)} results in ${gap.toFixed(1)}h gap).` };
+        }
       }
     }
 

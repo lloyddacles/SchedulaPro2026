@@ -1,8 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import pool from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
-import { ScheduleService } from '../services/ScheduleService.js';
-import { validate, scheduleSchema, autoScheduleSchema } from '../middleware/validator.js';
+import { withTransaction } from '../utils/transaction.js';
 import { logAudit } from '../utils/auditLogger.js';
 import { authenticateToken, authorizeRoles } from '../utils/auth.js';
 
@@ -132,111 +131,110 @@ router.get('/', async (req: Request<{}, {}, {}, ScheduleQuery>, res: Response, n
 
 router.post('/', authorizeRoles('admin', 'program_head', 'program_assistant'), validate(scheduleSchema), async (req: any, res: Response, next: express.NextFunction) => {
   const { teaching_load_id, day_of_week, start_time, end_time, room } = req.body;
-  const connection = await pool.getConnection();
+  
   try {
-    await connection.beginTransaction();
+    const result = await withTransaction(async (connection) => {
+      const [tlRows]: [any[], any] = await connection.query(`
+        SELECT tl.term_id, tl.section_id, sec.campus_id 
+        FROM teaching_loads tl
+        JOIN sections sec ON tl.section_id = sec.id
+        WHERE tl.id = ?
+      `, [teaching_load_id]);
+      
+      if (tlRows.length === 0) {
+        throw new ApiError(404, 'Teaching load not found', 'NOT_FOUND');
+      }
+      const { term_id: termId, section_id: sectionId, campus_id: campusId } = tlRows[0];
 
-    const [tlRows]: [any[], any] = await connection.query(`
-      SELECT tl.term_id, tl.section_id, sec.campus_id 
-      FROM teaching_loads tl
-      JOIN sections sec ON tl.section_id = sec.id
-      WHERE tl.id = ?
-    `, [teaching_load_id]);
-    
-    if (tlRows.length === 0) {
-      throw new ApiError(404, 'Teaching load not found', 'NOT_FOUND');
-    }
-    const { term_id: termId, section_id: sectionId, campus_id: campusId } = tlRows[0];
+      const validation = await ScheduleService.validatePlacement(connection, {
+        teachingLoadId: Number(teaching_load_id),
+        dayOfWeek: day_of_week as string,
+        startTime: start_time as string,
+        endTime: end_time as string,
+        room: room as string,
+        termId: termId
+      });
 
-    const validation = await ScheduleService.validatePlacement(connection, {
-      teachingLoadId: Number(teaching_load_id),
-      dayOfWeek: day_of_week as string,
-      startTime: start_time as string,
-      endTime: end_time as string,
-      room: room as string,
-      termId: termId
+      if (!validation.valid) {
+        throw new ApiError(400, validation.message || 'Validation failed', 'VALIDATION_ERROR', validation.details);
+      }
+
+      const [{ insertId }]: [any, any] = await connection.query(
+        'INSERT INTO schedules (teaching_load_id, day_of_week, start_time, end_time, room) VALUES (?, ?, ?, ?, ?)',
+        [teaching_load_id, day_of_week, start_time, end_time, room]
+      );
+      
+      await logAudit('CREATE_SCHEDULE', 'Schedule', insertId, { 
+        day: day_of_week, time: `${start_time}-${end_time}`, room 
+      }, req.user.username);
+      
+      return { insertId, teaching_load_id, day_of_week, start_time, end_time, room, campusId };
     });
 
-    if (!validation.valid) {
-      throw new ApiError(400, validation.message || 'Validation failed', 'VALIDATION_ERROR', validation.details);
-    }
-
-    const [{ insertId }]: [any, any] = await connection.query(
-      'INSERT INTO schedules (teaching_load_id, day_of_week, start_time, end_time, room) VALUES (?, ?, ?, ?, ?)',
-      [teaching_load_id, day_of_week, start_time, end_time, room]
-    );
-    
-    await logAudit('CREATE_SCHEDULE', 'Schedule', insertId, { 
-      day: day_of_week, time: `${start_time}-${end_time}`, room 
-    }, req.user.username);
-    
-    await connection.commit();
-    res.status(201).json({ id: insertId, teaching_load_id, day_of_week, start_time, end_time, room });
+    res.status(201).json({ id: result.insertId, teaching_load_id: result.teaching_load_id, day_of_week: result.day_of_week, start_time: result.start_time, end_time: result.end_time, room: result.room });
     
     // Realtime Sync
-    req.io.to(`campus_${campusId}`).emit('schedule_updated', { 
-      campus_id: campusId,
+    req.io.to(`campus_${result.campusId}`).emit('schedule_updated', { 
+      campus_id: result.campusId,
       action: 'create',
-      schedule_id: insertId
+      schedule_id: result.insertId
     });
   } catch (error: any) {
-    await connection.rollback();
     next(error);
-  } finally {
-    connection.release();
   }
 });
 
 router.put('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), validate(scheduleSchema), async (req: any, res: Response, next: express.NextFunction) => {
   const { day_of_week, start_time, end_time, room, teaching_load_id } = req.body;
-  const connection = await pool.getConnection();
+  
   try {
-    await connection.beginTransaction();
+    const { campusId } = await withTransaction(async (connection) => {
+      const [existRows]: [any[], any] = await connection.query('SELECT teaching_load_id, room FROM schedules WHERE id = ?', [req.params.id]);
+      if (existRows.length === 0) {
+        throw new ApiError(404, 'Schedule not found', 'NOT_FOUND');
+      }
+      
+      const targetTeachingLoadId = teaching_load_id || existRows[0].teaching_load_id;
+      const targetRoom = room || existRows[0].room;
 
-    const [existRows]: [any[], any] = await connection.query('SELECT teaching_load_id, room FROM schedules WHERE id = ?', [req.params.id]);
-    if (existRows.length === 0) {
-      throw new ApiError(404, 'Schedule not found', 'NOT_FOUND');
-    }
-    
-    const targetTeachingLoadId = teaching_load_id || existRows[0].teaching_load_id;
-    const targetRoom = room || existRows[0].room;
+      const [tlRows]: [any[], any] = await connection.query(`
+        SELECT tl.term_id, sec.campus_id 
+        FROM teaching_loads tl
+        JOIN sections sec ON tl.section_id = sec.id
+        WHERE tl.id = ?
+      `, [targetTeachingLoadId]);
+      
+      if (tlRows.length === 0) {
+        throw new ApiError(404, 'Teaching load not found', 'NOT_FOUND');
+      }
+      const { term_id: termId, campus_id: campusId } = tlRows[0];
 
-    const [tlRows]: [any[], any] = await connection.query(`
-      SELECT tl.term_id, sec.campus_id 
-      FROM teaching_loads tl
-      JOIN sections sec ON tl.section_id = sec.id
-      WHERE tl.id = ?
-    `, [targetTeachingLoadId]);
-    
-    if (tlRows.length === 0) {
-      throw new ApiError(404, 'Teaching load not found', 'NOT_FOUND');
-    }
-    const { term_id: termId, campus_id: campusId } = tlRows[0];
+      const validation = await ScheduleService.validatePlacement(connection, {
+        teachingLoadId: Number(targetTeachingLoadId),
+        dayOfWeek: day_of_week as string,
+        startTime: start_time as string,
+        endTime: end_time as string,
+        room: targetRoom as string,
+        termId: termId,
+        excludeScheduleId: Number(req.params.id)
+      });
 
-    const validation = await ScheduleService.validatePlacement(connection, {
-      teachingLoadId: Number(targetTeachingLoadId),
-      dayOfWeek: day_of_week as string,
-      startTime: start_time as string,
-      endTime: end_time as string,
-      room: targetRoom as string,
-      termId: termId,
-      excludeScheduleId: Number(req.params.id)
+      if (!validation.valid) {
+        throw new ApiError(400, validation.message || 'Validation failed', 'VALIDATION_ERROR', validation.details);
+      }
+
+      await connection.query(
+        'UPDATE schedules SET teaching_load_id = ?, day_of_week = ?, start_time = ?, end_time = ?, room = ? WHERE id = ?',
+        [targetTeachingLoadId, day_of_week, start_time, end_time, targetRoom, req.params.id]
+      );
+      
+      await logAudit('UPDATE_SCHEDULE', 'Schedule', req.params.id as string, { 
+        day: day_of_week, time: `${start_time}-${end_time}`, room: targetRoom 
+      }, req.user.username);
+
+      return { campusId };
     });
 
-    if (!validation.valid) {
-      throw new ApiError(400, validation.message || 'Validation failed', 'VALIDATION_ERROR', validation.details);
-    }
-
-    await connection.query(
-      'UPDATE schedules SET teaching_load_id = ?, day_of_week = ?, start_time = ?, end_time = ?, room = ? WHERE id = ?',
-      [targetTeachingLoadId, day_of_week, start_time, end_time, targetRoom, req.params.id]
-    );
-    
-    await logAudit('UPDATE_SCHEDULE', 'Schedule', req.params.id as string, { 
-      day: day_of_week, time: `${start_time}-${end_time}`, room: targetRoom 
-    }, req.user.username);
-
-    await connection.commit();
     res.json({ message: 'Schedule updated' });
 
     // Realtime Sync
@@ -246,43 +244,38 @@ router.put('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'),
       schedule_id: req.params.id
     });
   } catch (error: any) {
-    await connection.rollback();
     next(error);
-  } finally {
-    connection.release();
   }
 });
 
 router.delete('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response, next: express.NextFunction) => {
-  const connection = await pool.getConnection();
   try {
-    await connection.beginTransaction();
+    const campusId = await withTransaction(async (connection) => {
+      const [exist]: [any[], any] = await connection.query(`
+        SELECT sec.campus_id 
+        FROM schedules sch
+        JOIN teaching_loads tl ON sch.teaching_load_id = tl.id
+        JOIN sections sec ON tl.section_id = sec.id
+        WHERE sch.id = ?
+      `, [req.params.id]);
 
-    const [exist]: [any[], any] = await connection.query(`
-      SELECT sec.campus_id 
-      FROM schedules sch
-      JOIN teaching_loads tl ON sch.teaching_load_id = tl.id
-      JOIN sections sec ON tl.section_id = sec.id
-      WHERE sch.id = ?
-    `, [req.params.id]);
+      await connection.query('DELETE FROM schedules WHERE id = ?', [req.params.id]);
+      await logAudit('DELETE_SCHEDULE', 'Schedule', req.params.id as string, {}, req.user.username);
+      
+      return exist.length > 0 ? exist[0].campus_id : null;
+    });
 
-    await connection.query('DELETE FROM schedules WHERE id = ?', [req.params.id]);
-    await logAudit('DELETE_SCHEDULE', 'Schedule', req.params.id as string, {}, req.user.username);
-    await connection.commit();
     res.json({ message: 'Schedule deleted successfully' });
 
-    if (exist.length > 0) {
-      req.io.to(`campus_${exist[0].campus_id}`).emit('schedule_updated', { 
-        campus_id: exist[0].campus_id,
+    if (campusId) {
+      req.io.to(`campus_${campusId}`).emit('schedule_updated', { 
+        campus_id: campusId,
         action: 'delete',
         schedule_id: req.params.id
       });
     }
   } catch (error: any) {
-    await connection.rollback();
     next(error);
-  } finally {
-    connection.release();
   }
 });
 
@@ -308,35 +301,35 @@ router.route(['/auto-schedule', '/auto-schedule/'])
   .post(authorizeRoles('admin', 'program_head'), validate(autoScheduleSchema), async (req: any, res: Response, next: express.NextFunction) => {
     const { term_id, campus_id } = req.body;
 
-    const connection = await pool.getConnection();
     try {
-      await connection.beginTransaction();
+      const { result, campusRows } = await withTransaction(async (connection) => {
+        const result = await ScheduleService.autoGenerate(connection, term_id, campus_id);
+        await logAudit('AUTO_SCHEDULE', 'Schedule', null, { term_id, campus_id, ...result }, req.user.username);
 
-      const result = await ScheduleService.autoGenerate(connection, term_id, campus_id);
-      await logAudit('AUTO_SCHEDULE', 'Schedule', null, { term_id, campus_id, ...result }, req.user.username);
+        if (result.scheduled > 0) {
+          const values = result.newlyMapped.map(m => [
+            m.teaching_load_id, m.day_of_week, m.start_time, m.end_time, m.room
+          ]);
+          await connection.query(
+            'INSERT INTO schedules (teaching_load_id, day_of_week, start_time, end_time, room) VALUES ?',
+            [values]
+          );
+        }
 
-      if (result.scheduled > 0) {
-        const values = result.newlyMapped.map(m => [
-          m.teaching_load_id, m.day_of_week, m.start_time, m.end_time, m.room
-        ]);
-        await connection.query(
-          'INSERT INTO schedules (teaching_load_id, day_of_week, start_time, end_time, room) VALUES ?',
-          [values]
-        );
-      }
-
-      await connection.commit();
-      res.json({ scheduled: result.scheduled, failed: result.failed, failures: result.failures });
-
-      if (result.scheduled > 0) {
-        // Broadcast update to involved campuses
+        // Fetch involved campuses for realtime sync signal
         const [campusRows]: [any[], any] = await connection.query(`
           SELECT DISTINCT sec.campus_id 
           FROM teaching_loads tl
           JOIN sections sec ON tl.section_id = sec.id
           WHERE tl.term_id = ? ${campus_id ? 'AND sec.campus_id = ?' : ''}
         `, campus_id ? [term_id, campus_id] : [term_id]);
-        
+
+        return { result, campusRows };
+      });
+
+      res.json({ scheduled: result.scheduled, failed: result.failed, failures: result.failures });
+
+      if (result.scheduled > 0) {
         campusRows.forEach((row: any) => {
           req.io.to(`campus_${row.campus_id}`).emit('schedule_updated', { 
             campus_id: row.campus_id,
@@ -346,14 +339,11 @@ router.route(['/auto-schedule', '/auto-schedule/'])
       }
     } catch (error: any) {
       console.error(' [Auto-Scheduler Failure]:', error);
-      await connection.rollback();
       res.status(500).json({ 
         error: 'Core Auto-Scheduler failed during execution.', 
         details: error.message,
         stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
-    } finally {
-      connection.release();
     }
   })
   .all((req: Request, res: Response) => {
@@ -412,41 +402,36 @@ router.post('/batch-sync', authorizeRoles('admin', 'program_head', 'program_assi
     return next(new ApiError(400, 'Term ID is required for batch synchronization.', 'BAD_REQUEST'));
   }
 
-  const connection = await pool.getConnection();
   try {
-    await connection.beginTransaction();
-
     const tmId = Number(term_id);
     if (isNaN(tmId)) {
       throw new ApiError(400, 'Invalid Term ID provided for sync.', 'BAD_REQUEST');
     }
 
-    const result = await ScheduleService.batchSync(connection, {
-      termId: tmId,
-      updates: updates || [],
-      creates: creates || [],
-      deletes: deletes || []
+    await withTransaction(async (connection) => {
+      const result = await ScheduleService.batchSync(connection, {
+        termId: tmId,
+        updates: updates || [],
+        creates: creates || [],
+        deletes: deletes || []
+      });
+
+      if (!result.success) {
+        throw new ApiError(400, result.message, 'BATCH_SYNC_FAILURE');
+      }
+
+      await logAudit('STAGING_COMMIT', 'Schedule', null, { 
+        modified: (updates?.length || 0) + (creates?.length || 0) + (deletes?.length || 0),
+        summary: `Ghost Mode sync: ${updates?.length || 0} updated, ${creates?.length || 0} created, ${deletes?.length || 0} deleted.`
+      }, req.user.username);
     });
 
-    if (!result.success) {
-      throw new ApiError(400, result.message, 'BATCH_SYNC_FAILURE');
-    }
-
-    await logAudit('STAGING_COMMIT', 'Schedule', null, { 
-      modified: (updates?.length || 0) + (creates?.length || 0) + (deletes?.length || 0),
-      summary: `Ghost Mode sync: ${updates?.length || 0} updated, ${creates?.length || 0} created, ${deletes?.length || 0} deleted.`
-    }, req.user.username);
-
-    await connection.commit();
-    res.json({ message: result.message });
+    res.json({ message: 'Batch sync successful' });
 
     // Global refresh signal for all connected administrators
     req.io.emit('schedule_updated', { action: 'batch_sync', term_id });
   } catch (error: any) {
-    await connection.rollback();
     next(error);
-  } finally {
-    connection.release();
   }
 });
 
