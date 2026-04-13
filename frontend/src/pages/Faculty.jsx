@@ -106,6 +106,11 @@ export default function Faculty() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['faculty'] })
   });
 
+  const purgeMutation = useMutation({
+    mutationFn: (id) => api.delete(`/faculty/${id}/permanent`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['faculty'] })
+  });
+
   // ── Handlers ──────────────────────────────────────────────────────────────
   const openAddModal = () => {
     setFormData({ full_name: '', program_id: 1, campus_id: '', specializations: [], max_teaching_hours: 24, employment_type: 'Regular', department_id: '' });
@@ -387,7 +392,7 @@ export default function Faculty() {
                                           message: `This will erase ${f.full_name} and all their historical data from the system. This cannot be undone.`,
                                           type: 'danger',
                                           onConfirm: () => {
-                                            deleteMutation.mutate(f.id); 
+                                            purgeMutation.mutate(f.id); 
                                           }
                                         });
                                         setIsConfirmModalOpen(true);

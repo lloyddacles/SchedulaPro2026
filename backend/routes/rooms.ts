@@ -144,6 +144,18 @@ router.put('/:id/restore', authorizeRoles('admin', 'program_head', 'program_assi
   }
 });
 
+router.delete('/:id/permanent', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+  try {
+    const [result]: any = await pool.query('DELETE FROM rooms WHERE id = ?', [req.params.id]);
+    if (result.affectedRows === 0) throw new ApiError(404, 'Room not found', 'NOT_FOUND');
+
+    await logAudit('PERMANENT_DELETE', 'Room', req.params.id as string, {}, req.user.username);
+    res.json({ message: 'Room record permanently purged from institutional database.' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.patch('/:id/status', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   const { status } = req.body;
   try {

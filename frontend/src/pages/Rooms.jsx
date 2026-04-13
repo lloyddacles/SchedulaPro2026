@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api';
 import { 
   Building, Plus, Archive, X, AlertCircle, RefreshCw, Edit2, 
-  MapPin, Users, Activity, Hammer, CheckCircle2, LayoutGrid, List, RotateCcw
+  MapPin, Users, Activity, Hammer, CheckCircle2, LayoutGrid, List, RotateCcw, Trash2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ConfirmModal from '../components/ConfirmModal';
@@ -146,6 +146,11 @@ export default function Rooms() {
 
   const restoreMutation = useMutation({
     mutationFn: (id) => api.put(`/rooms/${id}/restore`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['rooms'] })
+  });
+  
+  const purgeMutation = useMutation({
+    mutationFn: (id) => api.delete(`/rooms/${id}/permanent`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['rooms'] })
   });
 
@@ -323,13 +328,32 @@ export default function Rooms() {
                     </div>
                     
                     {showArchived ? (
-                      <button 
-                        onClick={() => restoreMutation.mutate(r.id)}
-                        className="p-2 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-xl hover:bg-emerald-100 transition-colors"
-                        title="Restore Facility"
-                      >
-                        <RotateCcw className="w-5 h-5" />
-                      </button>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => restoreMutation.mutate(r.id)}
+                          className="p-2 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-xl hover:bg-emerald-100 transition-colors"
+                          title="Restore Facility"
+                        >
+                          <RotateCcw className="w-5 h-5" />
+                        </button>
+                        {isAdmin && (
+                          <button 
+                            onClick={() => {
+                              setConfirmConfig({
+                                title: 'PERMANENTLY DELETE?',
+                                message: `WARNING: You are about to IRREVERSIBLY purge room ${r.name}. This cannot be undone and may affect historical reports.`,
+                                type: 'danger',
+                                onConfirm: () => purgeMutation.mutate(r.id)
+                              });
+                              setIsConfirmModalOpen(true);
+                            }}
+                            className="p-2 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-xl hover:bg-red-100 transition-colors"
+                            title="Permanent Purge"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
                     ) : (
                       <button 
                         onClick={() => { 

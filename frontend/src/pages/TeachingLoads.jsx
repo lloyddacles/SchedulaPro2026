@@ -181,6 +181,11 @@ export default function TeachingLoads() {
     mutationFn: (id) => api.delete(`/teaching-loads/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['loads'] })
   });
+  
+  const purgeMutation = useMutation({
+    mutationFn: (id) => api.delete(`/teaching-loads/${id}/permanent`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['loads'] })
+  });
 
   const bulkApproveMutation = useMutation({
     mutationFn: (ids) => api.patch('/teaching-loads/bulk-approve', { ids, reviewed_by: user?.id }),
@@ -526,7 +531,10 @@ export default function TeachingLoads() {
                                    title: 'Permanently Delete',
                                    message: 'Are you sure you want to permanently delete this load block from the database? This cannot be undone.',
                                    type: 'danger',
-                                   onConfirm: () => deleteMutation.mutate(load.id)
+                                   onConfirm: () => {
+                                   if (activeTab === 'archived') purgeMutation.mutate(load.id);
+                                   else deleteMutation.mutate(load.id);
+                                 }
                                  });
                                  setIsConfirmModalOpen(true);
                                }}

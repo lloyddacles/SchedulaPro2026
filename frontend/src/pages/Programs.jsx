@@ -4,7 +4,7 @@ import api from '../api';
 import { 
   BookOpen, PlusCircle, Archive, AlertCircle, X, Shield, 
   RefreshCw, Edit2, Building2, Layers, Search, LayoutGrid, 
-  ChevronRight, ArrowRight, TrendingUp, GraduationCap
+  ChevronRight, ArrowRight, TrendingUp, GraduationCap, Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmModal from '../components/ConfirmModal';
@@ -71,6 +71,11 @@ export default function Programs() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['programs'] })
   });
 
+  const purgeProgramMutation = useMutation({
+    mutationFn: (id) => api.delete(`/programs/${id}/permanent`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['programs'] })
+  });
+
   // --- Department Mutations ---
   const createDeptMutation = useMutation({
     mutationFn: (newDept) => api.post('/departments', newDept),
@@ -100,6 +105,11 @@ export default function Programs() {
 
   const restoreDeptMutation = useMutation({
     mutationFn: (id) => api.put(`/departments/${id}/restore`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['departments'] })
+  });
+
+  const purgeDeptMutation = useMutation({
+    mutationFn: (id) => api.delete(`/departments/${id}/permanent`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['departments'] })
   });
 
@@ -312,9 +322,28 @@ export default function Programs() {
                                 <Archive className="w-4 h-4" />
                               </button>
                             </>
+                          {showArchived ? (
+                            <div className="flex gap-2">
+                              <button onClick={() => restoreDeptMutation.mutate(dept.id)} className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors">Restore</button>
+                              {user?.role === 'admin' && (
+                                <button 
+                                  onClick={() => {
+                                    setConfirmConfig({
+                                      title: 'PURGE DEPARTMENT?',
+                                      message: `WARNING: You are about to IRREVERSIBLY erase ${dept.name}. All programs and curricula tied to this node will be affected.`,
+                                      type: 'danger',
+                                      onConfirm: () => purgeDeptMutation.mutate(dept.id)
+                                    });
+                                    setIsConfirmModalOpen(true);
+                                  }}
+                                  className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                  title="Permanent Purge"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
                           ) : (
-                            <button onClick={() => restoreDeptMutation.mutate(dept.id)} className="px-3 py-1.5 bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400 rounded-lg text-xs font-black uppercase tracking-widest">Restore</button>
-                          )}
                         </div>
                       </div>
 
@@ -390,9 +419,28 @@ export default function Programs() {
                                             <Archive className="w-4 h-4" />
                                           </button>
                                         </>
+                                      {showArchived ? (
+                                        <div className="flex gap-2">
+                                          <button onClick={() => restoreProgramMutation.mutate(p.id)} className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors">Restore</button>
+                                          {user?.role === 'admin' && (
+                                            <button 
+                                              onClick={() => {
+                                                setConfirmConfig({
+                                                  title: 'PURGE PROGRAM?',
+                                                  message: `WARNING: You are about to IRREVERSIBLY erase ${p.code}. This cannot be undone and may affect historical records.`,
+                                                  type: 'danger',
+                                                  onConfirm: () => purgeProgramMutation.mutate(p.id)
+                                                });
+                                                setIsConfirmModalOpen(true);
+                                              }}
+                                              className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                              title="Permanent Purge"
+                                            >
+                                              <Trash2 className="w-4 h-4" />
+                                            </button>
+                                          )}
+                                        </div>
                                       ) : (
-                                        <button onClick={() => restoreProgramMutation.mutate(p.id)} className="px-3 py-1.5 bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-brand-100 transition-colors">Restore</button>
-                                      )}
                                    </div>
                                 </motion.div>
                               ))}

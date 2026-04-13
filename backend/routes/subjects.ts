@@ -83,11 +83,24 @@ router.put('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'),
 router.delete('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   try {
     const [[sub]]: [any[], any] = await pool.query('SELECT subject_code FROM subjects WHERE id = ?', [req.params.id]);
-    await pool.query('DELETE FROM subjects WHERE id = ?', [req.params.id]);
-    if (sub) {
-      await logAudit('DELETE', 'Subject', req.params.id as string, { subject_code: sub.subject_code }, req.user.username);
-    }
-    res.json({ message: 'Subject deleted successfully' });
+    if (!sub) throw new ApiError(404, 'Subject not found', 'NOT_FOUND');
+
+    await pool.query('UPDATE subjects SET is_archived = TRUE WHERE id = ?', [req.params.id]);
+    await logAudit('ARCHIVE', 'Subject', req.params.id as string, { subject_code: sub.subject_code }, req.user.username);
+    
+    res.json({ message: 'Subject archived successfully' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/:id/permanent', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+  try {
+    const [result]: any = await pool.query('DELETE FROM subjects WHERE id = ?', [req.params.id]);
+    if (result.affectedRows === 0) throw new ApiError(404, 'Subject not found', 'NOT_FOUND');
+
+    await logAudit('PERMANENT_DELETE', 'Subject', req.params.id as string, {}, req.user.username);
+    res.json({ message: 'Subject record permanently purged from institutional records.' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

@@ -118,11 +118,19 @@ router.delete('/:id', authorizeRoles('admin', 'program_head', 'program_assistant
   }
 });
 
-router.post('/bulk-upload', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response, next: express.NextFunction) => {
-  const faculty = req.body;
-  if (!Array.isArray(faculty)) {
-    return res.status(400).json({ message: 'Invalid data format. Expected an array of faculty.' });
+router.delete('/:id/permanent', authorizeRoles('admin', 'program_head'), async (req: any, res: Response, next: express.NextFunction) => {
+  try {
+    const [result]: any = await pool.query('DELETE FROM faculty WHERE id = ?', [req.params.id]);
+    if (result.affectedRows === 0) throw new ApiError(404, 'Faculty not found', 'NOT_FOUND');
+
+    await logAudit('PERMANENT_DELETE', 'Faculty', req.params.id as string, {}, req.user.username);
+    res.json({ message: 'Faculty record permanently purged from institutional database.' });
+  } catch (error: any) {
+    next(error);
   }
+});
+
+router.post('/bulk-upload', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response, next: express.NextFunction) => {
 
   const connection = await pool.getConnection();
   try {

@@ -452,14 +452,41 @@ router.patch('/:id/archive', authorizeRoles('admin', 'program_head'), async (req
   }
 });
 
-// ── DELETE ───────────────────────────────────────────────────────────────────
+// ── DELETE (Soft Archive) ────────────────────────────────────────────────────
 router.delete('/:id', authorizeRoles('admin', 'program_head'), async (req: any, res: Response, next: express.NextFunction) => {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const [updResult]: any = await connection.query("UPDATE teaching_loads SET status = 'archived' WHERE id = ?", [req.params.id]);
+    if (updResult.affectedRows === 0) throw new ApiError(404, 'Load not found', 'NOT_FOUND');
+
+    await connection.query('DELETE FROM schedules WHERE teaching_load_id = ?', [req.params.id]);
+    
+    await connection.commit();
+    await logAudit('ARCHIVE', 'TeachingLoad', req.params.id, {}, req.user.username);
+    res.json({ message: 'Teaching load archived successfully' });
+
+    const [[sec]]: [any[], any] = await connection.query('SELECT sec.campus_id FROM teaching_loads tl JOIN sections sec ON tl.section_id = sec.id WHERE tl.id = ?', [req.params.id]);
+    if (sec) {
+      req.io.to(`campus_${sec.campus_id}`).emit('load_updated', { campus_id: sec.campus_id, action: 'archive', load_id: req.params.id });
+    }
+  } catch (error: any) {
+    await connection.rollback();
+    next(error);
+  } finally {
+    connection.release();
+  }
+});
+
+// ── PERMANENT DELETE (Purge) ─────────────────────────────────────────────────
+router.delete('/:id/permanent', authorizeRoles('admin', 'program_head'), async (req: any, res: Response, next: express.NextFunction) => {
   try {
     const [result]: any = await pool.query('DELETE FROM teaching_loads WHERE id = ?', [req.params.id]);
     if (result.affectedRows === 0) throw new ApiError(404, 'Load not found', 'NOT_FOUND');
 
-    await logAudit('DELETE', 'TeachingLoad', req.params.id, {}, req.user.username);
-    res.json({ message: 'Teaching load deleted successfully' });
+    await logAudit('PERMANENT_DELETE', 'TeachingLoad', req.params.id, {}, req.user.username);
+    res.json({ message: 'Teaching load permanently purged from institutional records.' });
 
     req.io.emit('load_updated', { action: 'delete', load_id: req.params.id });
   } catch (error: any) {

@@ -113,6 +113,18 @@ router.delete('/:id', authorizeRoles('admin', 'program_head', 'program_assistant
   }
 });
 
+router.delete('/:id/permanent', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+  try {
+    const [result]: any = await pool.query('DELETE FROM sections WHERE id = ?', [req.params.id]);
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Section not found' });
+
+    await logAudit('PERMANENT_DELETE', 'Section', req.params.id as string, {}, req.user.username);
+    res.json({ message: 'Section record permanently purged from institutional database.' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.put('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), validate(sectionSchema), async (req: any, res: Response) => {
   try {
     const { program_id, year_level, name, student_count, adviser_id, campus_id } = req.body;

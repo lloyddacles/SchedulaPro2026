@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api';
-import { Plus, Edit2, Archive, Search, X, RefreshCw, BarChart2, BookOpen, Layers, Users, Link } from 'lucide-react';
+import { Plus, Edit2, Archive, Search, X, RefreshCw, BarChart2, BookOpen, Layers, Users, Link, Trash2 } from 'lucide-react';
 import { formatYearLevel } from '../utils/formatters';
 import { useAuth } from '../context/AuthContext';
 import useScheduleStore from '../store/useScheduleStore';
@@ -81,6 +81,11 @@ export default function Subjects() {
 
   const restoreMutation = useMutation({
     mutationFn: (id) => api.put(`/subjects/${id}/restore`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['subjects'] })
+  });
+
+  const purgeMutation = useMutation({
+    mutationFn: (id) => api.delete(`/subjects/${id}/permanent`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['subjects'] })
   });
 
@@ -346,19 +351,37 @@ export default function Subjects() {
                               </>
                             )}
                             {isHead && showArchived && (
-                              <button
-                                onClick={() => { 
-                                  setConfirmConfig({
-                                    title: 'Restore Subject?',
-                                    message: 'This subject will become visible again to curriculum mappers and load dispatchers.',
-                                    type: 'restore',
-                                    onConfirm: () => restoreMutation.mutate(s.id)
-                                  });
-                                  setIsConfirmModalOpen(true);
-                                setIsConfirmModalOpen(true);
-                              }} className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors font-bold flex items-center justify-end w-full gap-2">
-                                <RefreshCw className="w-4 h-4" /> Restore
-                              </button>
+                              <div className="flex items-center justify-end w-full gap-4">
+                                <button
+                                  onClick={() => { 
+                                    setConfirmConfig({
+                                      title: 'Restore Subject?',
+                                      message: 'This subject will become visible again to curriculum mappers and load dispatchers.',
+                                      type: 'brand',
+                                      onConfirm: () => restoreMutation.mutate(s.id)
+                                    });
+                                    setIsConfirmModalOpen(true);
+                                  }} className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors font-bold flex items-center gap-2">
+                                  <RefreshCw className="w-4 h-4" /> Restore
+                                </button>
+                                {isAdmin && (
+                                  <button
+                                    onClick={() => {
+                                      setConfirmConfig({
+                                        title: 'PURGE PERMANENTLY?',
+                                        message: `WARNING: You are about to IRREVERSIBLY erase ${s.subject_code}. All historical records for this subject will be purged.`,
+                                        type: 'danger',
+                                        onConfirm: () => purgeMutation.mutate(s.id)
+                                      });
+                                      setIsConfirmModalOpen(true);
+                                    }}
+                                    className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                                    title="Permanent Purge"
+                                  >
+                                    <Trash2 className="w-5 h-5" />
+                                  </button>
+                                )}
+                              </div>
                             )}
                           </td>
                         </tr>

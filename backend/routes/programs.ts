@@ -90,6 +90,18 @@ router.delete('/:id', authorizeRoles('admin', 'program_head', 'program_assistant
   }
 });
 
+router.delete('/:id/permanent', authorizeRoles('admin', 'program_head'), async (req: any, res: Response) => {
+  try {
+    const [result]: any = await pool.query('DELETE FROM programs WHERE id = ?', [req.params.id]);
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Program not found' });
+
+    await logAudit('PERMANENT_DELETE', 'Program', req.params.id as string, {}, req.user.username);
+    res.json({ message: 'Program record permanently purged from institutional database.' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.put('/:id/restore', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   try {
     await pool.query('UPDATE programs SET is_archived = FALSE WHERE id = ?', [req.params.id]);

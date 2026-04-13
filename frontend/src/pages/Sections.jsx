@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api';
-import { Users, PlusCircle, Archive, AlertCircle, X, RefreshCw, Edit2, Search, BookOpen, GraduationCap, ShieldAlert } from 'lucide-react';
+import { Users, PlusCircle, Archive, AlertCircle, X, RefreshCw, Edit2, Search, BookOpen, GraduationCap, ShieldAlert, Trash2 } from 'lucide-react';
 import { formatYearLevel } from '../utils/formatters';
 import ConfirmModal from '../components/ConfirmModal';
 import BulkActions from '../components/BulkActions';
 
 export default function Sections() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const isHead = user?.role === 'program_head' || isAdmin;
+
   const queryClient = useQueryClient();
   const [showArchived, setShowArchived] = useState(false);
   const [selectedCampus, setSelectedCampus] = useState('');
@@ -59,6 +63,11 @@ export default function Sections() {
 
   const restoreMutation = useMutation({
     mutationFn: (id) => api.put(`/sections/${id}/restore`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sections'] })
+  });
+  
+  const purgeMutation = useMutation({
+    mutationFn: (id) => api.delete(`/sections/${id}/permanent`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sections'] })
   });
 
@@ -320,17 +329,36 @@ export default function Sections() {
                               </div>
                             )}
                             {showArchived && (
-                              <button onClick={() => { 
-                                setConfirmConfig({
-                                  title: 'Restore Section?',
-                                  message: `This will reactive the ${sec.program_code}-${sec.year_level}${sec.name} cohort across all administrative dashboards and scheduling filters.`,
-                                  type: 'restore',
-                                  onConfirm: () => restoreMutation.mutate(sec.id)
-                                });
-                                setIsConfirmModalOpen(true);
-                              }} className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors font-bold flex items-center justify-end w-full gap-2">
-                                <RefreshCw className="w-4 h-4" /> Restore
-                              </button>
+                              <div className="flex items-center justify-end w-full gap-4">
+                                <button onClick={() => { 
+                                  setConfirmConfig({
+                                    title: 'Restore Section?',
+                                    message: `This will reactive the ${sec.program_code}-${sec.year_level}${sec.name} cohort across all administrative dashboards and scheduling filters.`,
+                                    type: 'brand',
+                                    onConfirm: () => restoreMutation.mutate(sec.id)
+                                  });
+                                  setIsConfirmModalOpen(true);
+                                }} className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors font-bold flex items-center gap-2">
+                                  <RefreshCw className="w-4 h-4" /> Restore
+                                </button>
+                                {isAdmin && (
+                                  <button
+                                    onClick={() => {
+                                      setConfirmConfig({
+                                        title: 'PURGE PERMANENTLY?',
+                                        message: `WARNING: You are about to IRREVERSIBLY erase ${sec.program_code}-${sec.year_level}${sec.name}. All historical records for this section will be purged.`,
+                                        type: 'danger',
+                                        onConfirm: () => purgeMutation.mutate(sec.id)
+                                      });
+                                      setIsConfirmModalOpen(true);
+                                    }}
+                                    className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                    title="Permanent Purge"
+                                  >
+                                    <Trash2 className="w-5 h-5" />
+                                  </button>
+                                )}
+                              </div>
                             )}
                           </td>
                         </tr>
