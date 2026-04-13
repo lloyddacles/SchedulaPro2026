@@ -372,8 +372,11 @@ export class ScheduleService {
   /**
    * Core Algorithm: Auto-generate schedules based on multi-pass priorities
    */
+  /**
+   * Core Algorithm: Auto-generate schedules based on multi-pass priorities
+   */
   static async autoGenerate(poolOrConn: any, term_id: number, campus_id?: number): Promise<AutoScheduleResult> {
-    // 1. Fetch unassigned loads with program codes
+    // 1. Fetch ALL approved loads for the term/campus (including partially scheduled ones)
     const queryLoads = `
       SELECT tl.id as teaching_load_id, tl.faculty_id, tl.co_faculty_id_1, tl.co_faculty_id_2, tl.section_id, 
              sec.campus_id, s.required_hours, s.room_type, s.subject_code, p.code as program_code
@@ -382,14 +385,13 @@ export class ScheduleService {
       JOIN sections sec ON tl.section_id = sec.id
       JOIN programs p ON sec.program_id = p.id
       WHERE tl.term_id = ? AND tl.status = 'approved'
-        AND tl.id NOT IN (SELECT teaching_load_id FROM schedules)
         ${campus_id ? 'AND sec.campus_id = ?' : ''}
       ORDER BY s.required_hours DESC, tl.id ASC
     `;
     const loadParams = campus_id ? [term_id, campus_id] : [term_id];
-    const [unassignedLoads] = await poolOrConn.query(queryLoads, loadParams) as [TeachingLoad[], any];
+    const [loads] = await poolOrConn.query(queryLoads, loadParams) as [TeachingLoad[], any];
 
-    if (unassignedLoads.length === 0) return { scheduled: 0, failed: 0, failures: [], newlyMapped: [] };
+    if (loads.length === 0) return { scheduled: 0, failed: 0, failures: [], newlyMapped: [] };
 
     // 2. Fetch all active rooms for the campus(es)
     const [rooms] = await poolOrConn.query(`
@@ -400,14 +402,24 @@ export class ScheduleService {
       ORDER BY r.capacity DESC
     `, campus_id ? [campus_id] : []) as [Room[], any];
 
-    // 3. Fetch existing schedules for conflict checks
+    // 3. Fetch existing schedules & current hour tallies for conflict checks
     const [existingSchedules] = await poolOrConn.query(`
       SELECT sch.day_of_week, sch.start_time, sch.end_time, sch.room, 
-             tl.faculty_id, tl.co_faculty_id_1, tl.co_faculty_id_2, tl.section_id
+             tl.faculty_id, tl.co_faculty_id_1, tl.co_faculty_id_2, tl.section_id, sch.teaching_load_id
       FROM schedules sch
       JOIN teaching_loads tl ON sch.teaching_load_id = tl.id
       WHERE tl.term_id = ? AND tl.status != 'archived'
-    `, [term_id]) as [Schedule[], any];
+    `, [term_id]) as [any[], any];
+
+    // Calculate currently assigned hours per load
+    const hoursTally = new Map<number, number>();
+    existingSchedules.forEach(s => {
+      const dur = this.parseTime(s.end_time) - this.parseTime(s.start_time);
+      hoursTally.set(s.teaching_load_id, (hoursTally.get(s.teaching_load_id) || 0) + dur);
+    });
+
+    // Filter loads to those needing more hours
+    const unassignedLoads = loads.filter(l => (hoursTally.get(l.teaching_load_id) || 0) < Number(l.required_hours) - 0.1);
 
     // 4. Fetch faculty blackouts
     const [blackouts] = await poolOrConn.query(`SELECT faculty_id, day_of_week, start_time, end_time FROM faculty_unavailability`) as [FacultyUnavailability[], any];
@@ -415,120 +427,49 @@ export class ScheduleService {
     const cm = this.createConflictManager(existingSchedules, blackouts);
 
     const PASSES = [
-      { days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], sMin: 7.5, eMax: 18.0 },
-      { days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], sMin: 7.0, eMax: 22.0 },
-      { days: ['Saturday'], sMin: 7.5, eMax: 18.0 },
-      { days: ['Saturday'], sMin: 7.0, eMax: 22.0 }
+      { name: 'Standard Day', days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], sMin: 7.5, eMax: 17.5 },
+      { name: 'Extended Day', days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], sMin: 7.0, eMax: 21.0 },
+      { name: 'Weekend', days: ['Saturday'], sMin: 7.5, eMax: 18.0 }
     ];
 
     let newlyMapped: Schedule[] = [];
-    let failures: { 
-      teaching_load_id: number;
-      subject: string;
-      section_id: number;
-      program_code: string;
-      reason: string;
-    }[] = [];
+    let failures: { subject: string; reason: string }[] = [];
+    let scheduledCount = 0;
 
     for (const load of unassignedLoads) {
       let isPlaced = false;
       const totalRequired = Number(load.required_hours);
-      
-      // Calculate how many hours are already scheduled for this load
-      const alreadyScheduled = scheduled.find(s => s.teaching_load_id === load.teaching_load_id)?.hours || 0;
-      let remainingToSchedule = totalRequired - Number(alreadyScheduled);
+      let remainingToSchedule = totalRequired - (hoursTally.get(load.teaching_load_id) || 0);
 
-      // Track days already used for this load in this run to ensure day-spread
+      const isLabProgram = ['BSIS', 'TVL-ICT', 'BSAIS'].includes(load.program_code);
+      const isPESubject = load.subject_code?.toUpperCase().startsWith('PE') || load.subject_code?.toUpperCase().includes('PHED');
+      const loadFacs = [load.faculty_id, load.co_faculty_id_1, load.co_faculty_id_2].filter((id): id is number => id !== null);
+
+      // Rule: Never schedule two sessions of the same load on the same day in one run
       const usedDaysThisLoad = new Set<string>();
+      // Also account for days already used in existing schedules
+      existingSchedules.filter(s => s.teaching_load_id === load.teaching_load_id).forEach(s => usedDaysThisLoad.add(s.day_of_week));
 
-      while (remainingToSchedule > 0.4) { // While more than ~25 mins left
-        // Determine the size of the next block to attempt
-        // Standard split: 3h -> 1.5/1.5, 5h -> 2.5/2.5 or 3/2, 2h -> 2 or 1/1
+      whileLoop: while (remainingToSchedule > 0.45) { // Threshold for minimum session (approx 30 mins)
+        let blockSuccess = false;
+
+        // Determine session duration (Splitting logic)
         let durationHours = remainingToSchedule;
         if (totalRequired === 3) durationHours = 1.5;
         else if (totalRequired === 5) durationHours = 2.5;
-        else if (remainingToSchedule > 3) durationHours = 3;
+        else if (remainingToSchedule > 3.5) durationHours = 3; 
 
-        // Ensure we don't try to schedule more than what's left
         durationHours = Math.min(durationHours, remainingToSchedule);
 
-        const isLabProgram = ['BSIS', 'TVL-ICT', 'BSAIS'].includes(load.program_code);
-        const isPESubject = load.subject_code?.toUpperCase().startsWith('PE') || load.subject_code?.toUpperCase().includes('PHED');
-        const loadFacs = [load.faculty_id, load.co_faculty_id_1, load.co_faculty_id_2].filter((id): id is number => id !== null);
-
-      /**
-       * ROOM PRIORITIZATION LOGIC:
-       * 1. If Subject EXPLICITLY asks for a type (e.g., 'Computer Lab'), prioritize it.
-       * 2. If Lab program + Subject is 'Any'/'Laboratory', prefer Labs.
-       * 3. If PE subject, prefer Courts/Fields.
-       * 4. ALL OTHERS (especially GE/Lecture subjects) prefer 'Lecture'.
-       */
-      
-      const prefersLab = (load.room_type === 'Computer Lab' || load.room_type === 'Laboratory') || 
-                         (isLabProgram && (load.room_type === 'Any' || !load.room_type));
-      
-      const prefersPE = (load.room_type === 'Court' || load.room_type === 'Field') || 
-                        (isPESubject && (load.room_type === 'Any' || !load.room_type));
-
-      const prefersLecture = (load.room_type === 'Lecture') || (!prefersLab && !prefersPE);
-      
-      // Initial candidate pool: All rooms on the target campus
-      const campusRooms = rooms.filter(r => r.campus_id === load.campus_id);
-      
-      // Sort candidates by institutional priority
-      let roomsForLoad = [...campusRooms].sort((a, b) => {
-        const aType = a.type || 'Lecture';
-        const bType = b.type || 'Lecture';
-        
-        // Priority Match: If subject PREFERS this specific type
-        if (prefersLab) {
-          const aIsLab = aType === 'Computer Lab' || aType === 'Laboratory';
-          const bIsLab = bType === 'Computer Lab' || bType === 'Laboratory';
-          if (aIsLab && !bIsLab) return -1;
-          if (!aIsLab && bIsLab) return 1;
-        }
-        
-        if (prefersPE) {
-          const aIsPEArea = aType === 'Court' || aType === 'Field';
-          const bIsPEArea = bType === 'Court' || bType === 'Field';
-          if (aIsPEArea && !bIsPEArea) return -1;
-          if (!aIsPEArea && bIsPEArea) return 1;
-        }
-
-        if (prefersLecture) {
-          const aIsLecture = aType === 'Lecture';
-          const bIsLecture = bType === 'Lecture';
-          if (aIsLecture && !bIsLecture) return -1;
-          if (!aIsLecture && bIsLecture) return 1;
-        }
-
-        // Default: Sort by capacity to ensure better fit
-        return b.capacity - a.capacity;
-      });
-
-
-      passLoop: for (const pass of PASSES) {
-        for (const day of pass.days) {
-          for (let timeCode = pass.sMin; timeCode <= pass.eMax - durationHours; timeCode += 0.5) {
-            const sAttempt = timeCode;
-            const eAttempt = timeCode + durationHours;
-
-            for (const room of roomsForLoad) {
-              // 1. Check Conflicts (Faculty, Room, Section) via cm
-              if (cm.isConflict(day, sAttempt, eAttempt, loadFacs, room.name, load.section_id)) continue;
-
-              // 2. Lunch Gap Check
-              const currentDayBlocks = cm.getRelatedBlocks(day, loadFacs, load.section_id);
-              if (!ScheduleService.hasLunchGap(currentDayBlocks, sAttempt, eAttempt)) continue;
-
-              // Success!
-        
-        const prefersLab = (load.room_type === 'Computer Lab' || load.room_type === 'Laboratory') || (isLabProgram && (load.room_type === 'Any' || !load.room_type));
-        const prefersPE = (load.room_type === 'Court' || load.room_type === 'Field') || (isPESubject && (load.room_type === 'Any' || !load.room_type));
+        // Room Prioritization for this segment
+        const prefersLab = (load.room_type === 'Computer Lab' || load.room_type === 'Laboratory') || 
+                           (isLabProgram && (load.room_type === 'Any' || !load.room_type));
+        const prefersPE = (load.room_type === 'Court' || load.room_type === 'Field') || 
+                          (isPESubject && (load.room_type === 'Any' || !load.room_type));
         const prefersLecture = (load.room_type === 'Lecture') || (!prefersLab && !prefersPE);
-        
+
         const campusRooms = rooms.filter(r => r.campus_id === load.campus_id);
-        let roomsForLoad = [...campusRooms].sort((a, b) => {
+        const roomsForLoad = [...campusRooms].sort((a, b) => {
           const aType = a.type || 'Lecture';
           const bType = b.type || 'Lecture';
           if (prefersLab) {
@@ -554,50 +495,59 @@ export class ScheduleService {
 
         passLoop: for (const pass of PASSES) {
           for (const day of pass.days) {
-            for (let timeCode = pass.sMin; timeCode <= pass.eMax - durationHours; timeCode += 0.5) {
-              const sAttempt = timeCode;
-              const eAttempt = timeCode + durationHours;
+            if (usedDaysThisLoad.has(day)) continue;
+
+            for (let t = pass.sMin; t <= pass.eMax - durationHours; t += 0.5) {
+              const sAttempt = t;
+              const eAttempt = t + durationHours;
+
               for (const room of roomsForLoad) {
-                const hasConflict = cm.isConflict(day, sAttempt, eAttempt, loadFacs, room.name, load.section_id);
-                const isSameDay = usedDaysThisLoad.has(day);
-                if (!hasConflict && !isSameDay) {
-                  const newSched = {
-                    teaching_load_id: load.teaching_load_id,
-                    faculty_id: load.faculty_id,
-                    co_faculty_id_1: load.co_faculty_id_1,
-                    co_faculty_id_2: load.co_faculty_id_2,
-                    section_id: load.section_id,
-                    day_of_week: day,
-                    start_time: ScheduleService.formatTime(sAttempt),
-                    end_time: ScheduleService.formatTime(eAttempt),
-                    room: room.name
-                  };
-                  newlyMapped.push(newSched);
-                  cm.addSchedule(newSched);
-                  remainingToSchedule -= durationHours;
-                  usedDaysThisLoad.add(day);
-                  isPlaced = true;
-                  continue whileLoop;
-                }
+                // Conflict Check
+                if (cm.isConflict(day, sAttempt, eAttempt, loadFacs, room.name, load.section_id)) continue;
+
+                // Lunch Gap Check
+                const currentDayBlocks = cm.getRelatedBlocks(day, loadFacs, load.section_id);
+                if (!ScheduleService.hasLunchGap(currentDayBlocks, sAttempt, eAttempt)) continue;
+
+                // PLACEMENT SUCCESS
+                const newSch: Schedule = {
+                  teaching_load_id: load.teaching_load_id,
+                  faculty_id: load.faculty_id,
+                  co_faculty_id_1: load.co_faculty_id_1,
+                  co_faculty_id_2: load.co_faculty_id_2,
+                  section_id: load.section_id,
+                  day_of_week: day,
+                  start_time: ScheduleService.formatTime(sAttempt),
+                  end_time: ScheduleService.formatTime(eAttempt),
+                  room: room.name
+                };
+
+                newlyMapped.push(newSch);
+                cm.addSchedule(newSch);
+                usedDaysThisLoad.add(day);
+                remainingToSchedule -= durationHours;
+                scheduledCount++;
+                blockSuccess = true;
+                isPlaced = true;
+                continue whileLoop;
               }
             }
           }
-          break; 
         }
-        if (!isPlaced) {
-          failures.push({ 
-            teaching_load_id: load.teaching_load_id,
-            subject: load.subject_code,
-            section_id: load.section_id,
-            program_code: load.program_code,
-            reason: `No free block found respecting room type (${load.room_type || 'Any'}) and required duration (${durationHours}h).`
-          });
-          break;
-        }
+
+        // If we reach here, we couldn't find a spot for the current 'durationHours' block
+        if (!blockSuccess) break whileLoop; 
+      }
+
+      if (!isPlaced) {
+        failures.push({
+          subject: load.subject_code,
+          reason: `No valid slot found for ${remainingToSchedule.toFixed(1)}h remaining (Type: ${load.room_type || 'Any'}).`
+        });
       }
     }
 
-    return { scheduled: newlyMapped.length, failed: failures.length, failures, newlyMapped };
+    return { scheduled: scheduledCount, failed: failures.length, failures, newlyMapped };
   }
 
   /**
