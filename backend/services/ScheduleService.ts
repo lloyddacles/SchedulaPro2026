@@ -391,6 +391,21 @@ export class ScheduleService {
     const loadParams = campus_id ? [term_id, campus_id] : [term_id];
     const [loads] = await poolOrConn.query(queryLoads, loadParams) as [TeachingLoad[], any];
 
+    // Diagnostic check: Find approved loads skipped due to missing campus_id
+    const [orphanedLoads] = await poolOrConn.query(`
+      SELECT p.code, COUNT(*) as count
+      FROM teaching_loads tl
+      JOIN sections sec ON tl.section_id = sec.id
+      JOIN programs p ON sec.program_id = p.id
+      WHERE tl.term_id = ? AND tl.status = 'approved' AND sec.campus_id IS NULL
+      GROUP BY p.code
+    `, [term_id]) as [any[], any];
+
+    if (orphanedLoads.length > 0) {
+      console.warn(` [AUTO-SCHEDULER] [DATA-HEALTH]: Found ${orphanedLoads.reduce((acc, curr) => acc + curr.count, 0)} approved subjects skipped because the Section has no Campus ID.`);
+      orphanedLoads.forEach(o => console.warn(`   - ${o.code}: ${o.count} subjects`));
+    }
+
     if (loads.length === 0) return { scheduled: 0, failed: 0, failures: [], newlyMapped: [] };
 
     // 2. Fetch all active rooms for the campus(es)
