@@ -379,7 +379,7 @@ export class ScheduleService {
     // 1. Fetch ALL approved loads for the term/campus (including partially scheduled ones)
     const queryLoads = `
       SELECT tl.id as teaching_load_id, tl.faculty_id, tl.co_faculty_id_1, tl.co_faculty_id_2, tl.section_id, 
-             sec.campus_id, s.required_hours, s.room_type, s.subject_code, p.code as program_code
+             sec.campus_id, sec.max_days_per_week, s.required_hours, s.room_type, s.subject_code, p.code as program_code
       FROM teaching_loads tl
       JOIN subjects s ON tl.subject_id = s.id
       JOIN sections sec ON tl.section_id = sec.id
@@ -476,6 +476,9 @@ export class ScheduleService {
     // Campus Isolation: track faculty_id -> campus_id (locked for this pass)
     const facultyCampusMap = new Map<number, number>();
 
+    // Section Compaction: track section_id -> Set of active days
+    const sectionActiveDays = new Map<number, Set<string>>();
+
     console.log(` [AUTO-SCHEDULER]: Starting fair interleaved pass for ${interleavedQueue.length} loads across ${programKeys.length} programs.`);
 
     for (const load of interleavedQueue) {
@@ -561,6 +564,14 @@ export class ScheduleService {
           for (const day of pass.days) {
             if (usedDaysThisLoad.has(day)) continue;
 
+            // Compressed Learning: Check if this section has reached its day limit
+            const activeDays = sectionActiveDays.get(load.section_id) || new Set<string>();
+            const dayLimit = Number(load.max_days_per_week) || 4; // Default to 4 as per institutional policy
+            if (activeDays.size >= dayLimit && !activeDays.has(day)) {
+                // Skip this day to enforce vertical compaction
+                continue;
+            }
+
             for (let t = pass.sMin; t <= pass.eMax - durationHours; t += 0.5) {
               const sAttempt = t;
               const eAttempt = t + durationHours;
@@ -602,6 +613,12 @@ export class ScheduleService {
                         }
                     });
                 }
+
+                // Update Section Active Days
+                if (!sectionActiveDays.has(load.section_id)) {
+                    sectionActiveDays.set(load.section_id, new Set<string>());
+                }
+                sectionActiveDays.get(load.section_id)!.add(day);
                 
                 continue whileLoop;
               }

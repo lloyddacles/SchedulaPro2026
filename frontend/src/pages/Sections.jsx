@@ -19,7 +19,7 @@ export default function Sections() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState('');
-  const [formData, setFormData] = useState({ program_id: '', year_level: '1', name: 'A', student_count: '50', adviser_id: '', campus_id: '' });
+  const [formData, setFormData] = useState({ program_id: '', year_level: '1', name: 'A', student_count: '50', adviser_id: '', campus_id: '', max_days_per_week: '4' });
   const [error, setError] = useState('');
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', type: '', onConfirm: () => {} });
@@ -85,14 +85,14 @@ export default function Sections() {
     setIsModalOpen(false);
     setIsEditing(false);
     setEditingId(null);
-    setFormData({ program_id: '', year_level: '1', name: 'A', student_count: '50', adviser_id: '', campus_id: '' });
+    setFormData({ program_id: '', year_level: '1', name: 'A', student_count: '50', adviser_id: '', campus_id: '', max_days_per_week: '4' });
     setError('');
   };
 
   const openAddModal = () => {
     setIsEditing(false);
     setEditingId(null);
-    setFormData({ program_id: '', year_level: '1', name: 'A', student_count: '50', adviser_id: '', campus_id: '' });
+    setFormData({ program_id: '', year_level: '1', name: 'A', student_count: '50', adviser_id: '', campus_id: '', max_days_per_week: '4' });
     setIsModalOpen(true);
   };
 
@@ -103,7 +103,8 @@ export default function Sections() {
       name: sec.name,
       adviser_id: sec.adviser_id || '',
       campus_id: sec.campus_id || '',
-      student_count: sec.student_count || '30'
+      student_count: sec.student_count || '30',
+      max_days_per_week: sec.max_days_per_week || '4'
     });
     setEditingId(sec.id);
     setIsEditing(true);
@@ -288,6 +289,7 @@ export default function Sections() {
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Section Name</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Block Adviser</th>
                         <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Size</th>
+                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Limit</th>
                         <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Full Identifier</th>
                         <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">Actions</th>
                       </tr>
@@ -314,6 +316,14 @@ export default function Sections() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center font-bold text-gray-700 dark:text-slate-300">
                             {sec.student_count || 30} <span className="text-[10px] text-gray-400 uppercase">Pax</span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <div className="flex flex-col items-center">
+                              <span className="text-xs font-black text-brand-600 dark:text-brand-400 uppercase tracking-tighter mb-0.5">Vertical Limit</span>
+                              <span className="px-2 py-0.5 bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 text-[10px] font-black rounded border border-brand-100 dark:border-brand-800">
+                                {sec.max_days_per_week || 4} Days
+                              </span>
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 text-sm font-bold rounded-lg border border-emerald-200 dark:border-emerald-800">
@@ -470,9 +480,21 @@ export default function Sections() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Block Adviser (Optional)</label>
+                  <label className="block text-xs font-black text-brand-600 dark:text-brand-400 uppercase tracking-widest mb-1 leading-none">Max Days (Compressed Learning)</label>
                   <select 
-                    className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-gray-50 dark:bg-slate-900 dark:text-white"
+                    className="w-full border border-brand-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-brand-50 dark:bg-slate-900 text-brand-900 dark:text-white font-bold text-sm"
+                    value={formData.max_days_per_week}
+                    onChange={e => setFormData({...formData, max_days_per_week: e.target.value})}
+                  >
+                    {[2,3,4,5,6].map(d => (
+                      <option key={d} value={d}>{d} Days per Week</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1 leading-none">Block Adviser (Optional)</label>
+                  <select 
+                    className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-gray-50 dark:bg-slate-900 dark:text-white text-sm"
                     value={formData.adviser_id}
                     onChange={e => setFormData({...formData, adviser_id: e.target.value})}
                   >
