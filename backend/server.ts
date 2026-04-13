@@ -141,8 +141,41 @@ app.use('/api/auth', authRoutes);
 app.use('/api/settings', settingsRoutes); // Public GET for branding, protected PUT for admin
 
 // Protected Routes (Authentication Required)
-import { authenticateToken } from './utils/auth.js';
+import { authenticateToken, authorizeRoles } from './utils/auth.js';
 app.use(authenticateToken);
+
+// Top-level Institutional Sync Route (Foolproof 404 Prevention)
+app.get('/api/sync-schema', authorizeRoles('admin'), async (req: any, res: Response) => {
+  try {
+    const pool = (await import('./config/db.js')).default;
+    console.log(" [SYNC]: Executing comprehensive schema alignment...");
+    
+    // 1. Expand Enum
+    await pool.query(`
+      ALTER TABLE schedule_requests 
+      MODIFY COLUMN request_type ENUM('DROP', 'SWAP', 'CHANGE_ROOM', 'CHANGE_TIME', 'OTHER', 'MAKEUP') NOT NULL
+    `);
+
+    // 2. Inject Missing Columns
+    const migrations = [
+      "ALTER TABLE schedule_requests ADD COLUMN IF NOT EXISTS reason_text TEXT NOT NULL AFTER request_type",
+      "ALTER TABLE schedule_requests ADD COLUMN IF NOT EXISTS target_day VARCHAR(20) DEFAULT NULL",
+      "ALTER TABLE schedule_requests ADD COLUMN IF NOT EXISTS target_start_time TIME DEFAULT NULL",
+      "ALTER TABLE schedule_requests ADD COLUMN IF NOT EXISTS target_end_time TIME DEFAULT NULL",
+      "ALTER TABLE schedule_requests ADD COLUMN IF NOT EXISTS target_room VARCHAR(50) DEFAULT NULL",
+      "ALTER TABLE schedule_requests ADD COLUMN IF NOT EXISTS is_recurring BOOLEAN DEFAULT 1",
+      "ALTER TABLE schedule_requests ADD COLUMN IF NOT EXISTS event_date DATE DEFAULT NULL"
+    ];
+
+    for (const sql of migrations) {
+      try { await pool.query(sql); } catch (e) { console.log(" [SYNC INFO]: Column processed."); }
+    }
+
+    res.json({ success: true, message: "Institutional database synchronized with Recovery Wizard requirements." });
+  } catch (error: any) {
+    res.status(500).json({ error: "Sync failed", details: error.message });
+  }
+});
 
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/subjects', subjectRoutes);

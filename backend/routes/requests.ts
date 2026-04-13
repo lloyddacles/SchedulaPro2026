@@ -81,9 +81,14 @@ router.post('/', validate(scheduleRequestSchema), async (req: any, res: Response
   }
 
   try {
+    // Legacy column check: use reason_text if available, fallback to reason
+    const [columns] = await pool.query("SHOW COLUMNS FROM schedule_requests");
+    const columnNames = (columns as any[]).map(c => c.Field);
+    const reasonColumn = columnNames.includes('reason_text') ? 'reason_text' : 'reason';
+
     const query = `
       INSERT INTO schedule_requests (
-        faculty_id, schedule_id, request_type, reason_text, 
+        faculty_id, schedule_id, request_type, ${reasonColumn}, 
         target_day, target_start_time, target_end_time, target_room, 
         is_recurring, event_date
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -97,7 +102,15 @@ router.post('/', validate(scheduleRequestSchema), async (req: any, res: Response
     await pool.query(query, params);
     res.status(201).json({ message: 'Recovery matrix request submitted for endorsement.' });
   } catch (error: any) {
-    res.status(500).json({ message: 'Fatal exception registering transaction request.', error: error.message });
+    if (error.code === 'ER_BAD_FIELD_ERROR') {
+      res.status(500).json({ 
+        message: 'Institutional schema mismatch detected. Missing recovery columns.', 
+        error: error.message,
+        suggestion: 'Please run the /api/sync-schema diagnostic route.' 
+      });
+    } else {
+      res.status(500).json({ message: 'Fatal exception registering transaction request.', error: error.message });
+    }
   }
 });
 
