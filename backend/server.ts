@@ -182,7 +182,7 @@ app.use('/api/subjects', subjectRoutes);
 app.use('/api/teaching-loads', teachingLoadRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/terms', termsRoutes);
+app.use('/api/academic-terms', termsRoutes);
 app.use('/api/programs', programsRoutes);
 app.use('/api/sections', sectionsRoutes);
 app.use('/api/rooms', roomsRoutes);
