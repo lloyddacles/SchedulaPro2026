@@ -129,7 +129,7 @@ export default function Requests() {
                     <td className="px-6 py-5 pl-8 max-w-xs">
                       <div className="relative">
                          <div className="absolute left-[-20px] top-1 text-gray-300 dark:text-slate-600">"</div>
-                         <p className="text-sm text-gray-700 dark:text-slate-300 font-medium italic line-clamp-2 leading-snug">{req.reason_text}</p>
+                         <p className="text-sm text-gray-700 dark:text-slate-300 font-medium italic line-clamp-2 leading-snug">{req.reason_text || req.reason || "No specification provided."}</p>
                          <div className="absolute right-0 bottom-0 text-gray-300 dark:text-slate-600">"</div>
                       </div>
                     </td>

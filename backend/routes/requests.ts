@@ -48,7 +48,7 @@ router.get('/sync-institutional-schema', authorizeRoles('admin'), async (req: Re
 router.get('/', async (req: Request, res: Response) => {
   try {
     const [rows] = await pool.query(`
-      SELECT sr.*, f.full_name, s.day_of_week, s.start_time, s.end_time, s.room, sub.subject_code
+      SELECT sr.*, f.full_name as faculty_name, s.day_of_week, s.start_time, s.end_time, s.room, sub.subject_code
       FROM schedule_requests sr
       JOIN faculty f ON sr.faculty_id = f.id
       JOIN schedules s ON sr.schedule_id = s.id
@@ -56,7 +56,14 @@ router.get('/', async (req: Request, res: Response) => {
       JOIN subjects sub ON tl.subject_id = sub.id
       ORDER BY sr.created_at DESC
     `);
-    res.json(rows);
+    
+    // Standardize the field name for the frontend
+    const enrichedRows = (rows as any[]).map(r => ({
+      ...r,
+      reason_text: r.reason_text || r.reason
+    }));
+
+    res.json(enrichedRows);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
