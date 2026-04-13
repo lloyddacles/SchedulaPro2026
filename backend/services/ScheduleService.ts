@@ -628,4 +628,44 @@ export class ScheduleService {
       return { success: false, message: error.message };
     }
   }
+
+  /**
+   * Pre-Commit Integrity Scan:
+   * Validates a batch of schedules specifically for "Spectral Orphans" (references to archived/deleted resources).
+   * Returns a list of orphan IDs and the reason for their invalidity.
+   */
+  static async validateBatchIntegrity(poolOrConn: any, schedules: any[]): Promise<{ orphanedIds: number[], issues: { id: number, reason: string }[] }> {
+    if (schedules.length === 0) return { orphanedIds: [], issues: [] };
+
+    // 1. Get all active rooms and faculty for validation
+    const [activeRooms]: [any[], any] = await poolOrConn.query('SELECT name FROM rooms WHERE is_archived = FALSE');
+    const [activeFaculty]: [any[], any] = await poolOrConn.query('SELECT id FROM faculty WHERE is_archived = FALSE');
+    
+    const validRoomNames = new Set(activeRooms.map(r => r.name));
+    const validFacultyIds = new Set(activeFaculty.map(f => f.id));
+
+    const orphanedIds: number[] = [];
+    const issues: { id: number, reason: string }[] = [];
+
+    for (const sch of schedules) {
+      const issuesForBlock: string[] = [];
+
+      // Check Room
+      if (sch.room && !validRoomNames.has(sch.room)) {
+        issuesForBlock.push(`Room "${sch.room}" is archived or missing.`);
+      }
+
+      // Check Faculty (if available in the object)
+      if (sch.faculty_id && !validFacultyIds.has(sch.faculty_id)) {
+        issuesForBlock.push(`Primary faculty is archived.`);
+      }
+
+      if (issuesForBlock.length > 0) {
+        orphanedIds.push(sch.id);
+        issues.push({ id: sch.id, reason: issuesForBlock.join(' ') });
+      }
+    }
+
+    return { orphanedIds, issues };
+  }
 }

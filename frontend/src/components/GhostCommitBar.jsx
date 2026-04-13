@@ -10,10 +10,11 @@ import useGhostStore from '../store/useGhostStore';
  * Provides real-time diff visibility and the primary 'Commit' action.
  */
 export default function GhostCommitBar({ onCommit, isCommitting }) {
-  const { isGhostMode, stagedSchedules, discardDraft, getDiff } = useGhostStore();
+  const { isGhostMode, stagedSchedules, discardDraft, getDiff, validationErrors } = useGhostStore();
   
   const diff = getDiff();
   const totalChanges = diff.updated.length + diff.created.length + diff.deleted.length;
+  const hasErrors = validationErrors.length > 0;
 
   if (!isGhostMode) return null;
 
@@ -25,20 +26,22 @@ export default function GhostCommitBar({ onCommit, isCommitting }) {
         exit={{ y: 100, opacity: 0 }}
         className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-full max-w-2xl px-4"
       >
-        <div className="bg-slate-900/95 backdrop-blur-xl border border-brand-500/30 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-4 flex items-center justify-between gap-6">
+        <div className={`bg-slate-900/95 backdrop-blur-xl border ${hasErrors ? 'border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.2)]' : 'border-brand-500/30 shadow-[0_20px_50px_rgba(0,0,0,0.5)]'} rounded-3xl p-4 flex items-center justify-between gap-6 transition-all duration-500`}>
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-brand-500/20 flex items-center justify-center text-brand-400 animate-pulse">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${hasErrors ? 'bg-red-500/20 text-red-400' : 'bg-brand-500/20 text-brand-400 animate-pulse'}`}>
               <Ghost className="w-6 h-6" />
             </div>
             <div>
-              <h4 className="text-white font-black text-sm uppercase tracking-widest flex items-center gap-2">
-                Spectral Draft Active
-                <span className="w-2 h-2 rounded-full bg-brand-500 shadow-[0_0_10px_#7c3aed]" />
+              <h4 className={`font-black text-sm uppercase tracking-widest flex items-center gap-2 ${hasErrors ? 'text-red-400' : 'text-white'}`}>
+                {hasErrors ? 'Spectral Conflict Detected' : 'Spectral Draft Active'}
+                <span className={`w-2 h-2 rounded-full ${hasErrors ? 'bg-red-500 shadow-[0_0_10px_#ef4444]' : 'bg-brand-500 shadow-[0_0_10px_#7c3aed]'}`} />
               </h4>
               <p className="text-slate-400 text-[10px] font-bold uppercase tracking-tighter">
-                {totalChanges === 0 
-                  ? "No changes staged yet" 
-                  : `${totalChanges} modifications stored in session`}
+                {hasErrors 
+                  ? `${validationErrors.length} orphans must be resolved before commit`
+                  : totalChanges === 0 
+                    ? "No changes staged yet" 
+                    : `${totalChanges} modifications stored in session`}
               </p>
             </div>
           </div>
@@ -52,15 +55,17 @@ export default function GhostCommitBar({ onCommit, isCommitting }) {
             </button>
             <button 
               onClick={onCommit}
-              disabled={totalChanges === 0 || isCommitting}
+              disabled={totalChanges === 0 || isCommitting || hasErrors}
               className={`px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center gap-2
-                ${totalChanges > 0 
+                ${totalChanges > 0 && !hasErrors
                   ? 'bg-brand-600 text-white shadow-[0_8px_20px_rgba(124,58,237,0.3)] hover:scale-105' 
-                  : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                  : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5'
                 }`}
             >
               {isCommitting ? (
                 <>Synchronizing...</>
+              ) : hasErrors ? (
+                <>Commit Blocked <AlertCircle className="w-4 h-4" /></>
               ) : (
                 <>Commit to Production <ArrowRight className="w-4 h-4" /></>
               )}

@@ -111,9 +111,24 @@ router.put('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'),
 
 router.delete('/:id', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   try {
+    // Check for dependencies before archiving to prevent immediate orphans in active schedules
+    const [dependencies]: [any[], any] = await pool.query(
+      'SELECT id FROM schedules WHERE room = (SELECT name FROM rooms WHERE id = ?)', 
+      [req.params.id]
+    );
+
     await pool.query('UPDATE rooms SET is_archived = TRUE WHERE id = ?', [req.params.id]);
-    await logAudit('ARCHIVE', 'Room', req.params.id as string, {}, req.user.username);
-    res.json({ message: 'Room archived.' });
+    await logAudit('ARCHIVE', 'Room', req.params.id as string, { orphaned_schedules: dependencies.length }, req.user.username);
+    
+    // Notify all clients to trigger a draft integrity re-scan
+    if (req.app.get('socketio')) {
+      req.app.get('socketio').emit('resource_archived', { type: 'room', id: req.params.id, count: dependencies.length });
+    }
+
+    res.json({ 
+      message: 'Room archived.', 
+      warning: dependencies.length > 0 ? `${dependencies.length} active schedule(s) now orphaned.` : null 
+    });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

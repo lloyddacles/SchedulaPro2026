@@ -11,9 +11,8 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 const useGhostStore = create()(
   persist(
     (set, get) => ({
-      isGhostMode: false,
-      stagedSchedules: [], // Array of Schedule objects including local modifications
       originalSchedules: [], // Snap of the production schedule at the time Ghost Mode was entered
+      validationErrors: [], // { id, reason, type }
       
       toggleGhostMode: (liveSchedules = []) => set((state) => {
         const nextMode = !state.isGhostMode;
@@ -23,7 +22,8 @@ const useGhostStore = create()(
           return {
             isGhostMode: true,
             originalSchedules: liveSchedules,
-            stagedSchedules: JSON.parse(JSON.stringify(liveSchedules))
+            stagedSchedules: JSON.parse(JSON.stringify(liveSchedules)),
+            validationErrors: []
           };
         }
         
@@ -31,8 +31,33 @@ const useGhostStore = create()(
         return {
           isGhostMode: false,
           stagedSchedules: [],
-          originalSchedules: []
+          originalSchedules: [],
+          validationErrors: []
         };
+      }),
+
+      validateIntegrity: (activeRooms = [], activeFaculty = []) => set((state) => {
+        const errors = [];
+        const roomNames = new Set(activeRooms.map(r => r.name));
+        const facultyIds = new Set(activeFaculty.map(f => f.id));
+
+        state.stagedSchedules.forEach(s => {
+          if (s.isPendingDelete) return;
+          
+          const issues = [];
+          if (s.room && !roomNames.has(s.room)) {
+            issues.push(`Room "${s.room}" was archived.`);
+          }
+          if (s.faculty_id && !facultyIds.has(s.faculty_id)) {
+            issues.push(`Faculty has been archived.`);
+          }
+
+          if (issues.length > 0) {
+            errors.push({ id: s.id, reason: issues.join(' '), type: 'orphan' });
+          }
+        });
+
+        return { validationErrors: errors };
       }),
 
       // Stage an update (drag-and-drop or edit)

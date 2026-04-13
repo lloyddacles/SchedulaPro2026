@@ -338,6 +338,16 @@ router.post('/auto-schedule', authorizeRoles('admin', 'program_head'), validate(
 });
 
 // ── BATCH SYNC ENDPOINT (GHOST MODE COMMIT) ──────────────────────────────────
+router.post('/validate-draft', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
+  try {
+    const { schedules } = req.body;
+    const result = await ScheduleService.validateBatchIntegrity(pool, schedules);
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.post('/batch-sync', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response, next: express.NextFunction) => {
   const { term_id, updates, creates, deletes } = req.body;
   

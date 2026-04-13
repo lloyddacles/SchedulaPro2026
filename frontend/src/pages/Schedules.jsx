@@ -56,8 +56,15 @@ export default function Schedules() {
   const [isCommittingGhost, setIsCommittingGhost] = useState(false);
 
   // ── Ghost Mode Logic ───────────────────────────────────────────────────
-  const { isGhostMode, stagedSchedules, toggleGhostMode, stageUpdate, stageDelete, getDiff, discardDraft } = useGhostStore();
+  const { isGhostMode, stagedSchedules, toggleGhostMode, stageUpdate, stageDelete, getDiff, discardDraft, validateIntegrity, validationErrors } = useGhostStore();
   
+  // Reactive Integrity Scan: Ensure drafts always respect resource availability
+  useEffect(() => {
+    if (isGhostMode && rooms.length > 0 && faculty.length > 0) {
+      validateIntegrity(rooms, faculty);
+    }
+  }, [isGhostMode, rooms, faculty, stagedSchedules, validateIntegrity]);
+
   // ── Responsive View State ────────────────────────────────────────────────
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const isMobile = windowWidth < 1024;
@@ -109,10 +116,19 @@ export default function Schedules() {
       }
     };
 
+    const handleResourceRemoved = () => {
+      // Trigger a broad invalidation to fetch fresh room/faculty lists for the integrity scan
+      queryClient.invalidateQueries(['rooms']);
+      queryClient.invalidateQueries(['faculty']);
+      toast.error('Institutional resource changes detected. Re-validating drafts...', { icon: '🔄' });
+    };
+
     socket.on('schedule_updated', handleUpdate);
+    socket.on('resource_archived', handleResourceRemoved);
 
     return () => {
       socket.off('schedule_updated', handleUpdate);
+      socket.off('resource_archived', handleResourceRemoved);
     };
   }, [socket, isConnected, queryClient, selectedCampusId]);
 
@@ -530,16 +546,22 @@ export default function Schedules() {
        const colors = getProgramColor(sch.program_code);
        const dateStr = weekDates[dayMap[sch.day_of_week]];
        const isDraft = sch.isDraft;
+       const isOrphan = validationErrors.some(e => e.id === sch.id);
+
        return {
          id: sch.id.toString(),
          title: sch.subject_code,
          start: `${dateStr}T${sch.start_time}`,
          end: `${dateStr}T${sch.end_time}`,
-         backgroundColor: isDraft ? 'rgba(124, 58, 237, 0.1)' : colors.bg,
-         borderColor: isDraft ? '#a78bfa' : colors.border,
-         textColor: isDraft ? '#a78bfa' : '#fff',
-         classNames: [...(isDraft ? ['ghost-draft-event'] : []), ...(sch.is_makeup ? ['makeup-event-block'] : [])],
-         extendedProps: { raw: sch }
+         backgroundColor: isOrphan ? 'rgba(239, 68, 68, 0.1)' : (isDraft ? 'rgba(124, 58, 237, 0.1)' : colors.bg),
+         borderColor: isOrphan ? '#ef4444' : (isDraft ? '#a78bfa' : colors.border),
+         textColor: isOrphan ? '#ef4444' : (isDraft ? '#a78bfa' : '#fff'),
+         classNames: [
+           ...(isDraft ? ['ghost-draft-event'] : []), 
+           ...(sch.is_makeup ? ['makeup-event-block'] : []),
+           ...(isOrphan ? ['spectral-orphan-warning', 'animate-pulse'] : [])
+         ],
+         extendedProps: { raw: sch, isOrphan }
        };
     }),
     ...(blackouts && !selectedSectionId ? blackouts.filter(b => selectedFacultyId ? b.faculty_id === Number(selectedFacultyId) : true).map(b => {
