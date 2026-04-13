@@ -623,7 +623,7 @@ export default function Schedules() {
 
     return (
       <div className="flex flex-col items-center justify-center h-full w-full p-0.5 text-center leading-[1.1] overflow-hidden group cursor-pointer relative">
-        {sch.is_makeup && (
+        {!!sch.is_makeup && (
            <div className="absolute top-0 right-0 p-0.5 z-10">
               <div className="bg-white/90 dark:bg-slate-900/90 text-[7px] font-black text-brand-600 px-1 rounded shadow-sm flex items-center gap-0.5">
                  <Sparkles className="w-1.5 h-1.5" /> RECOVERY
@@ -635,7 +635,7 @@ export default function Schedules() {
         <div className="flex flex-col gap-0.5 w-full mt-auto">
           <div className="text-[7px] sm:text-[8px] md:text-[9px] font-bold bg-white/20 rounded py-0.5 truncate uppercase">
             {sch.program_code}-{sch.year_level}{sch.section_name}
-            {sch.is_makeup && sch.event_date && (
+            {!!sch.is_makeup && sch.event_date && (
                <span className="ml-1 opacity-70">[{new Date(sch.event_date).toLocaleDateString([], {month:'short', day:'numeric'})}]</span>
             )}
           </div>
