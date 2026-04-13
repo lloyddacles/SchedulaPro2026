@@ -35,10 +35,14 @@ ensureTable().catch(console.error);
 router.get('/', async (_req: Request, res: Response) => {
   try {
     const [rows]: any = await pool.query('SELECT `key`, value FROM system_settings');
-    const settings: Record<string, string> = {};
+    const settings: Record<string, any> = {};
     for (const row of rows) {
       settings[row.key] = row.value;
     }
+    
+    // Inject runtime capabilities
+    settings.realtime_capability = !process.env.VERCEL;
+    
     res.json(settings);
   } catch (error: any) {
     res.status(500).json({ error: error.message });

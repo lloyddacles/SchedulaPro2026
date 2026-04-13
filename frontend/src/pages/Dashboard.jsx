@@ -76,7 +76,7 @@ function SectionHeader({ icon: Icon, iconColor, title, badge, badgeColor }) {
 }
 
 export default function Dashboard() {
-  const { activeTermId, socket, isConnected } = useScheduleStore();
+  const { activeTermId, socket, isConnected, realtimeSupported } = useScheduleStore();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isHead = ['admin', 'program_head'].includes(user?.role);
@@ -208,9 +208,9 @@ export default function Dashboard() {
           <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">System Dashboard</h1>
           <div className="flex items-center gap-3">
              <div className="flex items-center gap-2 px-2.5 py-1 bg-gray-50 dark:bg-slate-800/80 rounded-full border border-gray-100 dark:border-slate-700/50">
-               <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300 dark:bg-slate-600'}`} />
-               <span className="text-[9px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest">
-                 {isConnected ? 'Live Sync' : 'Offline'}
+               <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : (!realtimeSupported ? 'bg-indigo-400' : 'bg-red-500')}`} />
+               <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 dark:text-slate-400">
+                 {isConnected ? 'Live Sync' : (!realtimeSupported ? 'Standard Sync' : 'Offline')}
                </span>
              </div>
              <p className="text-sm text-gray-400 dark:text-slate-500 font-medium">Real-time metrics for current academic term</p>

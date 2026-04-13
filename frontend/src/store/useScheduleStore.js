@@ -97,6 +97,7 @@ const useScheduleStore = create((set, get) => ({
   // --- Socket / Notification State ---
   socket: socket,
   isConnected: false,
+  realtimeSupported: true, // Defaults to true, updated by fetchSettings
   unreadNotifications: 0,
   setUnreadNotifications: (count) => set({ unreadNotifications: count }),
   incrementNotifications: () => set((state) => ({ unreadNotifications: state.unreadNotifications + 1 })),
@@ -121,7 +122,11 @@ const useScheduleStore = create((set, get) => ({
   fetchSettings: async () => {
     try {
       const res = await api.get('/settings');
-      set({ systemSettings: res.data });
+      const { realtime_capability, ...settings } = res.data;
+      set({ 
+        systemSettings: settings,
+        realtimeSupported: !!realtime_capability 
+      });
     } catch (error) {
       console.error('Failed to fetch system settings:', error);
     }
