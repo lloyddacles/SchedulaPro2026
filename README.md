@@ -1,74 +1,105 @@
-# Faculty Teaching Load Scheduling System 🎓📅
+# SchedulaPro 2026: Faculty Teaching Load Scheduling System 🏫📊
+
+> **An Enterprise-Grade Academic Orchestration Platform designed for Institutional Excellence.**
+
+---
+
+## 👨‍💻 Architect & Creator
+
+**Mr. Lloyd Christopher F. Dacles, MIS, CITSMP, DBMP, CPAA, ITPO, CDSA**  
+*Lead System Architect & Founding Developer*
+
+This system represents a comprehensive synthesis of academic resource management, algorithmic conflict resolution, and enterprise-level auditing, meticulously crafted to solve the complexities of modern institutional scheduling.
+
+---
 
 ## 📖 Project Overview
-The **Faculty Teaching Load Scheduling System** is a comprehensive, full-stack, enterprise-grade web application designed to significantly streamline, automate, and secure the academic scheduling processes for educational institutions. It facilitates real-time data flow between Program Assistants, Program Heads, and Administrators—allowing institutional bodies to structurally manage teaching assignments, evaluate capacity overloads, generate automated schedule matrices, and perform rigorous audit tracking inherently.
+
+**SchedulaPro 2026** (Faculty Teaching Load Scheduling System) is a robust, full-stack, enterprise-grade web application engineered to significantly streamline, automate, and secure academic scheduling processes. It facilitates a seamless real-time data flow between Program Assistants, Program Heads, and Administrators—allowing institutional bodies to structurally manage teaching assignments, evaluate capacity overloads, generate automated schedule matrices, and perform rigorous audit tracking inherently.
+
+### 🎯 Strategic Objectives
+- **Operational Centralization:** A single source of truth for Faculty contracts, Subject curriculums, Section cohorts, and Room capacities.
+- **Algorithmic Constraint Enforcement:** Intelligent tracking of faculty teaching limits, co-teaching requirements, and physical room overlaps to eliminate mathematical collisions.
+- **Dynamic Scheduling:** A powerful Auto-Scheduler Algorithm paired with an intuitive Drag-and-Drop Master Schedule Matrix.
+- **Institutional Security:** Validation of all mission-critical activities through strict Role-Based Access Control (RBAC) and comprehensive immutable Audit Logging.
 
 ---
 
-## 🎯 Objectives
-- **Centralize Operations:** Provide a single source of truth handling Faculty contracts, Subject curriculums, Section cohorts, and Room capacities.
-- **Automate Core Constraints:** Intelligently track faculty teaching limits, co-teaching requirements, and physical room overlaps to reject mathematical collisions inherently.
-- **Streamline Scheduling:** Offer a powerful Auto-Scheduler Algorithm paired with an intuitive Drag-and-Drop Master Schedule Calendar to deploy complex timetables perfectly.
-- **Enhance Security & Auditing:** Validate user activities through strict Role-Based Access Control (RBAC) and comprehensive immutable Audit Logging.
+## 🚀 Key Modules & System Features
+
+### 1. 🔐 Security & Identity Management
+- **Enterprise RBAC:** Strict partitioning of functionalities across `Admin`, `Program Head`, and `Program Assistant` roles.
+- **JWT-Powered Auth:** Secure session management with encrypted token exchange and cross-site cookie protection.
+- **Role-Gated Interfaces:** Visual and API-level logic that ensures only authorized personnel can approve loads, purge databases, or modify institutional settings.
+
+### 2. ⚡ The Master Auto-Scheduler & Conflict Manager
+- **Core Algorithm:** A high-performance placement engine that evaluates hundreds of constraints (Faculty Blackouts, Facility Capacities, Section Clusters) in seconds.
+- **Conflict Resolution Center:** A dedicated panel that identifies "Spectral Orphans" and scheduling bottlenecks, offering "Smart Find" alternatives to resolve deadlocks.
+- **Ghost Mode Engineering:** A unique "preview" layer allowing architects to build draft schedules in a virtual matrix before committing changes to the production ledger.
+
+### 3. 📊 Academic Resource Matrix
+- **Teaching Load Pipeline:** Real-time visibility into instructor workloads with visual "Load Gauges" (Green/Amber/Red) and automatic 60-hour overload capping.
+- **Section & Cohort Management:** Structural organization of students into distinct programs and year levels with precise capacity tracking.
+- **Facility Orchestration:** Dynamic room management that enforces "Room Type" constraints (e.g., Computer Labs vs. Lecture Halls) during scheduling.
+
+### 4. 📈 Insight & Compliance
+- **Real-Time Dashboard:** Institutional KPI tracking, including load completion percentages and department-level summaries.
+- **Immutable Audit Logs:** Deep-tracing logic capturing every modification (`FROM` -> `TO`) with IP, Timestamp, and User metadata.
+- **Institutional Reporting:** Professional PDF and CSV export engines for Room Schedules, Faculty Loads, and Master Academic Matrices.
 
 ---
 
-## 🧱 Scope and Limitations
-### Scope
-- **User Roles:** The system securely partitions functionalities across three native roles: Admin, Program Head, and Program Assistant.
-- **Core Entities:** Full CRUD capabilities for Users, Terms, Programs, Sections, Rooms, Subjects, and Faculty members.
-- **Teaching Load Pipeline:** Assign, review, approve, reject, edit, and recursively archive teaching loads across dynamic capacity metrics.
-- **Master Algorithms:** Matrix overlap detection natively inspecting parallel sections, ternary co-teachers, physical venues, and personal blackout constraints completely safely.
+## 🛠️ Technology Stack
 
-### Limitations
-- The system focuses exclusively on the administrative deployment of Faculty schedules; it does not inherently offer student-facing portal enrollments out-of-the-box.
-- Auto-Scheduling algorithms attempt mapping iteratively; extremely constrained inputs without physical facility flexibility will force secure fallbacks requiring manual resolutions natively via the UI.
+SchedulaPro 2026 is built on a modern, reactive, and highly scalable monorepo architecture:
 
----
+### Frontend Layer
+- **Environment:** `Vite` + `React.js`
+- **State Management:** `@tanstack/react-query` (Asynchronous synchronization)
+- **Styling:** `Tailwind CSS` + Glassmorphic Design System
+- **Animations:** `Framer Motion` (Micro-interactions)
+- **Visuals:** `FullCalendar` + `Lucide Icons`
 
-## 💻 Technology Stack
-This robust application natively binds modern scalable stacks:
-- **Frontend Layer:** `React.js` (Vite) + `Tailwind CSS` for highly responsive, aesthetic, and glassmorphic UI tracking. 
-- **Calendar Matrix:** `@fullcalendar/react` powering complex timeline visualizations and drag-drop edits stably.
-- **State Management:** `@tanstack/react-query` actively syncing asynchronous queries smoothly across components.
-- **Backend Architecture:** `Node.js` + `Express.js` handling dynamic validations, algorithm computations, and deep authorization sequences securely.
-- **Database Engine:** `MySQL` (via `mysql2/promise`) rigorously storing relationships locally ensuring mathematical atomicity across queries.
+### Backend Layer
+- **Environment:** `Node.js` + `Express.js` (TypeScript)
+- **Real-Time Sync:** `Socket.io` (Instant institutional updates)
+- **Database:** `MySQL` (Atomicity and relational integrity)
+- **Validation:** `Zod` (Schema-level data hardening)
+- **Performance:** `Compression` + `HTTP/2` Readiness
 
 ---
 
-## ⚙️ Available Features & Modules
+## ⚙️ Installation & Deployment
 
-### 1. Authentication & RBAC (Role-Based Access Control)
-- **Functions:** Users login securely with JWT integration tracking roles (`admin`, `program_head`, `program_assistant`).
-- **Details:** The system safely gates specific API endpoints and visual interfaces structurally. Only Admins can edit Users and execute terminal database purges. Program Heads act as final approval authorities for academic loads structurally.
+### Environment Configuration
+The system requires a `.env` file in the `backend/` directory with the following parameters:
+```env
+PORT=5001
+DB_HOST=your_host
+DB_USER=your_user
+DB_PASSWORD=your_password
+DB_NAME=scheduling_system
+JWT_SECRET=your_super_secret_key
+FRONTEND_URL=http://localhost:5173
+```
 
-### 2. Multi-Term State Management
-- **Functions:** Global Academic Term selections intuitively tracking independent datasets cleanly.
-- **Details:** All academic tables (loads, schedules, blackouts) perfectly isolate parameters locally into specific Semesters natively blocking data leakage structurally.
+### Local Setup
+1. Clone the repository and navigate to the root directory.
+2. Install all dependencies: `npm run install-all`
+3. Initialize the database: `npm run seed`
+4. Launch Development Environment: `npm run dev`
 
-### 3. Faculty Database & Specializations
-- **Functions:** Detailed instructor repositories logging max-capacity contracts and multi-subject specializations intuitively.
-- **Details:** Features an "Employment Type" layer natively determining `max_teaching_hours`, while also processing visual dropdown tags `[+X Overload Units]` seamlessly handling structural overloads reaching an absolute `60 hrs` cap effectively.
-
-### 4. Teaching Loads & Approval Pipelines
-- **Functions:** Massive bulk subject assignment modules dynamically pushing classes to singular cohorts effectively.
-- **Details:** Displays a visually stunning Live Load Preview (Green/Amber/Red) organically preventing impossible overloads dynamically. Supports up to 3 instructors organically (Co-Teaching ternary patterns) and includes multi-state tracking (`draft`, `pending_review`, `approved`, `rejected`, `archived`).
-
-### 5. Master Schedule Matrix & AI Auto-Generator
-- **Functions:** Visual FullCalendar deployment capturing parallel academic classes elegantly strictly blocking mathematical overlaps actively.
-- **Details:**
-  - **Auto-Suggest & Auto-Scheduler:** Evaluates constraints rapidly against Blackouts, Facility capacities, Section clusters, and ternary Faculty conflicts gracefully filling missing class spaces.
-  - **Drag-and-Drop Editor:** Instantly move classes across the matrix natively securely computing validations mid-drag.
-  - **PDF Exporting:** Capable of natively generating clean `.pdf` printable matrices visually safely.
-
-### 6. Audit & Recovery Logs
-- **Functions:** Immutable logging pipelines capturing universal system edits organically tracking IPs and Timestamps explicitly.
-- **Details:** The Audit interface securely renders exact state modifications (`from` -> `to`) offering CSV Exports and structural JSON diff algorithms intuitively safely tracking all User actions mathematically.
-
-### 7. Facilities, Sections, and Cohorts
-- **Functions:** Independent matrices defining physical structure capabilities gracefully mapped to academic cohorts efficiently.
-- **Details:** Automatically syncs rooms and enforces "Room Type" constraints natively checking facility configurations mathematically when attempting mappings securely.
+### Production Context
+The system is optimized for **Vercel** deployment (Hobby/Pro), utilizing a monolithic backend entry point strategy to stay within serverless function limits while maintaining full API responsiveness.
 
 ---
 
-*Note: This README.md acts as a living document securely logging the structural definitions of the Faculty Scheduling System architecture natively. It should be iteratively updated alongside all internal revisions mathematically deployed to the core logic.*
+## 📄 License & Attribution
+
+Internal Property of the Institutional Bodies. Developed and Architected by:
+
+**Mr. Lloyd Christopher F. Dacles, MIS, CITSMP, DBMP, CPAA, ITPO, CDSA**  
+*Master of Information Systems | Information Technology Professional*
+
+---
+*Note: This README serves as the official structural record for SchedulaPro 2026. All rights to the algorithmic logic and core architecture are reserved by the Founding Architect.*
