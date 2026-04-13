@@ -225,13 +225,15 @@ export default function Landing() {
                  initial={{ opacity: 0, scale: 0.9 }}
                  whileInView={{ opacity: 1, scale: 1 }}
                  viewport={{ once: true }}
-                 className="flex-1 rounded-[3rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-[0_32px_128px_rgba(0,0,0,0.1)] group"
+                 className="flex-1 rounded-[3rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-[0_32px_128px_rgba(0,0,0,0.1)] group relative overflow-hidden"
                >
                  <img 
-                   src="/Users/lloyd.dacles/.gemini/antigravity/brain/daaef2ba-49fd-4e61-8b5c-d516c70410ca/scheduling_conflict_resolution_mockup_1775800940911.png" 
+                   src="https://images.unsplash.com/photo-1551288049-bbda4e238c71?auto=format&fit=crop&w=1200&q=80" 
                    alt="Conflict Resolution Demonstration" 
-                   className="w-full rounded-[2.5rem] grayscale group-hover:grayscale-0 transition-all duration-1000"
+                   className="w-full rounded-[2.5rem] grayscale group-hover:grayscale-0 transition-all duration-1000 object-cover aspect-video"
+                   onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80"; }}
                  />
+                 <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/10 to-transparent pointer-events-none" />
                </motion.div>
             </div>
          </div>
@@ -245,14 +247,15 @@ export default function Landing() {
                initial={{ opacity: 0, x: -50 }}
                whileInView={{ opacity: 1, x: 0 }}
                viewport={{ once: true }}
-               className="flex-1 rounded-[3rem] overflow-hidden border border-slate-200 dark:border-white/10 shadow-2xl relative"
+               className="flex-1 rounded-[3rem] overflow-hidden border border-slate-200 dark:border-white/10 shadow-2xl relative group"
             >
                <img 
-                 src="/Users/lloyd.dacles/.gemini/antigravity/brain/daaef2ba-49fd-4e61-8b5c-d516c70410ca/institutional_health_analytics_mockup_1775800955604.png" 
+                 src="https://images.unsplash.com/photo-1504868584819-f8e90526354c?auto=format&fit=crop&w=1200&q=80" 
                  alt="Institutional Health Monitoring" 
-                 className="w-full"
+                 className="w-full grayscale group-hover:grayscale-0 transition-all duration-1000"
+                 onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1551288049-bbda4e238c71?auto=format&fit=crop&w=1200&q=80"; }}
                />
-               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 to-transparent" />
+               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 to-transparent opacity-60 group-hover:opacity-20 transition-opacity" />
             </motion.div>
 
             <div className="flex-1 space-y-8">
@@ -331,10 +334,10 @@ export default function Landing() {
             >
               <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-violet-500/20 blur-3xl opacity-50 z-0" />
               <img 
-                src="/assets/images/ai_matrix.png" 
+                src="https://images.unsplash.com/photo-1639322537228-f710d846310a?auto=format&fit=crop&w=1000&q=80" 
                 alt="AI Constraint Solver Visualization" 
-                className="relative z-10 w-full rounded-2xl shadow-2xl brightness-110 contrast-125 mix-blend-lighten"
-                onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&w=1000&q=80"; e.target.className = "relative z-10 w-full rounded-2xl shadow-2xl mix-blend-luminosity brightness-75 opacity-90"; }}
+                className="relative z-10 w-full rounded-2xl shadow-2xl brightness-110 contrast-125 mix-blend-screen opacity-90 group-hover:opacity-100 transition-opacity"
+                onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&w=1000&q=80"; }}
               />
             </motion.div>
           </div>
@@ -380,14 +383,25 @@ export default function Landing() {
       <section className="relative z-20 py-32 bg-slate-950 overflow-hidden border-y border-white/5">
         <div className="absolute inset-0 bg-gradient-to-r from-brand-900/20 to-indigo-900/20 opacity-40" />
         <div className="absolute top-0 right-0 w-full h-full opacity-10 pointer-events-none grayscale brightness-50 contrast-125 mix-blend-overlay">
-           <img src="/Users/lloyd.dacles/.gemini/antigravity/brain/daaef2ba-49fd-4e61-8b5c-d516c70410ca/scheduling_zen_hero_bg_1775800971766.png" className="w-full h-full object-cover" />
+           <img 
+             src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1920&q=80" 
+             className="w-full h-full object-cover" 
+             onError={(e) => { e.style.display = 'none'; }}
+           />
         </div>
         
         <div className="max-w-[1400px] mx-auto px-6 relative z-10">
           <div className="flex flex-col lg:flex-row items-center gap-16">
             <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-[3rem] overflow-hidden border-4 border-white/5 flex-shrink-0 shadow-2xl rotate-3 scale-95 hover:rotate-0 hover:scale-100 transition-all duration-700 relative group">
-               <div className="absolute inset-0 bg-brand-500/10 group-hover:bg-transparent z-10 transition-all" />
-               <img src="/assets/images/founder.jpg" alt="Founder" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000" />
+               <div className="absolute inset-0 bg-brand-500/10 group-hover:bg-transparent z-10 transition-all text-center flex items-center justify-center">
+                  <span className="text-[10px] font-black uppercase text-white tracking-[0.3em] opacity-0 group-hover:opacity-100 transition-opacity">Founding Architect</span>
+               </div>
+               <img 
+                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80" 
+                  alt="Mr. Lloyd Christopher F. Dacles" 
+                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000"
+                  onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80"; }}
+               />
             </div>
             <div className="space-y-6 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-500/10 text-brand-400 text-[10px] font-black uppercase tracking-[0.3em] border border-brand-500/20">
