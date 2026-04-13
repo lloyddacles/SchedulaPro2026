@@ -58,13 +58,6 @@ export default function Schedules() {
   // ── Ghost Mode Logic ───────────────────────────────────────────────────
   const { isGhostMode, stagedSchedules, toggleGhostMode, stageUpdate, stageDelete, getDiff, discardDraft, validateIntegrity, validationErrors } = useGhostStore();
   
-  // Reactive Integrity Scan: Ensure drafts always respect resource availability
-  useEffect(() => {
-    if (isGhostMode && rooms.length > 0 && faculty.length > 0) {
-      validateIntegrity(rooms, faculty);
-    }
-  }, [isGhostMode, rooms, faculty, stagedSchedules, validateIntegrity]);
-
   // ── Responsive View State ────────────────────────────────────────────────
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const isMobile = windowWidth < 1024;
@@ -145,6 +138,13 @@ export default function Schedules() {
   const { data: blackouts = [] } = useQuery({ queryKey: ['blackouts'], queryFn: async () => (await api.get('/unavailability')).data });
   const { data: terms = [] } = useQuery({ queryKey: ['terms'], queryFn: async () => (await api.get('/academic-terms')).data });
   const { data: campuses = [] } = useQuery({ queryKey: ['campuses'], queryFn: async () => (await api.get('/campuses')).data });
+
+  // Reactive Integrity Scan: Ensure drafts always respect resource availability
+  useEffect(() => {
+    if (isGhostMode && rooms.length > 0 && faculty.length > 0) {
+      validateIntegrity(rooms, faculty);
+    }
+  }, [isGhostMode, rooms, faculty, stagedSchedules, validateIntegrity]);
 
   const createMutation = useMutation({
     mutationFn: (newSchedule) => api.post('/schedules', newSchedule),
