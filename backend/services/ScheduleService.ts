@@ -473,6 +473,9 @@ export class ScheduleService {
     let failures: { subject: string; section_id: number; duration: number; reason: string }[] = [];
     let scheduledCount = 0;
 
+    // Campus Isolation: track faculty_id -> campus_id (locked for this pass)
+    const facultyCampusMap = new Map<number, number>();
+
     console.log(` [AUTO-SCHEDULER]: Starting fair interleaved pass for ${interleavedQueue.length} loads across ${programKeys.length} programs.`);
 
     for (const load of interleavedQueue) {
@@ -481,8 +484,30 @@ export class ScheduleService {
       let remainingToSchedule = totalRequired - (hoursTally.get(load.teaching_load_id) || 0);
 
       const isLabProgram = ['BSIS', 'TVL-ICT', 'BSAIS'].includes(load.program_code);
-      const isPESubject = load.subject_code?.toUpperCase().startsWith('PE') || load.subject_code?.toUpperCase().includes('PHED');
+      const loadPESubject = load.subject_code?.toUpperCase().startsWith('PE') || load.subject_code?.toUpperCase().includes('PHED');
       const loadFacs = [load.faculty_id, load.co_faculty_id_1, load.co_faculty_id_2].filter((id): id is number => id !== null);
+
+      // Campus Isolation Check: If any faculty is locked to a DIFFERENT campus, skip this load
+      let campusLockReason = '';
+      if (load.campus_id) {
+          for (const fId of loadFacs) {
+              const lockedCampus = facultyCampusMap.get(fId);
+              if (lockedCampus !== undefined && lockedCampus !== load.campus_id) {
+                  campusLockReason = `Faculty #${fId} is already locked to another campus in this pass.`;
+                  break;
+              }
+          }
+      }
+
+      if (campusLockReason) {
+          failures.push({
+              subject: load.subject_code,
+              section_id: load.section_id,
+              duration: totalRequired,
+              reason: `Skipped: Campus Isolation (${campusLockReason})`
+          });
+          continue; // Skip to next load in interleaved queue
+      }
 
       // Rule: Never schedule two sessions of the same load on the same day in one run
       const usedDaysThisLoad = new Set<string>();
@@ -503,9 +528,9 @@ export class ScheduleService {
         // Room Prioritization for this segment
         const prefersLab = (load.room_type === 'Computer Lab' || load.room_type === 'Laboratory') || 
                            (isLabProgram && (load.room_type === 'Any' || !load.room_type));
-        const prefersPE = (load.room_type === 'Court' || load.room_type === 'Field') || 
-                          (isPESubject && (load.room_type === 'Any' || !load.room_type));
-        const prefersLecture = (load.room_type === 'Lecture') || (!prefersLab && !prefersPE);
+        const prefersPESubject = (load.room_type === 'Court' || load.room_type === 'Field') || 
+                          (loadPESubject && (load.room_type === 'Any' || !load.room_type));
+        const prefersLecture = (load.room_type === 'Lecture') || (!prefersLab && !prefersPESubject);
 
         const campusRooms = rooms.filter(r => r.campus_id === load.campus_id);
         const roomsForLoad = [...campusRooms].sort((a, b) => {
@@ -517,7 +542,7 @@ export class ScheduleService {
             if (aIsLab && !bIsLab) return -1;
             if (!aIsLab && bIsLab) return 1;
           }
-          if (prefersPE) {
+          if (prefersPESubject) {
             const aIsPEArea = aType === 'Court' || aType === 'Field';
             const bIsPEArea = bType === 'Court' || bType === 'Field';
             if (aIsPEArea && !bIsPEArea) return -1;
@@ -568,6 +593,16 @@ export class ScheduleService {
                 scheduledCount++;
                 blockSuccess = true;
                 isPlaced = true;
+
+                // After successful placement, lock all involved faculty to this campus
+                if (room.campus_id) {
+                    loadFacs.forEach(fId => {
+                        if (!facultyCampusMap.has(fId)) {
+                            facultyCampusMap.set(fId, room.campus_id);
+                        }
+                    });
+                }
+                
                 continue whileLoop;
               }
             }
