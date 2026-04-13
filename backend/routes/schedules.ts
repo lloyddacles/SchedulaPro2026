@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import pool from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ScheduleService } from '../services/ScheduleService.js';

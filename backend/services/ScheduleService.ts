@@ -422,7 +422,13 @@ export class ScheduleService {
     ];
 
     let newlyMapped: Schedule[] = [];
-    let failures: { subject: string; reason: string }[] = [];
+    let failures: { 
+      teaching_load_id: number;
+      subject: string;
+      section_id: number;
+      program_code: string;
+      reason: string;
+    }[] = [];
 
     for (const load of unassignedLoads) {
       let isPlaced = false;
