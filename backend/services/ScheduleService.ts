@@ -21,6 +21,7 @@ export interface TeachingLoad {
   room_type: string;
   subject_code: string;
   program_code: string;
+  max_days_per_week: number | null;
 }
 
 export interface Room {
@@ -75,6 +76,8 @@ export interface ValidationResult {
 }
 
 export class ScheduleService {
+  private static readonly TOLERANCE = 0.001; // 1 second tolerance for floating-point drift
+
   /**
    * Helper: Parse "HH:mm:ss" or "HH:mm" to decimal hours (e.g., "07:30:00" -> 7.5)
    */
@@ -181,10 +184,9 @@ export class ScheduleService {
         AND tl.term_id = ? AND tl.status != 'archived' AND sch.day_of_week = ?
         AND sch.start_time < ? AND sch.end_time > ?
     `;
-    const TOLERANCE = 0.001; // 1 second tolerance for floating-point drift
     const facParams = targetFacultyIds.length > 0 ? targetFacultyIds : [];
     // Adjust timing params by tolerance to avoid edge-case collisions from rounding
-    const paramsConflicts: any[] = [...facParams, ...facParams, ...facParams, sectionId, targetTermId, dayOfWeek, this.formatTime(eAttempt - TOLERANCE), this.formatTime(sAttempt + TOLERANCE)];
+    const paramsConflicts: any[] = [...facParams, ...facParams, ...facParams, sectionId, targetTermId, dayOfWeek, this.formatTime(eAttempt - ScheduleService.TOLERANCE), this.formatTime(sAttempt + ScheduleService.TOLERANCE)];
     if (excludeScheduleId) { queryConflicts += ' AND sch.id != ?'; paramsConflicts.push(excludeScheduleId); }
 
     const [conflicts]: [any[], any] = await poolOrConn.query(queryConflicts, paramsConflicts);
@@ -207,8 +209,7 @@ export class ScheduleService {
       JOIN teaching_loads tl ON sch.teaching_load_id = tl.id JOIN subjects s ON tl.subject_id = s.id
       WHERE sch.room = ? AND tl.term_id = ? AND tl.status != 'archived' AND sch.day_of_week = ? AND sch.start_time < ? AND sch.end_time > ?
     `;
-    const TOLERANCE = 0.001;
-    const paramsRoom = [room, targetTermId, dayOfWeek, this.formatTime(eAttempt - TOLERANCE), this.formatTime(sAttempt + TOLERANCE)];
+    const paramsRoom = [room, targetTermId, dayOfWeek, this.formatTime(eAttempt - ScheduleService.TOLERANCE), this.formatTime(sAttempt + ScheduleService.TOLERANCE)];
     if (excludeScheduleId) { queryRoom += ' AND sch.id != ?'; paramsRoom.push(excludeScheduleId); }
 
     const [roomConflicts]: [any[], any] = await poolOrConn.query(queryRoom, paramsRoom);

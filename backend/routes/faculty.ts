@@ -131,6 +131,10 @@ router.delete('/:id/permanent', authorizeRoles('admin', 'program_head'), async (
 });
 
 router.post('/bulk-upload', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response, next: express.NextFunction) => {
+  const { faculty } = req.body;
+  if (!faculty || !Array.isArray(faculty)) {
+    return next(new ApiError(400, 'Invalid faculty data provided', 'BAD_REQUEST'));
+  }
 
   const connection = await pool.getConnection();
   try {

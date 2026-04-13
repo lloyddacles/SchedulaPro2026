@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import pool from '../config/db.js';
+import { ApiError } from '../utils/ApiError.js';
 import { logAudit } from '../utils/auditLogger.js';
 import { authenticateToken, authorizeRoles } from '../utils/auth.js';
 import { validate, subjectSchema } from '../middleware/validator.js';
