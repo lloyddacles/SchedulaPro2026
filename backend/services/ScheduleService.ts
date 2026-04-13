@@ -418,10 +418,32 @@ export class ScheduleService {
       hoursTally.set(s.teaching_load_id, (hoursTally.get(s.teaching_load_id) || 0) + dur);
     });
 
-    // Filter loads to those needing more hours
+    // 4. Interleaving Logic: Group by Program and Round-Robin to ensure fairness for multi-subject instructors
     const unassignedLoads = loads.filter(l => (hoursTally.get(l.teaching_load_id) || 0) < Number(l.required_hours) - 0.1);
+    
+    const programGroups = new Map<string, TeachingLoad[]>();
+    unassignedLoads.forEach(l => {
+      const code = l.program_code || 'GEN-ED';
+      if (!programGroups.has(code)) programGroups.set(code, []);
+      programGroups.get(code)!.push(l);
+    });
 
-    // 4. Fetch faculty blackouts
+    // Internal sort: hardest subjects (highest hours) first within each program
+    programGroups.forEach(list => list.sort((a,b) => Number(b.required_hours) - Number(a.required_hours)));
+
+    const interleavedQueue: TeachingLoad[] = [];
+    const programKeys = Array.from(programGroups.keys());
+    let maxLen = 0;
+    programGroups.forEach(list => { if (list.length > maxLen) maxLen = list.length; });
+
+    for (let i = 0; i < maxLen; i++) {
+      for (const key of programKeys) {
+        const list = programGroups.get(key)!;
+        if (i < list.length) interleavedQueue.push(list[i]);
+      }
+    }
+
+    // 5. Fetch faculty blackouts
     const [blackouts] = await poolOrConn.query(`SELECT faculty_id, day_of_week, start_time, end_time FROM faculty_unavailability`) as [FacultyUnavailability[], any];
 
     const cm = this.createConflictManager(existingSchedules, blackouts);
@@ -436,9 +458,9 @@ export class ScheduleService {
     let failures: { subject: string; section_id: number; duration: number; reason: string }[] = [];
     let scheduledCount = 0;
 
-    console.log(` [AUTO-SCHEDULER]: Starting pass for ${unassignedLoads.length} loads.`);
+    console.log(` [AUTO-SCHEDULER]: Starting fair interleaved pass for ${interleavedQueue.length} loads across ${programKeys.length} programs.`);
 
-    for (const load of unassignedLoads) {
+    for (const load of interleavedQueue) {
       let isPlaced = false;
       const totalRequired = Number(load.required_hours);
       let remainingToSchedule = totalRequired - (hoursTally.get(load.teaching_load_id) || 0);
