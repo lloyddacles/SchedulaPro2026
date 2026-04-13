@@ -130,12 +130,12 @@ export const scheduleRequestSchema = z.object({
   schedule_id: requiredId,
   request_type: z.enum(['DROP', 'SWAP', 'CHANGE_ROOM', 'CHANGE_TIME', 'OTHER', 'MAKEUP']),
   reason_text: z.string().min(5, "Justification must be at least 5 characters"),
-  target_day: z.string().optional(),
-  target_start_time: z.string().optional(),
-  target_end_time: z.string().optional(),
-  target_room: z.string().optional(),
+  target_day: z.string().nullable().optional(),
+  target_start_time: z.string().nullable().optional(),
+  target_end_time: z.string().nullable().optional(),
+  target_room: z.string().nullable().optional(),
   is_recurring: z.coerce.boolean().optional().default(true),
-  event_date: z.string().optional()
+  event_date: z.string().nullable().optional()
 });
 
 export const subjectSchema = z.object({
