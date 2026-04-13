@@ -433,32 +433,62 @@ export class ScheduleService {
     for (const load of unassignedLoads) {
       let isPlaced = false;
       const durationHours = Number(load.required_hours) || 1;
-      const COMPUTER_PROGRAMS = ['BSIS', 'TVL-ICT', 'BSAIS'];
-      const isComputerSubject = COMPUTER_PROGRAMS.includes(load.program_code);
+      const isLabProgram = ['BSIS', 'TVL-ICT', 'BSAIS'].includes(load.program_code);
+      const isPESubject = load.subject_code?.toUpperCase().startsWith('PE') || load.subject_code?.toUpperCase().includes('PHED');
       const loadFacs = [load.faculty_id, load.co_faculty_id_1, load.co_faculty_id_2].filter((id): id is number => id !== null);
 
-      // Filter and Sort rooms based on prioritization logic
-      let roomsForLoad = rooms.filter(r => (load.room_type === 'Any' || !load.room_type || r.type === load.room_type) && r.campus_id === load.campus_id);
+      /**
+       * ROOM PRIORITIZATION LOGIC:
+       * 1. If Lab program -> Prefer 'Computer Lab' or 'Laboratory'. Fallback to 'Lecture'.
+       * 2. If PE subject -> Prefer 'Court' or 'Field'. Fallback to 'Lecture'.
+       * 3. Default/GenEd -> Prefer 'Lecture'.
+       */
       
-      if (roomsForLoad.length === 0) {
-        // Fallback: If no strict room_type matches, check for generic institutional type if 'Any'
-        if (!load.room_type || load.room_type === 'Any') {
-          roomsForLoad = rooms.filter(r => r.campus_id === load.campus_id);
+      // Initial candidate pool: All rooms on the target campus
+      const campusRooms = rooms.filter(r => r.campus_id === load.campus_id);
+      
+      // Sort candidates by institutional priority
+      let roomsForLoad = [...campusRooms].sort((a, b) => {
+        const aType = a.type || 'Lecture';
+        const bType = b.type || 'Lecture';
+        
+        // Priority 1: Computer Programs
+        if (isLabProgram) {
+          const aIsLab = aType === 'Computer Lab' || aType === 'Laboratory';
+          const bIsLab = bType === 'Computer Lab' || bType === 'Laboratory';
+          if (aIsLab && !bIsLab) return -1;
+          if (!aIsLab && bIsLab) return 1;
+          if (aIsLab && bIsLab) return b.capacity - a.capacity; // Both Labs, use larger one
+        }
+        
+        // Priority 2: PE Subjects
+        if (isPESubject) {
+          const aIsPEArea = aType === 'Court' || aType === 'Field';
+          const bIsPEArea = bType === 'Court' || bType === 'Field';
+          if (aIsPEArea && !bIsPEArea) return -1;
+          if (!aIsPEArea && bIsPEArea) return 1;
+          if (aIsPEArea && bIsPEArea) return b.capacity - a.capacity;
+        }
+
+        // Priority 3: General / Lecture fallback
+        const aIsLecture = aType === 'Lecture';
+        const bIsLecture = bType === 'Lecture';
+        if (aIsLecture && !bIsLecture) return -1;
+        if (!aIsLecture && bIsLecture) return 1;
+
+        // Default: Sort by capacity to ensure better fit for standard groups
+        return b.capacity - a.capacity;
+      });
+
+      // Filter: If a subject has a STRICT room requirement (e.g., from Department settings), 
+      // we still respect it if it's not 'Any' or empty.
+      if (load.room_type && load.room_type !== 'Any' && load.room_type !== 'Lecture') {
+        const strictMatch = roomsForLoad.filter(r => r.type === load.room_type);
+        if (strictMatch.length > 0) {
+          roomsForLoad = strictMatch;
         }
       }
 
-      roomsForLoad.sort((a, b) => {
-        const aType = a.type || 'Lecture';
-        const bType = b.type || 'Lecture';
-        if (isComputerSubject) {
-          if (aType === 'Laboratory' && bType !== 'Laboratory') return -1;
-          if (aType !== 'Laboratory' && bType === 'Laboratory') return 1;
-        } else {
-          if (aType === 'Lecture' && bType !== 'Lecture') return -1;
-          if (aType !== 'Lecture' && bType === 'Lecture') return 1;
-        }
-        return 0;
-      });
 
       passLoop: for (const pass of PASSES) {
         for (const day of pass.days) {
