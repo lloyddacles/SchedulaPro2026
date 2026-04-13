@@ -2,6 +2,8 @@ import express, { Request, Response, NextFunction } from 'express';
 import pool from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { withTransaction } from '../utils/transaction.js';
+import { ScheduleService } from '../services/ScheduleService.js';
+import { validate, scheduleSchema, autoScheduleSchema } from '../middleware/validator.js';
 import { logAudit } from '../utils/auditLogger.js';
 import { authenticateToken, authorizeRoles } from '../utils/auth.js';
 
