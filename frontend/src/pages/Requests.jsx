@@ -132,8 +132,8 @@ export default function Requests() {
             <Activity className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-gray-900 dark:text-white font-display tracking-tight">Request Command Center</h1>
-            <p className="text-sm text-gray-500 dark:text-slate-400 font-bold">Manage teaching load recovery and variance staging.</p>
+            <h1 className="text-3xl font-black text-gray-900 dark:text-white font-display tracking-tight">Academic Request Portal</h1>
+            <p className="text-sm text-gray-500 dark:text-slate-400 font-bold">Manage teaching workload recovery and schedule adjustments.</p>
           </div>
         </div>
 
@@ -141,7 +141,7 @@ export default function Requests() {
           {[
             { id: 'PENDING', label: 'Action Needed', icon: Clock, count: stats.pending, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/30' },
             { id: 'ENDORSED', label: 'Endorsed', icon: Sparkles, count: stats.endorsed, color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/30' },
-            { id: 'RESOLVED', label: 'Audit History', icon: Archive, count: stats.resolved, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30' }
+            { id: 'RESOLVED', label: 'Completed History', icon: Archive, count: stats.resolved, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -191,7 +191,7 @@ export default function Requests() {
           onClick={() => refetch()} 
           disabled={isRefetching} 
           className="p-3 bg-white dark:bg-slate-800 text-gray-400 dark:text-slate-500 hover:text-brand-500 dark:hover:text-brand-400 rounded-2xl border-2 border-gray-100 dark:border-slate-700/50 transition-all hover:rotate-180 active:scale-95 shadow-sm"
-          title="Force Matrix Sync"
+          title="Refresh Schedule Data"
         >
            <RefreshCw className={`w-5 h-5 ${isRefetching ? 'animate-spin text-brand-500' : ''}`} />
         </button>
@@ -260,8 +260,8 @@ export default function Requests() {
             >
               <div className="flex justify-between items-start mb-8">
                 <div>
-                  <h2 className="text-2xl font-black text-gray-900 dark:text-white">Transaction Detail</h2>
-                  <p className="text-xs font-bold text-gray-500 mt-1 uppercase tracking-widest">Request ID: #{selectedRequest.id}</p>
+                  <h2 className="text-2xl font-black text-gray-900 dark:text-white">Request Detail</h2>
+                  <p className="text-xs font-bold text-gray-500 mt-1 uppercase tracking-widest">Reference ID: #{selectedRequest.id}</p>
                 </div>
                 <button 
                   onClick={() => setSelectedRequest(null)}
@@ -316,7 +316,7 @@ export default function Requests() {
                       onClick={() => { handleAction(selectedRequest.id, 'approve', selectedRequest.request_type); setSelectedRequest(null); }}
                       className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black text-xs tracking-widest shadow-lg shadow-emerald-500/30 transition-transform active:scale-95"
                     >
-                      EXECUTE FINAL MATRIX
+                      FINALIZE SCHEDULE CHANGE
                     </button>
                   )}
                 </div>

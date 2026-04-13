@@ -258,8 +258,8 @@ export default function MySchedule() {
     <div className="space-y-6 pb-20 print:p-0 print:space-y-0 print:block">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 dark:text-white font-display tracking-tight">Active Schedule</h1>
-          <p className="mt-1 text-slate-500 font-medium">Official institutional load and venue assignments.</p>
+          <h1 className="text-4xl font-black text-slate-900 dark:text-white font-display tracking-tight">Current Teaching Workload</h1>
+          <p className="mt-1 text-slate-500 font-medium">Official institutional assignments and venue allocations.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
@@ -267,7 +267,7 @@ export default function MySchedule() {
               onClick={() => setViewType('personal')}
               className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewType === 'personal' ? 'bg-white dark:bg-slate-700 text-brand-600 shadow-sm' : 'text-slate-400'}`}
              >
-               My Load
+               My Workload
              </button>
              {advisorySections.length > 0 && (
                <button 
@@ -287,7 +287,7 @@ export default function MySchedule() {
               onClick={() => setViewType('history')}
               className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewType === 'history' ? 'bg-white dark:bg-slate-700 text-brand-600 shadow-sm' : 'text-slate-400'}`}
              >
-               Load History
+               Workload History
              </button>
           </div>
           <button onClick={handlePrint} className="flex items-center gap-2 px-6 py-2.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-2xl font-bold shadow-sm hover:bg-slate-50 transition-all">
@@ -444,8 +444,8 @@ export default function MySchedule() {
             <div className="glass p-12 rounded-[2.5rem] border border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-center gap-4">
               <History className="w-16 h-16 text-slate-200 dark:text-slate-700" />
               <div>
-                <h3 className="text-xl font-black text-slate-900 dark:text-white">No Teaching History Found</h3>
-                <p className="text-slate-500 mt-1 max-w-sm">Your teaching load records from previous semesters will appear here once they are archived.</p>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white">No Workload History Found</h3>
+                <p className="text-slate-500 mt-1 max-w-sm">Your teaching records from previous semesters will appear here once they are archived.</p>
               </div>
             </div>
           )}
@@ -495,7 +495,7 @@ export default function MySchedule() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in print:hidden">
            <div className="bg-white dark:bg-slate-800 rounded-[3rem] shadow-2xl w-full max-w-lg overflow-hidden transform transition-all border border-white/20">
               <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
-                 <h3 className="text-2xl font-black text-slate-900 dark:text-white font-display">Change Request</h3>
+                 <h3 className="text-2xl font-black text-slate-900 dark:text-white font-display">Adjustment Request</h3>
                  <button onClick={() => setIsModalOpen(false)} className="p-2 bg-slate-100 dark:bg-slate-700 text-slate-400 rounded-xl hover:text-slate-600 transition-colors"><X className="w-6 h-6" /></button>
               </div>
               <div className="p-8 space-y-6">
@@ -506,7 +506,7 @@ export default function MySchedule() {
                  )}
                  <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-[2rem] border border-slate-100 dark:border-slate-700 relative overflow-hidden shadow-inner">
                     <div className="absolute top-0 left-0 w-2 h-full bg-brand-500"></div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Target Load</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Target Adjustment</p>
                     <h4 className="text-3xl font-black text-slate-900 dark:text-white font-display italic tracking-tight mb-2 underline">{selectedSch.subject_code}</h4>
                     <div className="flex flex-wrap gap-4 mt-4">
                        <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wide"><MapPin className="w-4 h-4" /> {selectedSch.room}</span>
@@ -550,7 +550,7 @@ export default function MySchedule() {
               <div className="px-8 py-6 border-t border-slate-100 dark:border-slate-700/50 flex gap-4">
                  <button onClick={() => setIsModalOpen(false)} className="flex-1 py-4 font-black text-slate-400 tracking-widest uppercase text-xs hover:text-slate-600 transition-colors">Abort</button>
                  <button onClick={handleCommitRequest} disabled={submitMutation.isPending} className="flex-3 py-4 bg-brand-600 text-white rounded-2xl font-black tracking-widest uppercase text-xs shadow-xl shadow-brand-500/30 hover:bg-brand-700 transition-all flex justify-center items-center gap-2">
-                    {submitMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4" /> Dispatch Ticket</>}
+                    {submitMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4" /> Submit Request</>}
                  </button>
               </div>
            </div>

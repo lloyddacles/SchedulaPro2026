@@ -263,8 +263,8 @@ export default function TeachingLoads() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white font-display">Assign Loads</h1>
-          <p className="mt-1 text-gray-500 dark:text-slate-400">Institutional recruitment and subject mapping for the active term.</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white font-display">Teaching Workload Management</h1>
+          <p className="mt-1 text-gray-500 dark:text-slate-400">Institutional recruitment and curriculum mapping for the active academic term.</p>
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <div className="flex items-center gap-2 bg-white dark:bg-slate-800 rounded-xl px-4 py-2 border border-gray-200 dark:border-slate-700 shadow-sm min-w-max">
@@ -285,7 +285,7 @@ export default function TeachingLoads() {
             onClick={() => { setFormData(initialForm); setIsModalOpen(true); }}
             className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white rounded-xl font-semibold shadow-lg hover:bg-brand-700 transition hover:-translate-y-0.5 text-sm flex-shrink-0"
           >
-            <PlusCircle className="w-4 h-4" /> New Assignment
+            <PlusCircle className="w-4 h-4" /> New Workload Assignment
           </button>
         </div>
       </div>
@@ -319,7 +319,7 @@ export default function TeachingLoads() {
           onClick={() => setActiveTab('all')}
           className={`px-4 py-2.5 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === 'all' ? 'border-brand-600 text-brand-600 dark:text-brand-400 dark:border-brand-400' : 'border-transparent text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'}`}
         >
-          All Loads ({activeTab === 'archived' ? '-' : loads.length})
+          All Assignments ({activeTab === 'archived' ? '-' : loads.length})
         </button>
         {(isHead || isAssistant) && (
           <button
@@ -338,7 +338,7 @@ export default function TeachingLoads() {
           onClick={() => setActiveTab('archived')}
           className={`px-4 py-2.5 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === 'archived' ? 'border-gray-500 text-gray-600 dark:text-gray-400 dark:border-gray-500' : 'border-transparent text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'}`}
         >
-          Archived Historical
+          Historical Records
         </button>
       </div>
 
@@ -368,7 +368,7 @@ export default function TeachingLoads() {
                     {programKey}
                   </h2>
                   <span className="bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 font-bold px-3 py-1 rounded-full text-xs shadow-sm shadow-brand-100/50 dark:shadow-none border border-brand-100 dark:border-slate-600">
-                    {progLoads.length} {progLoads.length === 1 ? 'Mapped Load' : 'Mapped Loads'}
+                    {progLoads.length} {progLoads.length === 1 ? 'Workload Assignment' : 'Workload Assignments'}
                   </span>
                 </div>
                 <div className="overflow-x-auto">
@@ -710,7 +710,7 @@ export default function TeachingLoads() {
               {!isEditing && (
                 <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 text-xs text-blue-700 dark:text-blue-400">
                   <Clock className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                  <span>New loads are saved as <strong>Draft</strong>. Endorse when ready for Program Head approval.</span>
+                  <span>New assignments are saved as <strong>Draft</strong>. Endorse when ready for Program Head review.</span>
                 </div>
               )}
 

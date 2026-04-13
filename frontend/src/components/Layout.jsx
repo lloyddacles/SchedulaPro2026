@@ -31,10 +31,10 @@ const schedulerNav = [
   { path: '/sections',       label: 'Appoint Sections',icon: Hexagon },
   { path: '/rooms',          label: 'Facilities',     icon: Building2 },
   { path: '/faculty',        label: 'Faculty Roster', icon: Users },
-  { path: '/subjects',       label: 'Subject Bank',   icon: BookOpen },
-  { path: '/teaching-loads', label: 'Assign Loads',   icon: Database },
-  { path: '/requests',       label: 'Swap Requests',  icon: Inbox },
-  { path: '/schedules',      label: 'Master Schedule',icon: Calendar },
+  { path: '/subjects',       label: 'Subject Catalog', icon: BookOpen },
+  { path: '/teaching-loads', label: 'Teaching Workloads', icon: Database },
+  { path: '/requests',       label: 'Schedule Adjustments', icon: Inbox },
+  { path: '/schedules',      label: 'Master Schedule', icon: Calendar },
   { path: '/reports',        label: 'Analytics & Reports', icon: PieChart },
 ];
 
@@ -130,7 +130,7 @@ export default function Layout() {
 
   // Add My Schedule if user has a faculty_id but isn't already seeing it
   if (user?.faculty_id && !navItems.find(i => i.path === '/my-schedule')) {
-    navItems.unshift({ path: '/my-schedule', label: 'My Schedule', icon: Calendar });
+    navItems.unshift({ path: '/my-schedule', label: 'My Workload', icon: Calendar });
   }
 
   const roleBadge = ROLE_BADGES[user?.role] || ROLE_BADGES.viewer;
@@ -250,7 +250,7 @@ export default function Layout() {
               <Menu className="w-5 h-5" />
             </button>
             <h2 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white truncate">
-              {isAdmin ? 'System Admin Portal' : isScheduler ? 'Scheduling Portal' : 'Faculty Portal'}
+              {isAdmin ? 'Administrative Portal' : isScheduler ? 'Academic Scheduler' : 'Faculty Portal'}
             </h2>
           </div>
 
