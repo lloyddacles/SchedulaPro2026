@@ -305,23 +305,6 @@ export default function Programs() {
                           <Building2 className="w-6 h-6 text-brand-600 dark:text-brand-400" />
                         </div>
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {!showArchived ? (
-                            <>
-                              <button onClick={() => openDeptModal(dept)} className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-colors">
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button onClick={() => {
-                                setConfirmConfig({
-                                  title: 'Archive Department?',
-                                  message: `Move ${dept.name} to archives?`,
-                                  type: 'danger',
-                                  onConfirm: () => archiveDeptMutation.mutate(dept.id)
-                                });
-                                setIsConfirmModalOpen(true);
-                              }} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors">
-                                <Archive className="w-4 h-4" />
-                              </button>
-                            </>
                           {showArchived ? (
                             <div className="flex gap-2">
                               <button onClick={() => restoreDeptMutation.mutate(dept.id)} className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors">Restore</button>
@@ -344,6 +327,23 @@ export default function Programs() {
                               )}
                             </div>
                           ) : (
+                            <>
+                              <button onClick={() => openDeptModal(dept)} className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-colors">
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => {
+                                setConfirmConfig({
+                                  title: 'Archive Department?',
+                                  message: `Move ${dept.name} to archives?`,
+                                  type: 'danger',
+                                  onConfirm: () => archiveDeptMutation.mutate(dept.id)
+                                });
+                                setIsConfirmModalOpen(true);
+                              }} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors">
+                                <Archive className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
 
@@ -402,23 +402,6 @@ export default function Programs() {
                                    </div>
                                    
                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity -mr-2">
-                                      {!showArchived ? (
-                                        <>
-                                          <button onClick={() => openProgramModal(p)} className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
-                                            <Edit2 className="w-4 h-4" />
-                                          </button>
-                                          <button onClick={() => {
-                                            setConfirmConfig({
-                                              title: 'Archive Program?',
-                                              message: `Archive ${p.code}?`,
-                                              type: 'danger',
-                                              onConfirm: () => archiveProgramMutation.mutate(p.id)
-                                            });
-                                            setIsConfirmModalOpen(true);
-                                          }} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
-                                            <Archive className="w-4 h-4" />
-                                          </button>
-                                        </>
                                       {showArchived ? (
                                         <div className="flex gap-2">
                                           <button onClick={() => restoreProgramMutation.mutate(p.id)} className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors">Restore</button>
@@ -441,6 +424,23 @@ export default function Programs() {
                                           )}
                                         </div>
                                       ) : (
+                                        <>
+                                          <button onClick={() => openProgramModal(p)} className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
+                                            <Edit2 className="w-4 h-4" />
+                                          </button>
+                                          <button onClick={() => {
+                                            setConfirmConfig({
+                                              title: 'Archive Program?',
+                                              message: `Archive ${p.code}?`,
+                                              type: 'danger',
+                                              onConfirm: () => archiveProgramMutation.mutate(p.id)
+                                            });
+                                            setIsConfirmModalOpen(true);
+                                          }} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                                            <Archive className="w-4 h-4" />
+                                          </button>
+                                        </>
+                                      )}
                                    </div>
                                 </motion.div>
                               ))}
