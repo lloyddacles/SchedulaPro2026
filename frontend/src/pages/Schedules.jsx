@@ -187,7 +187,7 @@ export default function Schedules() {
     mutationFn: ({ termId, campusId }) => {
       const payload = { term_id: termId };
       if (campusId) payload.campus_id = campusId;
-      return api.post('/schedules/auto-schedule', payload);
+      return api.post('/schedules/auto-schedule/', payload);
     },
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['schedules'] });

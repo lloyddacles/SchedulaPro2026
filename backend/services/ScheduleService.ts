@@ -380,37 +380,49 @@ export class ScheduleService {
    * Core Algorithm: Auto-generate schedules based on multi-pass priorities
    */
   static async autoGenerate(poolOrConn: any, term_id: number, campus_id?: number): Promise<AutoScheduleResult> {
-    // 1. Fetch ALL approved loads for the term/campus (including partially scheduled ones)
+    // 1. Fetch ALL approved loads for the term/campus using LEFT JOIN to catch Data Gaps (Spectral Orphans)
     const queryLoads = `
       SELECT tl.id as teaching_load_id, tl.faculty_id, tl.co_faculty_id_1, tl.co_faculty_id_2, tl.section_id, 
              sec.campus_id, sec.max_days_per_week, s.required_hours, s.room_type, s.subject_code, p.code as program_code
       FROM teaching_loads tl
-      JOIN subjects s ON tl.subject_id = s.id
-      JOIN sections sec ON tl.section_id = sec.id
-      JOIN programs p ON sec.program_id = p.id
-      WHERE tl.term_id = ? AND tl.status = 'approved'
-        ${campus_id ? 'AND sec.campus_id = ?' : ''}
+      LEFT JOIN subjects s ON tl.subject_id = s.id
+      LEFT JOIN sections sec ON tl.section_id = sec.id
+      LEFT JOIN programs p ON sec.program_id = p.id
+      WHERE tl.term_id = ? AND LOWER(tl.status) = 'approved'
+        ${campus_id ? 'AND (sec.campus_id = ? OR sec.campus_id IS NULL)' : ''}
       ORDER BY s.required_hours DESC, tl.id ASC
     `;
     const loadParams = campus_id ? [term_id, campus_id] : [term_id];
-    const [loads] = await poolOrConn.query(queryLoads, loadParams) as [TeachingLoad[], any];
+    const [rawLoads] = await poolOrConn.query(queryLoads, loadParams) as [any[], any];
 
-    // Diagnostic check: Find approved loads skipped due to missing campus_id
-    const [orphanedLoads] = await poolOrConn.query(`
-      SELECT p.code, COUNT(*) as count
-      FROM teaching_loads tl
-      JOIN sections sec ON tl.section_id = sec.id
-      JOIN programs p ON sec.program_id = p.id
-      WHERE tl.term_id = ? AND tl.status = 'approved' AND sec.campus_id IS NULL
-      GROUP BY p.code
-    `, [term_id]) as [any[], any];
+    let failures: { subject: string; teaching_load_id: number; program_code: string; section_id: number; duration: number; reason: string }[] = [];
+    const validLoads: TeachingLoad[] = [];
 
-    if (orphanedLoads.length > 0) {
-      console.warn(` [AUTO-SCHEDULER] [DATA-HEALTH]: Found ${orphanedLoads.reduce((acc, curr) => acc + curr.count, 0)} approved subjects skipped because the Section has no Campus ID.`);
-      orphanedLoads.forEach(o => console.warn(`   - ${o.code}: ${o.count} subjects`));
+    // ── Pre-Algorithmic Integrity Scan ──────────────────────────────────────
+    for (const rl of rawLoads) {
+      if (!rl.subject_code || !rl.section_id || (campus_id && !rl.campus_id)) {
+        let reason = 'Data Integrity: ';
+        if (!rl.subject_code) reason += 'Linked Subject record missing or purged. ';
+        if (!rl.section_id) reason += 'No Section associated with this load. ';
+        if (campus_id && !rl.campus_id) reason += 'Section has no assigned Campus home. ';
+
+        failures.push({
+          subject: rl.subject_code || 'UNIDENTIFIED SUBJECT',
+          teaching_load_id: rl.teaching_load_id,
+          program_code: rl.program_code || 'N/A',
+          section_id: rl.section_id || 0,
+          duration: rl.required_hours || 0,
+          reason: reason.trim()
+        });
+        continue;
+      }
+      validLoads.push(rl as TeachingLoad);
     }
 
-    if (loads.length === 0) return { scheduled: 0, failed: 0, failures: [], newlyMapped: [] };
+    const loads = validLoads;
+
+    if (loads.length === 0 && failures.length === 0) return { scheduled: 0, failed: 0, failures: [], newlyMapped: [] };
+    if (loads.length === 0) return { scheduled: 0, failed: failures.length, failures, newlyMapped: [] };
 
     // 2. Fetch all active rooms for the campus(es)
     const [rooms] = await poolOrConn.query(`
@@ -474,7 +486,6 @@ export class ScheduleService {
     ];
 
     let newlyMapped: Schedule[] = [];
-    let failures: { subject: string; teaching_load_id: number; program_code: string; section_id: number; duration: number; reason: string }[] = [];
     let scheduledCount = 0;
 
     // Campus Isolation: track faculty_id -> campus_id (locked for this pass)

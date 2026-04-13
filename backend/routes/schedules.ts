@@ -304,57 +304,64 @@ router.delete('/reset/:term_id', authorizeRoles('admin', 'program_head'), async 
 });
 
 // ── AUTO-SCHEDULE ENDPOINT ───────────────────────────────────────────────────
-router.post('/auto-schedule', authorizeRoles('admin', 'program_head'), validate(autoScheduleSchema), async (req: any, res: Response, next: express.NextFunction) => {
-  const { term_id, campus_id } = req.body;
+router.route(['/auto-schedule', '/auto-schedule/'])
+  .post(authorizeRoles('admin', 'program_head'), validate(autoScheduleSchema), async (req: any, res: Response, next: express.NextFunction) => {
+    const { term_id, campus_id } = req.body;
 
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
 
-    const result = await ScheduleService.autoGenerate(connection, term_id, campus_id);
-    await logAudit('AUTO_SCHEDULE', 'Schedule', null, { term_id, campus_id, ...result }, req.user.username);
+      const result = await ScheduleService.autoGenerate(connection, term_id, campus_id);
+      await logAudit('AUTO_SCHEDULE', 'Schedule', null, { term_id, campus_id, ...result }, req.user.username);
 
-    if (result.scheduled > 0) {
-      const values = result.newlyMapped.map(m => [
-        m.teaching_load_id, m.day_of_week, m.start_time, m.end_time, m.room
-      ]);
-      await connection.query(
-        'INSERT INTO schedules (teaching_load_id, day_of_week, start_time, end_time, room) VALUES ?',
-        [values]
-      );
-    }
+      if (result.scheduled > 0) {
+        const values = result.newlyMapped.map(m => [
+          m.teaching_load_id, m.day_of_week, m.start_time, m.end_time, m.room
+        ]);
+        await connection.query(
+          'INSERT INTO schedules (teaching_load_id, day_of_week, start_time, end_time, room) VALUES ?',
+          [values]
+        );
+      }
 
-    await connection.commit();
-    res.json({ scheduled: result.scheduled, failed: result.failed, failures: result.failures });
+      await connection.commit();
+      res.json({ scheduled: result.scheduled, failed: result.failed, failures: result.failures });
 
-    if (result.scheduled > 0) {
-      // Broadcast update to involved campuses
-      const [campusRows]: [any[], any] = await connection.query(`
-        SELECT DISTINCT sec.campus_id 
-        FROM teaching_loads tl
-        JOIN sections sec ON tl.section_id = sec.id
-        WHERE tl.term_id = ? ${campus_id ? 'AND sec.campus_id = ?' : ''}
-      `, campus_id ? [term_id, campus_id] : [term_id]);
-      
-      campusRows.forEach((row: any) => {
-        req.io.to(`campus_${row.campus_id}`).emit('schedule_updated', { 
-          campus_id: row.campus_id,
-          action: 'auto'
+      if (result.scheduled > 0) {
+        // Broadcast update to involved campuses
+        const [campusRows]: [any[], any] = await connection.query(`
+          SELECT DISTINCT sec.campus_id 
+          FROM teaching_loads tl
+          JOIN sections sec ON tl.section_id = sec.id
+          WHERE tl.term_id = ? ${campus_id ? 'AND sec.campus_id = ?' : ''}
+        `, campus_id ? [term_id, campus_id] : [term_id]);
+        
+        campusRows.forEach((row: any) => {
+          req.io.to(`campus_${row.campus_id}`).emit('schedule_updated', { 
+            campus_id: row.campus_id,
+            action: 'auto'
+          });
         });
+      }
+    } catch (error: any) {
+      console.error(' [Auto-Scheduler Failure]:', error);
+      await connection.rollback();
+      res.status(500).json({ 
+        error: 'Core Auto-Scheduler failed during execution.', 
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
+    } finally {
+      connection.release();
     }
-  } catch (error: any) {
-    console.error(' [Auto-Scheduler Failure]:', error);
-    await connection.rollback();
-    res.status(500).json({ 
-      error: 'Core Auto-Scheduler failed during execution.', 
-      details: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+  })
+  .all((req: Request, res: Response) => {
+    res.status(405).json({ 
+      error: `Method ${req.method} not allowed on /auto-schedule. Use POST.`,
+      recommendation: "If you seen this in a browser, the frontend is accidentally navigating instead of sending an AJAX request."
     });
-  } finally {
-    connection.release();
-  }
-});
+  });
 
 /**
  * GET /suggestions/:teachingLoadId

@@ -125,7 +125,7 @@ const ConflictResolutionPanel = ({
                         <h3 className="font-black text-gray-900 dark:text-white uppercase tracking-tight">{fail.subject}</h3>
                       </div>
                       <p className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-3 flex items-center gap-1">
-                        <ChevronRight className="w-3 h-3 text-brand-500" /> SECTION ID: {fail.section_id}
+                        <ChevronRight className="w-3 h-3 text-brand-500" /> SECTION: {fail.section_id > 0 ? fail.section_id : 'N/A (Link Broken)'}
                       </p>
                       
                       <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 flex items-start gap-3">
