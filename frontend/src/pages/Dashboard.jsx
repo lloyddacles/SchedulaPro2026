@@ -380,9 +380,9 @@ export default function Dashboard() {
 
               {/* Employment Breakdown & Load Status Mix */}
               <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-6 h-full">
-                <div className="flex flex-col h-full bg-white/50 dark:bg-slate-800/40 p-6 rounded-[2rem] border border-white/40 dark:border-slate-700/30">
+                <div className="flex flex-col h-full bg-white/50 dark:bg-slate-800/40 p-6 rounded-[2rem] border border-white/40 dark:border-slate-700/30 min-h-0">
                   <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-4">Employment Mix</p>
-                  <div className="flex-1 min-h-[160px]">
+                  <div className="flex-1 min-h-[160px] relative">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie data={empData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={8} dataKey="value" stroke="none">
@@ -401,9 +401,9 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="flex flex-col h-full bg-white/50 dark:bg-slate-800/40 p-6 rounded-[2rem] border border-white/40 dark:border-slate-700/30">
+                <div className="flex flex-col h-full bg-white/50 dark:bg-slate-800/40 p-6 rounded-[2rem] border border-white/40 dark:border-slate-700/30 min-h-0">
                   <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-4">Faculty Load Distribution</p>
-                  <div className="flex-1 min-h-[160px]">
+                  <div className="flex-1 min-h-[160px] relative">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie data={loadStatusData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={8} dataKey="value" stroke="none">
