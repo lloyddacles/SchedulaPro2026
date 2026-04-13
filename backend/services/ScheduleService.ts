@@ -433,8 +433,10 @@ export class ScheduleService {
     ];
 
     let newlyMapped: Schedule[] = [];
-    let failures: { subject: string; reason: string }[] = [];
+    let failures: { subject: string; section_id: number; duration: number; reason: string }[] = [];
     let scheduledCount = 0;
+
+    console.log(` [AUTO-SCHEDULER]: Starting pass for ${unassignedLoads.length} loads.`);
 
     for (const load of unassignedLoads) {
       let isPlaced = false;
@@ -453,12 +455,12 @@ export class ScheduleService {
       whileLoop: while (remainingToSchedule > 0.45) { // Threshold for minimum session (approx 30 mins)
         let blockSuccess = false;
 
-        // Determine session duration (Splitting logic)
+        // Flexible splitting logic
         let durationHours = remainingToSchedule;
-        if (totalRequired === 3) durationHours = 1.5;
-        else if (totalRequired === 5) durationHours = 2.5;
+        if (totalRequired === 3 && remainingToSchedule > 1.5) durationHours = 1.5;
+        else if (totalRequired === 5 && remainingToSchedule > 2.5) durationHours = 2.5;
         else if (remainingToSchedule > 3.5) durationHours = 3; 
-
+        
         durationHours = Math.min(durationHours, remainingToSchedule);
 
         // Room Prioritization for this segment
@@ -536,12 +538,17 @@ export class ScheduleService {
         }
 
         // If we reach here, we couldn't find a spot for the current 'durationHours' block
-        if (!blockSuccess) break whileLoop; 
+        if (!blockSuccess) {
+          console.log(` [AUTO-SCHEDULER] [FAILURE]: ${load.subject_code} (${load.program_code}) - Could not find ${durationHours}h slot. Remaining: ${remainingToSchedule}h`);
+          break whileLoop; 
+        }
       }
 
       if (!isPlaced) {
         failures.push({
           subject: load.subject_code,
+          section_id: load.section_id,
+          duration: remainingToSchedule,
           reason: `No valid slot found for ${remainingToSchedule.toFixed(1)}h remaining (Type: ${load.room_type || 'Any'}).`
         });
       }
