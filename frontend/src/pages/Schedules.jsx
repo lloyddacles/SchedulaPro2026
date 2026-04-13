@@ -819,36 +819,15 @@ export default function Schedules() {
         onCancel={confirmConfig.onCancel}
       />
 
-      <div ref={containerRef} className="glass rounded-[2rem] shadow-xl border border-white/40 overflow-hidden print:shadow-none print:border-none print:bg-white print:rounded-none relative">
-        {isLoadingSchedules ? (
-           <div className="flex justify-center items-center h-40"><RefreshCw className="animate-spin h-8 w-8 text-brand-600" /></div>
-        ) : (displayedSchedules.length === 0 && (selectedFacultyId || selectedSectionId || selectedProgramId || selectedRoomName)) ? (
-           <div className="flex flex-col items-center justify-center py-24 px-4 text-center animate-fade-in bg-white/50 dark:bg-slate-900/50">
-             <div className="w-48 h-48 mb-6 relative">
-               <div className="absolute inset-0 bg-brand-100 dark:bg-brand-900/20 rounded-full blur-3xl opacity-50"></div>
-               <svg viewBox="0 0 24 24" fill="none" className="w-full h-full text-brand-500 dark:text-brand-400 opacity-80 relative z-10 drop-shadow-sm" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
-                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                 <line x1="16" y1="2" x2="16" y2="6"></line>
-                 <line x1="8" y1="2" x2="8" y2="6"></line>
-                 <line x1="3" y1="10" x2="21" y2="10"></line>
-                 <path d="M9 16l2 2 4-4"></path>
-               </svg>
-             </div>
-             <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">No Scheduled Blocks Found</h3>
-             <p className="text-gray-500 dark:text-slate-400 max-w-sm mx-auto mb-8">The current filter selection has no assigned classes in the matrix. Broaden your search or start booking.</p>
-             <button onClick={() => { setError(''); setIsEditingSchedule(false); setSelectedScheduleId(null); setFormData({ teaching_load_id: '', day_of_week: 'Monday', start_time: '08:00', end_time: '09:00', room: '' }); setIsModalOpen(true); }} className="px-6 py-3 bg-brand-600 text-white font-bold rounded-xl shadow-lg hover:bg-brand-700 transition flex items-center gap-2 mx-auto"><PlusCircle className="w-5 h-5"/> Book Class</button>
-           </div>
-        ) : (
-          <>
-            <ConflictResolutionPanel 
-              isOpen={isConflictPanelOpen}
-              onClose={() => setIsConflictPanelOpen(false)}
-              failures={schedulerFailures}
-              termId={activeTermId}
-              onResolveSuccessful={handleManualResolveSuccess}
-            />
+      <ConflictResolutionPanel 
+        isOpen={isConflictPanelOpen}
+        onClose={() => setIsConflictPanelOpen(false)}
+        failures={schedulerFailures}
+        termId={activeTermId}
+        onResolveSuccessful={handleManualResolveSuccess}
+      />
 
-            <div ref={containerRef} className="glass rounded-[2rem] shadow-xl border border-white/40 overflow-hidden print:shadow-none print:border-none print:bg-white print:rounded-none relative">
+      <div ref={containerRef} className="glass rounded-[2rem] shadow-xl border border-white/40 overflow-hidden print:shadow-none print:border-none print:bg-white print:rounded-none relative">
         {isLoadingSchedules ? (
            <div className="flex justify-center items-center h-40"><RefreshCw className="animate-spin h-8 w-8 text-brand-600" /></div>
         ) : (displayedSchedules.length === 0 && (selectedFacultyId || selectedSectionId || selectedProgramId || selectedRoomName)) ? (
@@ -1042,7 +1021,7 @@ export default function Schedules() {
                </div>
              )}
           </div>
-        </>)}
+        )}
       </div>
 
       {isModalOpen && (
