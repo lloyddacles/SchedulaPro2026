@@ -386,6 +386,8 @@ router.post('/batch-sync', authorizeRoles('admin', 'program_head', 'program_assi
 
   const connection = await pool.getConnection();
   try {
+    await connection.beginTransaction();
+
     const result = await ScheduleService.batchSync(connection, {
       termId: Number(term_id),
       updates: updates || [],
@@ -402,11 +404,13 @@ router.post('/batch-sync', authorizeRoles('admin', 'program_head', 'program_assi
       summary: `Ghost Mode sync: ${updates?.length || 0} updated, ${creates?.length || 0} created, ${deletes?.length || 0} deleted.`
     }, req.user.username);
 
+    await connection.commit();
     res.json({ message: result.message });
 
     // Global refresh signal for all connected administrators
     req.io.emit('schedule_updated', { action: 'batch_sync', term_id });
   } catch (error: any) {
+    await connection.rollback();
     next(error);
   } finally {
     connection.release();

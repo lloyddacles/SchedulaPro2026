@@ -137,7 +137,7 @@ export class ScheduleService {
     
     const { faculty_id: fId, co_faculty_id_1: c1Id, co_faculty_id_2: c2Id, section_id: sectionId, term_id: dbTermId } = tlRows[0];
     const targetTermId = termId || dbTermId;
-    const targetFacultyIds = [fId, c1Id, c2Id].filter(Boolean);
+    const targetFacultyIds = [fId, c1Id, c2Id].filter((id): id is number => !!id && id > 0);
     const facPlaceholders = targetFacultyIds.length > 0 ? targetFacultyIds.map(() => '?').join(',') : 'NULL';
 
     // 2. Room & Section Integrity Checks
@@ -181,8 +181,10 @@ export class ScheduleService {
         AND tl.term_id = ? AND tl.status != 'archived' AND sch.day_of_week = ?
         AND sch.start_time < ? AND sch.end_time > ?
     `;
+    const TOLERANCE = 0.001; // 1 second tolerance for floating-point drift
     const facParams = targetFacultyIds.length > 0 ? targetFacultyIds : [];
-    const paramsConflicts: any[] = [...facParams, ...facParams, ...facParams, sectionId, termId, dayOfWeek, endTime, startTime];
+    // Adjust timing params by tolerance to avoid edge-case collisions from rounding
+    const paramsConflicts: any[] = [...facParams, ...facParams, ...facParams, sectionId, targetTermId, dayOfWeek, this.formatTime(eAttempt - TOLERANCE), this.formatTime(sAttempt + TOLERANCE)];
     if (excludeScheduleId) { queryConflicts += ' AND sch.id != ?'; paramsConflicts.push(excludeScheduleId); }
 
     const [conflicts]: [any[], any] = await poolOrConn.query(queryConflicts, paramsConflicts);
@@ -205,7 +207,8 @@ export class ScheduleService {
       JOIN teaching_loads tl ON sch.teaching_load_id = tl.id JOIN subjects s ON tl.subject_id = s.id
       WHERE sch.room = ? AND tl.term_id = ? AND tl.status != 'archived' AND sch.day_of_week = ? AND sch.start_time < ? AND sch.end_time > ?
     `;
-    const paramsRoom = [room, targetTermId, dayOfWeek, endTime, startTime];
+    const TOLERANCE = 0.001;
+    const paramsRoom = [room, targetTermId, dayOfWeek, this.formatTime(eAttempt - TOLERANCE), this.formatTime(sAttempt + TOLERANCE)];
     if (excludeScheduleId) { queryRoom += ' AND sch.id != ?'; paramsRoom.push(excludeScheduleId); }
 
     const [roomConflicts]: [any[], any] = await poolOrConn.query(queryRoom, paramsRoom);
@@ -729,8 +732,12 @@ export class ScheduleService {
   }): Promise<{ success: boolean; message: string; audit_ids?: number[] }> {
     const { termId, updates, creates, deletes } = params;
     
-    // Start atomic transaction
-    await poolOrConn.query('START TRANSACTION');
+    // Start atomic transaction natively (if supported by connection)
+    if (poolOrConn.beginTransaction) {
+       await poolOrConn.beginTransaction();
+    } else {
+       await poolOrConn.query('START TRANSACTION');
+    }
 
     try {
       // 1. Process Deletions
@@ -781,10 +788,18 @@ export class ScheduleService {
         );
       }
 
-      await poolOrConn.query('COMMIT');
+      if (poolOrConn.commit) {
+        await poolOrConn.commit();
+      } else {
+        await poolOrConn.query('COMMIT');
+      }
       return { success: true, message: 'Ghost Layer successfully committed to production ledger.' };
     } catch (error: any) {
-      await poolOrConn.query('ROLLBACK');
+      if (poolOrConn.rollback) {
+        await poolOrConn.rollback();
+      } else {
+        await poolOrConn.query('ROLLBACK');
+      }
       return { success: false, message: error.message };
     }
   }
@@ -815,9 +830,12 @@ export class ScheduleService {
         issuesForBlock.push(`Room "${sch.room}" is archived or missing.`);
       }
 
-      // Check Faculty (if available in the object)
-      if (sch.faculty_id && !validFacultyIds.has(sch.faculty_id)) {
-        issuesForBlock.push(`Primary faculty is archived.`);
+      // Check Faculty (including Co-Teachers)
+      const facIdsInBlock = [sch.faculty_id, sch.co_faculty_id_1, sch.co_faculty_id_2].filter(Boolean);
+      for (const fId of facIdsInBlock) {
+        if (!validFacultyIds.has(fId)) {
+          issuesForBlock.push(`Instructor ID ${fId} is archived or missing.`);
+        }
       }
 
       if (issuesForBlock.length > 0) {

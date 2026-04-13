@@ -116,11 +116,25 @@ app.use((req: any, res: Response, next: NextFunction) => {
 });
 
 // Public Routes
-app.get('/api/health', (req, res) => res.json({ 
-  status: 'ok', 
-  version: 'v1.0.8-FIX-A',
-  timestamp: new Date().toISOString() 
-}));
+app.get('/api/health', async (req, res) => {
+  try {
+    const pool = (await import('./config/db.js')).default;
+    await pool.query('SELECT 1'); // Low-latency heartbeat
+    res.json({ 
+      status: 'ok', 
+      database: 'connected',
+      version: 'v1.0.9-FIX-ARCH',
+      timestamp: new Date().toISOString() 
+    });
+  } catch (err: any) {
+    res.status(503).json({ 
+      status: 'error', 
+      database: 'disconnected',
+      error: err.message,
+      timestamp: new Date().toISOString() 
+    });
+  }
+});
 
 import { seed } from './seed.js';
 app.get('/api/setup', async (req, res) => {
