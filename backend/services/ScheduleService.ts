@@ -490,7 +490,13 @@ export class ScheduleService {
       }
 
       if (!isPlaced) {
-        failures.push({ subject: load.subject_code, reason: `No free block found respecting room type and priorities.` });
+        failures.push({ 
+          teaching_load_id: load.teaching_load_id,
+          subject: load.subject_code,
+          section_id: load.section_id,
+          program_code: load.program_code,
+          reason: `No free block found respecting room type (${load.room_type || 'Any'}) and required duration (${durationHours}h).`
+        });
       }
     }
 

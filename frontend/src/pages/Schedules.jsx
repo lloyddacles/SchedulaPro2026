@@ -5,16 +5,18 @@ import useScheduleStore from '../store/useScheduleStore';
 import { 
   PlusCircle, Trash2, Calendar, AlertCircle, X, Printer, 
   Download, Sparkles, RotateCcw, ShieldAlert, RefreshCw, 
-  Ghost, Save, Database, ArrowRightLeft, History
+  Ghost, Save, Database, ArrowRightLeft, History, Search, Filter, MoreHorizontal, ChevronDown, AlertTriangle
 } from 'lucide-react';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import ConfirmModal from '../components/ConfirmModal';
+import ConflictResolutionPanel from '../components/ConflictResolutionPanel';
 import GhostCommitBar from '../components/GhostCommitBar';
 import useGhostStore from '../store/useGhostStore';
 import { generateProfessionalPDF } from '../utils/pdfGenerator';
 import toast from 'react-hot-toast';
+import { format, startOfWeek, addDays, parseISO } from 'date-fns';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -178,6 +180,9 @@ export default function Schedules() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['schedules'] })
   });
 
+  const [isConflictPanelOpen, setIsConflictPanelOpen] = useState(false);
+  const [schedulerFailures, setSchedulerFailures] = useState([]);
+
   const autoScheduleMutation = useMutation({
     mutationFn: ({ termId, campusId }) => {
       const payload = { term_id: termId };
@@ -187,16 +192,25 @@ export default function Schedules() {
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['schedules'] });
       const { data } = res;
-      if (data.scheduled > 0) {
-        alert(`Successfully auto-scheduled ${data.scheduled} class blocks. ${data.failed > 0 ? `\n\nNote: ${data.failed} classes could not be mapped automatically because there are no available rooms left, or the instructor's schedule is too full.` : ''}`);
-      } else if (data.failed > 0) {
-         alert(`Auto-Scheduler finished. ${data.failed} classes could not be mapped because of severe room shortages or instructor availability limits. Please review and schedule these remaining blocks manually.`);
+      
+      if (data.failed > 0) {
+        setSchedulerFailures(data.failures || []);
+        setIsConflictPanelOpen(true);
+      } else if (data.scheduled > 0) {
+         alert(`Successfully auto-scheduled ${data.scheduled} class blocks with 0 conflicts!`);
       } else {
          alert('Matrix clean! All approved teaching loads are inherently mapped!');
       }
     },
     onError: (err) => setError(err.response?.data?.error?.message || 'Error running Core Auto-Scheduler')
   });
+
+  const handleManualResolveSuccess = (loadId) => {
+    // Remove from the resolution list locally
+    setSchedulerFailures(prev => prev.filter(f => f.teaching_load_id !== loadId));
+    // Refresh the grid
+    queryClient.invalidateQueries({ queryKey: ['schedules'] });
+  };
 
   const resetMutation = useMutation({
     mutationFn: (termId) => api.delete(`/schedules/reset/${termId}`),
@@ -463,10 +477,6 @@ export default function Schedules() {
 
   const dayMap = { 'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6 };
   
-  // Moved getProgramColor outside  
-
-  // displayedSchedules calculation logic has been hoisted to properly support filtered PDF exports
-
   const getReferenceDates = () => {
     const today = new Date();
     const dates = [];
@@ -807,6 +817,34 @@ export default function Schedules() {
         type={confirmConfig.type}
         onConfirm={confirmConfig.onConfirm}
         onCancel={confirmConfig.onCancel}
+      />
+
+      <div ref={containerRef} className="glass rounded-[2rem] shadow-xl border border-white/40 overflow-hidden print:shadow-none print:border-none print:bg-white print:rounded-none relative">
+        {isLoadingSchedules ? (
+           <div className="flex justify-center items-center h-40"><RefreshCw className="animate-spin h-8 w-8 text-brand-600" /></div>
+        ) : (displayedSchedules.length === 0 && (selectedFacultyId || selectedSectionId || selectedProgramId || selectedRoomName)) ? (
+           <div className="flex flex-col items-center justify-center py-24 px-4 text-center animate-fade-in bg-white/50 dark:bg-slate-900/50">
+             <div className="w-48 h-48 mb-6 relative">
+               <div className="absolute inset-0 bg-brand-100 dark:bg-brand-900/20 rounded-full blur-3xl opacity-50"></div>
+               <svg viewBox="0 0 24 24" fill="none" className="w-full h-full text-brand-500 dark:text-brand-400 opacity-80 relative z-10 drop-shadow-sm" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                 <line x1="16" y1="2" x2="16" y2="6"></line>
+                 <line x1="8" y1="2" x2="8" y2="6"></line>
+                 <line x1="3" y1="10" x2="21" y2="10"></line>
+                 <path d="M9 16l2 2 4-4"></path>
+               </svg>
+             </div>
+             <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">No Scheduled Blocks Found</h3>
+             <p className="text-gray-500 dark:text-slate-400 max-w-sm mx-auto mb-8">The current filter selection has no assigned classes in the matrix. Broaden your search or start booking.</p>
+             <button onClick={() => { setError(''); setIsEditingSchedule(false); setSelectedScheduleId(null); setFormData({ teaching_load_id: '', day_of_week: 'Monday', start_time: '08:00', end_time: '09:00', room: '' }); setIsModalOpen(true); }} className="px-6 py-3 bg-brand-600 text-white font-bold rounded-xl shadow-lg hover:bg-brand-700 transition flex items-center gap-2 mx-auto"><PlusCircle className="w-5 h-5"/> Book Class</button>
+           </div>
+        ) : (
+          <ConflictResolutionPanel 
+        isOpen={isConflictPanelOpen}
+        onClose={() => setIsConflictPanelOpen(false)}
+        failures={schedulerFailures}
+        termId={activeTermId}
+        onResolveSuccessful={handleManualResolveSuccess}
       />
 
       <div ref={containerRef} className="glass rounded-[2rem] shadow-xl border border-white/40 overflow-hidden print:shadow-none print:border-none print:bg-white print:rounded-none relative">

@@ -342,6 +342,30 @@ router.post('/auto-schedule', authorizeRoles('admin', 'program_head'), validate(
   }
 });
 
+/**
+ * GET /suggestions/:teachingLoadId
+ * Returns conflict-free alternative slots for a specific teaching load.
+ */
+router.get('/suggestions/:teachingLoadId', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: Request, res: Response, next: NextFunction) => {
+  const { teachingLoadId } = req.params;
+  const { term_id } = req.query;
+
+  if (!term_id) {
+    return next(new ApiError(400, 'Term ID is required for schedule suggestions.', 'BAD_REQUEST'));
+  }
+
+  try {
+    const suggestions = await ScheduleService.suggestAlternativeSlots(pool, {
+      teachingLoadId: Number(teachingLoadId),
+      termId: Number(term_id),
+      limit: 8
+    });
+    res.json(suggestions);
+  } catch (error: any) {
+    next(error);
+  }
+});
+
 // ── BATCH SYNC ENDPOINT (GHOST MODE COMMIT) ──────────────────────────────────
 router.post('/validate-draft', authorizeRoles('admin', 'program_head', 'program_assistant'), async (req: any, res: Response) => {
   try {
