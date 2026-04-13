@@ -21,7 +21,7 @@ const useScheduleStore = create((set, get) => ({
   fetchTerms: async (includeArchived = false) => {
     set({ isTermsLoading: true });
     try {
-      const res = await api.get(`/terms?include_archived=${includeArchived}`);
+      const res = await api.get(`/academic-terms?include_archived=${includeArchived}`);
       const terms = res.data;
       // ALWAYS prioritize the globally 'is_active' term as the default
       const activeTerm = terms.find(t => t.is_active) || terms[0];
@@ -37,7 +37,7 @@ const useScheduleStore = create((set, get) => ({
   promoteTerm: async (id) => {
     set({ isGlobalLoading: true });
     try {
-      await api.put(`/terms/${id}/activate`);
+      await api.put(`/academic-terms/${id}/activate`);
       await get().fetchTerms(); // Refresh local state
       set({ isGlobalLoading: false });
     } catch (error) {
@@ -50,7 +50,7 @@ const useScheduleStore = create((set, get) => ({
   archiveTerm: async (id, isArchived, includeArchived = false) => {
     set({ isGlobalLoading: true });
     try {
-      await api.put(`/terms/${id}/archive`, { is_archived: isArchived });
+      await api.put(`/academic-terms/${id}/archive`, { is_archived: isArchived });
       await get().fetchTerms(includeArchived); // Refresh local state while retaining archived view if requested
       set({ isGlobalLoading: false });
     } catch (error) {
@@ -63,7 +63,7 @@ const useScheduleStore = create((set, get) => ({
   createTerm: async (name, makeActive = false) => {
     set({ isGlobalLoading: true });
     try {
-      const res = await api.post('/terms', { name, is_active: makeActive });
+      const res = await api.post('/academic-terms', { name, is_active: makeActive });
       const newTerm = res.data;
       
       if (makeActive) {
