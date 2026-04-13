@@ -33,7 +33,7 @@ const pool = mysql.createPool(
     : {
         ...config,
         waitForConnections: true,
-        connectionLimit: 25,
+        connectionLimit: process.env.VERCEL ? 10 : 25,
         queueLimit: 0
       }
 );
