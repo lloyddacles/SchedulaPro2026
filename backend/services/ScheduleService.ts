@@ -432,10 +432,29 @@ export class ScheduleService {
 
     for (const load of unassignedLoads) {
       let isPlaced = false;
-      const durationHours = Number(load.required_hours) || 1;
-      const isLabProgram = ['BSIS', 'TVL-ICT', 'BSAIS'].includes(load.program_code);
-      const isPESubject = load.subject_code?.toUpperCase().startsWith('PE') || load.subject_code?.toUpperCase().includes('PHED');
-      const loadFacs = [load.faculty_id, load.co_faculty_id_1, load.co_faculty_id_2].filter((id): id is number => id !== null);
+      const totalRequired = Number(load.required_hours);
+      
+      // Calculate how many hours are already scheduled for this load
+      const alreadyScheduled = scheduled.find(s => s.teaching_load_id === load.teaching_load_id)?.hours || 0;
+      let remainingToSchedule = totalRequired - Number(alreadyScheduled);
+
+      // Track days already used for this load in this run to ensure day-spread
+      const usedDaysThisLoad = new Set<string>();
+
+      while (remainingToSchedule > 0.4) { // While more than ~25 mins left
+        // Determine the size of the next block to attempt
+        // Standard split: 3h -> 1.5/1.5, 5h -> 2.5/2.5 or 3/2, 2h -> 2 or 1/1
+        let durationHours = remainingToSchedule;
+        if (totalRequired === 3) durationHours = 1.5;
+        else if (totalRequired === 5) durationHours = 2.5;
+        else if (remainingToSchedule > 3) durationHours = 3;
+
+        // Ensure we don't try to schedule more than what's left
+        durationHours = Math.min(durationHours, remainingToSchedule);
+
+        const isLabProgram = ['BSIS', 'TVL-ICT', 'BSAIS'].includes(load.program_code);
+        const isPESubject = load.subject_code?.toUpperCase().startsWith('PE') || load.subject_code?.toUpperCase().includes('PHED');
+        const loadFacs = [load.faculty_id, load.co_faculty_id_1, load.co_faculty_id_2].filter((id): id is number => id !== null);
 
       /**
        * ROOM PRIORITIZATION LOGIC:
@@ -503,34 +522,78 @@ export class ScheduleService {
               if (!ScheduleService.hasLunchGap(currentDayBlocks, sAttempt, eAttempt)) continue;
 
               // Success!
-              const newSch: Schedule = {
-                teaching_load_id: load.teaching_load_id,
-                faculty_id: load.faculty_id,
-                co_faculty_id_1: load.co_faculty_id_1,
-                co_faculty_id_2: load.co_faculty_id_2,
-                section_id: load.section_id,
-                day_of_week: day,
-                start_time: ScheduleService.formatTime(sAttempt),
-                end_time: ScheduleService.formatTime(eAttempt),
-                room: room.name
-              };
-              newlyMapped.push(newSch);
-              cm.addSchedule(newSch);
-              isPlaced = true;
-              break passLoop;
+        
+        const prefersLab = (load.room_type === 'Computer Lab' || load.room_type === 'Laboratory') || (isLabProgram && (load.room_type === 'Any' || !load.room_type));
+        const prefersPE = (load.room_type === 'Court' || load.room_type === 'Field') || (isPESubject && (load.room_type === 'Any' || !load.room_type));
+        const prefersLecture = (load.room_type === 'Lecture') || (!prefersLab && !prefersPE);
+        
+        const campusRooms = rooms.filter(r => r.campus_id === load.campus_id);
+        let roomsForLoad = [...campusRooms].sort((a, b) => {
+          const aType = a.type || 'Lecture';
+          const bType = b.type || 'Lecture';
+          if (prefersLab) {
+            const aIsLab = aType === 'Computer Lab' || aType === 'Laboratory';
+            const bIsLab = bType === 'Computer Lab' || bType === 'Laboratory';
+            if (aIsLab && !bIsLab) return -1;
+            if (!aIsLab && bIsLab) return 1;
+          }
+          if (prefersPE) {
+            const aIsPEArea = aType === 'Court' || aType === 'Field';
+            const bIsPEArea = bType === 'Court' || bType === 'Field';
+            if (aIsPEArea && !bIsPEArea) return -1;
+            if (!aIsPEArea && bIsPEArea) return 1;
+          }
+          if (prefersLecture) {
+            const aIsLecture = aType === 'Lecture';
+            const bIsLecture = bType === 'Lecture';
+            if (aIsLecture && !bIsLecture) return -1;
+            if (!aIsLecture && bIsLecture) return 1;
+          }
+          return b.capacity - a.capacity;
+        });
+
+        passLoop: for (const pass of PASSES) {
+          for (const day of pass.days) {
+            for (let timeCode = pass.sMin; timeCode <= pass.eMax - durationHours; timeCode += 0.5) {
+              const sAttempt = timeCode;
+              const eAttempt = timeCode + durationHours;
+              for (const room of roomsForLoad) {
+                const hasConflict = cm.isConflict(day, sAttempt, eAttempt, loadFacs, room.name, load.section_id);
+                const isSameDay = usedDaysThisLoad.has(day);
+                if (!hasConflict && !isSameDay) {
+                  const newSched = {
+                    teaching_load_id: load.teaching_load_id,
+                    faculty_id: load.faculty_id,
+                    co_faculty_id_1: load.co_faculty_id_1,
+                    co_faculty_id_2: load.co_faculty_id_2,
+                    section_id: load.section_id,
+                    day_of_week: day,
+                    start_time: ScheduleService.formatTime(sAttempt),
+                    end_time: ScheduleService.formatTime(eAttempt),
+                    room: room.name
+                  };
+                  newlyMapped.push(newSched);
+                  cm.addSchedule(newSched);
+                  remainingToSchedule -= durationHours;
+                  usedDaysThisLoad.add(day);
+                  isPlaced = true;
+                  continue whileLoop;
+                }
+              }
             }
           }
+          break; 
         }
-      }
-
-      if (!isPlaced) {
-        failures.push({ 
-          teaching_load_id: load.teaching_load_id,
-          subject: load.subject_code,
-          section_id: load.section_id,
-          program_code: load.program_code,
-          reason: `No free block found respecting room type (${load.room_type || 'Any'}) and required duration (${durationHours}h).`
-        });
+        if (!isPlaced) {
+          failures.push({ 
+            teaching_load_id: load.teaching_load_id,
+            subject: load.subject_code,
+            section_id: load.section_id,
+            program_code: load.program_code,
+            reason: `No free block found respecting room type (${load.room_type || 'Any'}) and required duration (${durationHours}h).`
+          });
+          break;
+        }
       }
     }
 
