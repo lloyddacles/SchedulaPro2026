@@ -249,7 +249,7 @@ export default function Schedules() {
 
     for (let i = 0; i < schedules.length; i++) {
         const sch = schedules[i];
-        if (ignoreScheduleId && sch.id === ignoreScheduleId) continue;
+        if (ignoreScheduleId && sch.id == ignoreScheduleId) continue;
         if (sch.day_of_week !== day) continue;
         const sSch = parseInt(sch.start_time.substring(0, 2), 10) + parseInt(sch.start_time.substring(3, 5), 10) / 60;
         const eSch = parseInt(sch.end_time.substring(0, 2), 10) + parseInt(sch.end_time.substring(3, 5), 10) / 60;
