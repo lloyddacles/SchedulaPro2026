@@ -10,7 +10,7 @@ const ensureTable = async () => {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS system_settings (
       \`key\` VARCHAR(255) PRIMARY KEY,
-      value TEXT NOT NULL
+      value LONGTEXT NOT NULL
     )
   `);
 

@@ -535,16 +535,16 @@ export default function Dashboard() {
               ) : (
                 <div className="space-y-4 py-2">
                   {/* Wellness Violations: Forensic Priority */}
-                  {wellness_violations.map((v, i) => (
+                  {wellness_violations?.map((v, i) => (
                     <div key={`w-${i}`} className="p-4 bg-emerald-500/10 dark:bg-emerald-900/10 rounded-2xl border border-emerald-200/50 dark:border-emerald-700/30 animate-pulse-slow">
                        <div className="flex items-center gap-2 mb-2">
                           <Activity className="w-3.5 h-3.5 text-emerald-500" />
                           <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Wellness Alert</span>
                        </div>
-                       <p className="text-sm font-black text-gray-800 dark:text-white mb-1">{v.faculty_name}</p>
-                       <p className="text-[10px] font-bold text-gray-500 dark:text-slate-400 mb-2">Rest Gap Violation: {v.rest_gap}h observed</p>
+                       <p className="text-sm font-black text-gray-800 dark:text-white mb-1">{v?.faculty_name || 'System Faculty'}</p>
+                       <p className="text-[10px] font-bold text-gray-500 dark:text-slate-400 mb-2">Rest Gap Violation: {v?.rest_gap || '0'}h observed</p>
                        <div className="flex items-center justify-between text-[9px] font-black text-gray-500 uppercase tracking-widest bg-white/50 dark:bg-slate-800/50 px-2 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/30">
-                        <span>{v.day_a} → {v.day_b}</span>
+                        <span>{v?.day_a || 'Day A'} → {v?.day_b || 'Day B'}</span>
                         <span>Min 10h Required</span>
                       </div>
                     </div>

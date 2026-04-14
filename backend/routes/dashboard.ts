@@ -218,10 +218,18 @@ router.get('/summary', async (req: Request, res: Response) => {
     const [wellnessData]: any = await pool.query(wellnessQuery, term_id ? [term_id] : []);
     const wellnessResult = wellnessData[0] || { total_scheduled: 0, total_violators: 0, violations_list: [] };
     
-    // Ensure violations_list is parsed if it returns as a string from some MySQL drivers
-    let parsedViolations = Array.isArray(wellnessResult.violations_list) 
-      ? wellnessResult.violations_list 
-      : (wellnessResult.violations_list ? JSON.parse(wellnessResult.violations_list) : []);
+    // Ensure violations_list is parsed safely if it returns as a string from some MySQL drivers
+    let parsedViolations = [];
+    try {
+      if (Array.isArray(wellnessResult.violations_list)) {
+        parsedViolations = wellnessResult.violations_list;
+      } else if (wellnessResult.violations_list) {
+        parsedViolations = JSON.parse(wellnessResult.violations_list);
+      }
+    } catch (e) {
+      console.error(' [DASHBOARD_ERROR]: Failed to parse wellness violations vector:', e);
+      parsedViolations = [];
+    }
 
     const scheduledCount = Number(wellnessResult.total_scheduled || 0);
     const violatorCount = Number(wellnessResult.total_violators || 0);
