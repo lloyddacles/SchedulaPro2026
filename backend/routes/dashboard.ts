@@ -242,9 +242,9 @@ router.get('/summary', async (req: Request, res: Response) => {
       SELECT 
         id, 
         action, 
-        target_type, 
-        target_id, 
-        performer_name, 
+        entity_type as target_type, 
+        entity_id as target_id, 
+        user_name as performer_name, 
         created_at 
       FROM audit_logs 
       ORDER BY created_at DESC 

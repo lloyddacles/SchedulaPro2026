@@ -8,17 +8,17 @@ import {
 
 const ACTION_ICONS = {
   'CREATE': { icon: Zap, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-  'UPDATE': { icon: RefreshCw => Zap, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+  'UPDATE': { icon: Zap, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20' },
   'DELETE': { icon: AlertCircle, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20' },
   'APPROVE': { icon: CheckCircle2, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20' },
   'GENERATE': { icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20' },
 };
 
 const TARGET_ICONS = {
-  'FACULTY': Users => User,
+  'FACULTY': User,
   'SCHEDULE': Calendar,
   'ROOM': Building2,
-  'LOAD': Layers => Hash,
+  'LOAD': Hash,
   'SYSTEM': Shield,
 };
 
