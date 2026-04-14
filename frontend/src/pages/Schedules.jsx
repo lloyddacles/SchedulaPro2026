@@ -57,7 +57,8 @@ export default function Schedules() {
   const [smartSuggestions, setSmartSuggestions] = useState([]);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
   const [isCommittingGhost, setIsCommittingGhost] = useState(false);
-  const [dragTarget, setDragTarget] = useState(null); // { day, sAttempt, eAttempt, status, message }
+  const [dragTarget, setDragTarget] = useState(null); // { day, sAttempt, eAttempt, status, message, blockerId, blockerSubject }
+  const [swapSuggestion, setSwapSuggestion] = useState(null); // { day_of_week, start_time, end_time, room, blockerId }
 
   // ── Ghost Mode Logic ───────────────────────────────────────────────────
   const { isGhostMode, stagedSchedules, toggleGhostMode, stageUpdate, stageDelete, getDiff, discardDraft, validateIntegrity, validationErrors } = useGhostStore();
@@ -128,6 +129,69 @@ export default function Schedules() {
       socket.off('resource_archived', handleResourceRemoved);
     };
   }, [socket, isConnected, queryClient, selectedCampusId]);
+
+  // [SMART SWAP INTELLIGENCE]: Fetch alternative slots for blockers in real-time
+  useEffect(() => {
+    if (dragTarget?.blockerId) {
+      const timer = setTimeout(async () => {
+        try {
+          const { data } = await api.get(`/schedules/suggestions/${dragTarget.blockerId}`, {
+            params: { term_id: activeTermId }
+          });
+          if (data && data.length > 0) {
+            setSwapSuggestion({ ...data[0], blockerId: dragTarget.blockerId, blockerSubject: dragTarget.blockerSubject });
+          } else {
+            setSwapSuggestion(null);
+          }
+        } catch (err) {
+          console.error('Smart Swap Fetch Error:', err);
+          setSwapSuggestion(null);
+        }
+      }, 250); // Debounce to avoid excessive API calls during rapid drag
+      return () => clearTimeout(timer);
+    } else {
+      setSwapSuggestion(null);
+    }
+  }, [dragTarget?.blockerId, activeTermId, dragTarget?.blockerSubject]);
+
+  const formatTime = (t) => {
+    const hh = Math.floor(t).toString().padStart(2, '0');
+    const mm = (t % 1 === 0.5) ? '30' : '00';
+    return `${hh}:${mm}:00`;
+  };
+
+  const handleSmartSwap = async () => {
+    if (!swapSuggestion || !dragTarget) return;
+
+    // Orchestrate a Dual-Event Move in the Ghost Layer
+    const blockerSch = schedules.find(s => s.id == swapSuggestion.blockerId);
+    if (!blockerSch) return;
+
+    // 1. Stage the blocker's move
+    stageUpdate({
+      ...blockerSch,
+      day_of_week: swapSuggestion.day_of_week,
+      start_time: swapSuggestion.start_time,
+      end_time: swapSuggestion.end_time,
+      room: swapSuggestion.room
+    });
+
+    // 2. Stage our current dragged event's move to the newly vacated slot
+    const draggedRaw = dragTarget.raw;
+    if (draggedRaw) {
+      stageUpdate({
+        ...draggedRaw,
+        day_of_week: dragTarget.day,
+        start_time: formatTime(dragTarget.start),
+        end_time: formatTime(dragTarget.end),
+        room: draggedRaw.room
+      });
+    }
+
+    setDragTarget(null);
+    setSwapSuggestion(null);
+    toast.success('Smart Swap Staged! Verify the Ghost Drafts before committing.', { icon: '✨' });
+  };
 
   const { data: loads = [] } = useQuery({ 
     queryKey: ['loads', activeTermId], 
@@ -259,10 +323,10 @@ export default function Schedules() {
         if (sch.faculty_id && loadFacs.includes(sch.faculty_id)) isSameFaculty = true;
         else if (sch.co_faculty_id_1 && loadFacs.includes(sch.co_faculty_id_1)) isSameFaculty = true;
         else if (sch.co_faculty_id_2 && loadFacs.includes(sch.co_faculty_id_2)) isSameFaculty = true;
-        if (isSameFaculty) return { collision: true, reason: 'Faculty Overlap' };
+        if (isSameFaculty) return { collision: true, reason: 'Faculty Overlap', blockerId: sch.id, blockerSubject: sch.subject_code };
 
-        if (sch.section_id === load.section_id && sch.section_id !== 1) return { collision: true, reason: 'Cohort Conflict' };
-        if (roomName && sch.room && sch.room.toLowerCase() === roomName.toLowerCase()) return { collision: true, reason: 'Room Double-Book' };
+        if (sch.section_id === load.section_id && sch.section_id !== 1) return { collision: true, reason: 'Cohort Conflict', blockerId: sch.id, blockerSubject: sch.subject_code };
+        if (roomName && sch.room && sch.room.toLowerCase() === roomName.toLowerCase()) return { collision: true, reason: 'Room Double-Book', blockerId: sch.id, blockerSubject: sch.subject_code };
     }
 
     for (let i = 0; i < blackouts.length; i++) {
@@ -538,11 +602,6 @@ export default function Schedules() {
           const { collision } = checkSlotCollision(day, sAttempt, eAttempt, load, formData.room, isEditingSchedule ? selectedScheduleId : null);
 
           if (!collision) {
-              const formatTime = (t) => {
-                 const hh = Math.floor(t).toString().padStart(2, '0');
-                 const mm = (t % 1 === 0.5) ? '30' : '00';
-                 return `${hh}:${mm}:00`;
-              };
               const dateStr = weekDates[dayMap[day]];
               blocks.push({
                 id: `ghost-${day}-${timeCode}`,
@@ -570,7 +629,7 @@ export default function Schedules() {
     const eA = parse(eTime);
     
     // Ghost Mode Predictive Feedback
-    const { collision, reason } = checkSlotCollision(newDayOfWeek, sA, eA, raw, raw.room, raw.id);
+    const { collision, reason, blockerId, blockerSubject } = checkSlotCollision(newDayOfWeek, sA, eA, raw, raw.room, raw.id);
     const wellness = verifyWellness(newDayOfWeek, sA, eA, raw, raw.id);
     
     setDragTarget({ 
@@ -579,7 +638,10 @@ export default function Schedules() {
       end: eA, 
       status: collision ? 'error' : (!wellness.valid ? 'warning' : 'success'),
       message: collision ? reason : (!wellness.valid ? wellness.reason : 'Optimal Slot'),
-      isWellnessViolation: !wellness.valid
+      isWellnessViolation: !wellness.valid,
+      blockerId,
+      blockerSubject,
+      raw // Capture raw for Smart Swap execution
     });
 
     if (sA <= 11 && eA >= 14) return false;
@@ -1006,6 +1068,15 @@ export default function Schedules() {
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-0.5">Ghost Intelligence</p>
                       <p className="text-sm font-black tracking-tight">{dragTarget.message}</p>
+                      {swapSuggestion && dragTarget.status === 'error' && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleSmartSwap(); }}
+                          className="mt-2 flex items-center gap-2 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all animate-pulse"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          Auto-Resolve: Swap with {swapSuggestion.blockerSubject}
+                        </button>
+                      )}
                     </div>
                   </motion.div>
                 )}
