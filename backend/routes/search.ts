@@ -38,10 +38,17 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       [searchTerm, searchTerm]
     );
 
+    // 4. Search Audit Logs (Forensic Layer)
+    const [audit] = await pool.query(
+      'SELECT id, action, entity_type, user_name, details, created_at FROM audit_logs WHERE (action LIKE ? OR entity_type LIKE ? OR user_name LIKE ? OR details LIKE ?) ORDER BY created_at DESC LIMIT 5',
+      [searchTerm, searchTerm, searchTerm, searchTerm]
+    );
+
     res.json({
       faculty,
       rooms,
-      programs
+      programs,
+      audit
     });
   } catch (error) {
     next(error);

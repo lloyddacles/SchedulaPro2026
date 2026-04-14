@@ -3,7 +3,7 @@ import { Command } from 'cmdk';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { Search, Calendar, Users, BookOpen, Building2, LayoutDashboard, Database, PieChart, Moon, Sun, Inbox, GraduationCap } from 'lucide-react';
+import { Search, Calendar, Users, BookOpen, Building2, LayoutDashboard, Database, PieChart, Moon, Sun, Inbox, GraduationCap, History, Fingerprint } from 'lucide-react';
 import api from '../api';
 
 export default function CommandPalette() {
@@ -12,7 +12,7 @@ export default function CommandPalette() {
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [results, setResults] = useState({ faculty: [], rooms: [], programs: [] });
+  const [results, setResults] = useState({ faculty: [], rooms: [], programs: [], audit: [] });
   const [loading, setLoading] = useState(false);
 
   // Toggle the menu when ⌘K is pressed
@@ -31,7 +31,7 @@ export default function CommandPalette() {
   // Handle Search Fetching
   useEffect(() => {
     if (searchQuery.length < 2) {
-      setResults({ faculty: [], rooms: [], programs: [] });
+      setResults({ faculty: [], rooms: [], programs: [], audit: [] });
       return;
     }
 
@@ -81,7 +81,7 @@ export default function CommandPalette() {
                value={searchQuery}
                onValueChange={setSearchQuery}
                className="w-full bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none ml-3 text-lg font-medium" 
-               placeholder="Search faculty, rooms, programs..." 
+               placeholder="Search faculty, rooms, programs, or audit logs..." 
              />
             <div className="ml-auto text-xs text-gray-400 bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded border border-gray-200 dark:border-slate-700 font-mono tracking-widest shadow-sm">
               ESC
@@ -150,6 +150,28 @@ export default function CommandPalette() {
                     </div>
                     <span>{p.name}</span>
                     <span className="ml-auto text-[10px] opacity-60 font-medium px-2 py-0.5 bg-gray-100 dark:bg-slate-800 rounded-md group-hover:bg-white/20">{p.code}</span>
+                  </Command.Item>
+                ))}
+              </Command.Group>
+            )}
+
+            {/* Dynamic Results: Audit Trail (Forensic) */}
+            {results.audit?.length > 0 && (
+              <Command.Group heading="Forensic Audit Trail" className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-slate-500 px-3 py-2">
+                {results.audit.map((a) => (
+                  <Command.Item
+                    key={`audit-${a.id}`}
+                    onSelect={() => runCommand(() => navigate(`/audit-logs?search=${encodeURIComponent(a.id)}`))}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-orange-500 hover:text-white dark:hover:bg-orange-600 aria-selected:bg-orange-500 aria-selected:text-white transition-all group"
+                  >
+                    <div className="p-1.5 bg-gray-100 dark:bg-slate-800 rounded-lg group-hover:bg-orange-400/20">
+                      <History className="w-3.5 h-3.5 text-gray-400 group-hover:text-white" />
+                    </div>
+                    <div className="flex flex-col overflow-hidden">
+                       <span>{a.action} [{a.entity_type}]</span>
+                       <span className="text-[10px] opacity-60 font-medium truncate max-w-[400px]">{a.details}</span>
+                    </div>
+                    <span className="ml-auto text-[9px] opacity-60 font-medium bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase tracking-tighter group-hover:bg-white/20">{a.user_name}</span>
                   </Command.Item>
                 ))}
               </Command.Group>
