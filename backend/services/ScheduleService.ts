@@ -327,10 +327,22 @@ export class ScheduleService {
     const facultyBusy = new Map<string, ScheduleBlock[]>();
     const roomBusy = new Map<string, ScheduleBlock[]>();
     const sectionBusy = new Map<string, ScheduleBlock[]>();
+    
+    // Wellness Boundaries: Map<"faculty_id:day_of_week", hours>
+    const facDayStart = new Map<string, number>();
+    const facDayEnd = new Map<string, number>();
 
     const addBlock = (map: Map<string, ScheduleBlock[]>, key: string, start: number, end: number) => {
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push({ start, end });
+      
+      // Update Wellness Boundaries if target is faculty
+      if (map === facultyBusy) {
+        const currentMin = facDayStart.get(key) ?? 99;
+        const currentMax = facDayEnd.get(key) ?? -1;
+        if (start < currentMin) facDayStart.set(key, start);
+        if (end > currentMax) facDayEnd.set(key, end);
+      }
     };
 
     for (const sch of initialSchedules) {
@@ -347,6 +359,15 @@ export class ScheduleService {
     for (const b of blackouts) {
       addBlock(facultyBusy, `${b.faculty_id}:${b.day_of_week}`, this.parseTime(b.start_time), this.parseTime(b.end_time));
     }
+
+    const dayMap: Record<string, string> = {
+      'Monday': 'Sunday', 'Tuesday': 'Monday', 'Wednesday': 'Tuesday', 'Thursday': 'Wednesday', 
+      'Friday': 'Thursday', 'Saturday': 'Friday', 'Sunday': 'Saturday'
+    };
+    const nextDayMap: Record<string, string> = {
+      'Sunday': 'Monday', 'Monday': 'Tuesday', 'Tuesday': 'Wednesday', 'Wednesday': 'Thursday', 
+      'Thursday': 'Friday', 'Friday': 'Saturday', 'Saturday': 'Sunday'
+    };
 
     return {
       isConflict: (day: string, s: number, e: number, facIds: number[], room: string, secId: number): boolean => {
@@ -378,6 +399,27 @@ export class ScheduleService {
         facIds.forEach(id => all.push(...(facultyBusy.get(`${id}:${day}`) || [])));
         if (secId !== 1) all.push(...(sectionBusy.get(`${secId}:${day}`) || []));
         return all;
+      },
+      getWellnessScore: (day: string, s: number, e: number, facIds: number[]): { minGap: number; violation: boolean } => {
+        const prevDay = dayMap[day];
+        const nextDay = nextDayMap[day];
+        let minGap = 24; // Starts at max possible single-day gap
+
+        for (const fId of facIds) {
+          // Check Previous Day Gap
+          const lastEnd = facDayEnd.get(`${fId}:${prevDay}`);
+          if (lastEnd !== undefined) {
+             const gap = (s + 24) - lastEnd;
+             if (gap < minGap) minGap = gap;
+          }
+          // Check Next Day Gap
+          const nextStart = facDayStart.get(`${fId}:${nextDay}`);
+          if (nextStart !== undefined) {
+             const gap = (nextStart + 24) - e;
+             if (gap < minGap) minGap = gap;
+          }
+        }
+        return { minGap, violation: minGap < 10.0 };
       }
     };
   }
@@ -629,15 +671,35 @@ export class ScheduleService {
               const sAttempt = t;
               const eAttempt = t + durationHours;
 
+              // [WELLNESS HARDENING]: Optimal Slot Search
+              let bestWellnessSlot: { s: number, e: number, room: string, score: number } | null = null;
+              
               for (const room of roomsForLoad) {
-                // Conflict Check
                 if (cm.isConflict(day, sAttempt, eAttempt, loadFacs, room.name, load.section_id)) continue;
 
                 // Lunch Gap Check
                 const currentDayBlocks = cm.getRelatedBlocks(day, loadFacs, load.section_id);
                 if (!ScheduleService.hasLunchGap(currentDayBlocks, sAttempt, eAttempt)) continue;
 
+                // Wellness Score Evaluation (10-Hour Rule)
+                const wellness = cm.getWellnessScore(day, sAttempt, eAttempt, loadFacs);
+                if (wellness.violation) continue; // Strictly block wellness violations in auto-mode
+
+                // Optimization: Take the first "Golden Slot" (>= 12h gap) immediately for peak performance
+                if (wellness.minGap >= 12.0) {
+                    bestWellnessSlot = { s: sAttempt, e: eAttempt, room: room.name, score: wellness.minGap };
+                    break; 
+                }
+
+                // Otherwise, keep track of the best one found in this time/room iteration
+                if (!bestWellnessSlot || wellness.minGap > bestWellnessSlot.score) {
+                    bestWellnessSlot = { s: sAttempt, e: eAttempt, room: room.name, score: wellness.minGap };
+                }
+              }
+
+              if (bestWellnessSlot) {
                 // PLACEMENT SUCCESS
+                const { s: sFinal, e: eFinal, room: roomFinal } = bestWellnessSlot;
                 const newSch: Schedule = {
                   teaching_load_id: load.teaching_load_id,
                   faculty_id: load.faculty_id,
@@ -645,9 +707,9 @@ export class ScheduleService {
                   co_faculty_id_2: load.co_faculty_id_2,
                   section_id: load.section_id,
                   day_of_week: day,
-                  start_time: ScheduleService.formatTime(sAttempt),
-                  end_time: ScheduleService.formatTime(eAttempt),
-                  room: room.name
+                  start_time: ScheduleService.formatTime(sFinal),
+                  end_time: ScheduleService.formatTime(eFinal),
+                  room: roomFinal
                 };
 
                 newlyMapped.push(newSch);
