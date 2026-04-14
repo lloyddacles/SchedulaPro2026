@@ -140,8 +140,11 @@ export default function Dashboard() {
     room_utilization = [],
     conflicts = { faculty: [], rooms: [] },
     load_status_breakdown = {},
-    employment_breakdown = []
+    employment_breakdown = [],
+    wellness_violations = []
   } = data || {};
+
+  const wellnessScore = summary.wellness_score ?? 100;
 
   const totalConflicts = (conflicts.faculty?.length || 0) + (conflicts.rooms?.length || 0);
   // Count pending_review from load_status_breakdown is not tracked there; add a separate derive:
@@ -311,7 +314,15 @@ export default function Dashboard() {
 
       {/* ── Top KPIs: Optimized Grid ─────────────────────────── */}
       {/* ── Top KPIs: Optimized Grid ─────────────────────────── */}
-      <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 ${isHead ? 'lg:grid-cols-7' : 'lg:grid-cols-6'} gap-4`}>
+      <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 ${isHead ? 'lg:grid-cols-8' : 'lg:grid-cols-7'} gap-4`}>
+        <StatCard 
+          name="Wellness" 
+          stat={`${wellnessScore}%`} 
+          icon={Activity} 
+          color={wellnessScore > 90 ? 'text-emerald-600' : (wellnessScore > 75 ? 'text-amber-500' : 'text-rose-600')} 
+          bg={wellnessScore > 90 ? 'bg-emerald-50 dark:bg-emerald-900/20' : (wellnessScore > 75 ? 'bg-amber-50 dark:bg-amber-900/10' : 'bg-rose-50 dark:bg-rose-900/10')} 
+          sub="Rest Compliance"
+        />
         <StatCard name="Faculty" stat={summary.total_faculty ?? 0} icon={Users} color="text-blue-600" bg="bg-blue-50 dark:bg-blue-900/20" />
         <StatCard name="Subjects" stat={summary.total_subjects ?? 0} icon={BookOpen} color="text-indigo-600" bg="bg-indigo-50 dark:bg-indigo-900/20" />
         <StatCard name="Assigned" stat={summary.total_assigned_loads ?? 0} icon={Layers} color="text-purple-600" bg="bg-purple-50 dark:bg-purple-900/20" />
@@ -516,13 +527,29 @@ export default function Dashboard() {
               badgeColor={totalConflicts > 0 ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'}
             />
             <div className="px-6 py-4 divide-y divide-rose-100 dark:divide-rose-900/20 max-h-[400px] overflow-y-auto">
-              {totalConflicts === 0 ? (
+              {totalConflicts === 0 && wellness_violations.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 gap-2 text-gray-400 dark:text-slate-500">
                   <CheckCircle2 className="w-10 h-10 text-emerald-400/50" />
-                  <p className="text-xs font-black uppercase tracking-widest text-emerald-500/60">No Collisions Detected</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-emerald-500/60">Institutional Integrity Secured</p>
                 </div>
               ) : (
                 <div className="space-y-4 py-2">
+                  {/* Wellness Violations: Forensic Priority */}
+                  {wellness_violations.map((v, i) => (
+                    <div key={`w-${i}`} className="p-4 bg-emerald-500/10 dark:bg-emerald-900/10 rounded-2xl border border-emerald-200/50 dark:border-emerald-700/30 animate-pulse-slow">
+                       <div className="flex items-center gap-2 mb-2">
+                          <Activity className="w-3.5 h-3.5 text-emerald-500" />
+                          <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Wellness Alert</span>
+                       </div>
+                       <p className="text-sm font-black text-gray-800 dark:text-white mb-1">{v.faculty_name}</p>
+                       <p className="text-[10px] font-bold text-gray-500 dark:text-slate-400 mb-2">Rest Gap Violation: {v.rest_gap}h observed</p>
+                       <div className="flex items-center justify-between text-[9px] font-black text-gray-500 uppercase tracking-widest bg-white/50 dark:bg-slate-800/50 px-2 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/30">
+                        <span>{v.day_a} → {v.day_b}</span>
+                        <span>Min 10h Required</span>
+                      </div>
+                    </div>
+                  ))}
+
                   {conflicts.faculty?.map((c, i) => (
                     <div key={`f-${i}`} className="p-4 bg-white/60 dark:bg-slate-900/60 rounded-2xl border border-rose-100 dark:border-rose-900/30">
                       <div className="flex items-center gap-2 mb-2">

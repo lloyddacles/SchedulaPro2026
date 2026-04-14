@@ -170,6 +170,65 @@ router.get('/summary', async (req: Request, res: Response) => {
       ${term_id ? 'AND tl.term_id = ?' : ''} ${secCampFilter}
     `, termCampParams);
 
+    // [WELLNESS FORENSIC SCAN]: Calculate institutional rest-gap compliance
+    const wellnessQuery = `
+      WITH DailyBoundaries AS (
+        SELECT 
+          tl.faculty_id,
+          f.full_name as faculty_name,
+          sch.day_of_week,
+          MIN(sch.start_time) as first_start,
+          MAX(sch.end_time) as last_end,
+          CASE sch.day_of_week
+            WHEN 'Monday' THEN 1 WHEN 'Tuesday' THEN 2 WHEN 'Wednesday' THEN 3
+            WHEN 'Thursday' THEN 4 WHEN 'Friday' THEN 5 WHEN 'Saturday' THEN 6
+          END as day_order
+        FROM schedules sch
+        JOIN teaching_loads tl ON sch.teaching_load_id = tl.id
+        JOIN faculty f ON tl.faculty_id = f.id
+        WHERE tl.status != 'archived' ${term_id ? 'AND tl.term_id = ?' : ''}
+        GROUP BY tl.faculty_id, sch.day_of_week
+      ),
+      Violations AS (
+        SELECT 
+          d1.faculty_id,
+          d1.faculty_name,
+          d1.day_of_week as day_a,
+          d2.day_of_week as day_b,
+          d1.last_end,
+          d2.first_start,
+          (24 - (TIME_TO_SEC(d1.last_end)/3600)) + (TIME_TO_SEC(d2.first_start)/3600) as rest_gap
+        FROM DailyBoundaries d1
+        JOIN DailyBoundaries d2 ON d1.faculty_id = d2.faculty_id AND d2.day_order = d1.day_order + 1
+        WHERE (24 - (TIME_TO_SEC(d1.last_end)/3600)) + (TIME_TO_SEC(d2.first_start)/3600) < 10
+      )
+      SELECT 
+        (SELECT COUNT(DISTINCT faculty_id) FROM DailyBoundaries) as total_scheduled,
+        (SELECT COUNT(DISTINCT faculty_id) FROM Violations) as total_violators,
+        json_arrayagg(
+          json_object(
+            'faculty_name', faculty_name,
+            'day_a', day_a,
+            'day_b', day_b,
+            'rest_gap', ROUND(rest_gap, 1)
+          )
+        ) as violations_list
+      FROM (SELECT * FROM Violations LIMIT 5) as limited_violations
+    `;
+    const [wellnessData]: any = await pool.query(wellnessQuery, term_id ? [term_id] : []);
+    const wellnessResult = wellnessData[0] || { total_scheduled: 0, total_violators: 0, violations_list: [] };
+    
+    // Ensure violations_list is parsed if it returns as a string from some MySQL drivers
+    let parsedViolations = Array.isArray(wellnessResult.violations_list) 
+      ? wellnessResult.violations_list 
+      : (wellnessResult.violations_list ? JSON.parse(wellnessResult.violations_list) : []);
+
+    const scheduledCount = Number(wellnessResult.total_scheduled || 0);
+    const violatorCount = Number(wellnessResult.total_violators || 0);
+    const wellnessScore = scheduledCount > 0 
+      ? Math.round(((scheduledCount - violatorCount) / scheduledCount) * 100)
+      : 100;
+
     res.json({
       summary: {
         total_faculty: facultyCount[0].count,
@@ -179,8 +238,10 @@ router.get('/summary', async (req: Request, res: Response) => {
         total_schedule_blocks: blockCount[0].count,
         total_unassigned_subjects: unassignedSubjects.length,
         total_conflicts: facultyConflicts.length + roomConflicts.length,
-        pending_approval_count: pendingCount[0].count
+        pending_approval_count: pendingCount[0].count,
+        wellness_score: wellnessScore
       },
+      wellness_violations: parsedViolations,
       load_status_breakdown: loadStatusBreakdown,
       employment_breakdown: empBreakdown,
       unassigned_subjects: unassignedSubjects,
