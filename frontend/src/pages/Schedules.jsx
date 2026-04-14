@@ -17,6 +17,7 @@ import useGhostStore from '../store/useGhostStore';
 import { generateProfessionalPDF } from '../utils/pdfGenerator';
 import toast from 'react-hot-toast';
 import { format, startOfWeek, addDays, parseISO } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
