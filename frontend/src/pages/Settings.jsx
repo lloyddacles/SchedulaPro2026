@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Settings, Save, Building2, Monitor, Image, RefreshCw, CheckCircle, 
   CalendarPlus, Archive, CheckCircle2, PlusCircle, Info, Database, 
-  ShieldCheck, Zap, ArrowRight, Layout, KeyRound, ShieldAlert
+  ShieldCheck, Zap, ArrowRight, Layout, KeyRound, ShieldAlert, UploadCloud, X
 } from 'lucide-react';
 import api from '../api';
 import useScheduleStore from '../store/useScheduleStore';
@@ -20,7 +20,8 @@ export default function SystemSettings() {
   const [appName, setAppName] = useState(systemSettings.app_name || '');
   const [institutionName, setInstitutionName] = useState(systemSettings.institution_name || '');
   const [logoUrl, setLogoUrl] = useState(systemSettings.logo_url || '');
-  const [logoPreviewError, setLogoPreviewError] = useState(false);
+  const [logoFileName, setLogoFileName] = useState('');
+  const logoInputRef = useRef(null);
   
   const [showArchived, setShowArchived] = useState(false);
   const [isAddingTerm, setIsAddingTerm] = useState(false);
@@ -36,7 +37,30 @@ export default function SystemSettings() {
     if (systemSettings.app_name) setAppName(systemSettings.app_name);
     if (systemSettings.institution_name) setInstitutionName(systemSettings.institution_name);
     setLogoUrl(systemSettings.logo_url || '');
+    // If the stored value is a URL (not base64), show a short name
+    if (systemSettings.logo_url && !systemSettings.logo_url.startsWith('data:')) {
+      setLogoFileName('Existing logo (URL)');
+    }
   }, [systemSettings.app_name, systemSettings.institution_name, systemSettings.logo_url]);
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Logo must be under 2 MB.');
+      return;
+    }
+    setLogoFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (ev) => setLogoUrl(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearLogo = () => {
+    setLogoUrl('');
+    setLogoFileName('');
+    if (logoInputRef.current) logoInputRef.current.value = '';
+  };
 
   const saveMutation = useMutation({
     mutationFn: (data) => api.put('/settings', data),
@@ -180,22 +204,57 @@ export default function SystemSettings() {
 
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Brand Asset (Logo URL)</label>
-                    <div className="flex gap-4">
-                      <input
-                        type="url"
-                        id="system_logo_url"
-                        name="system_logo_url"
-                        value={logoUrl}
-                        onChange={(e) => { setLogoUrl(e.target.value); setLogoPreviewError(false); }}
-                        placeholder="https://assets.yourschool.edu/logo.png"
-                        className="flex-1 px-5 py-4 rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white text-xs font-semibold focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none"
-                      />
-                      <div className="w-14 h-14 rounded-2xl bg-gray-50 dark:bg-slate-950 border border-gray-100 dark:border-slate-800 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-inner group">
-                        {logoUrl && !logoPreviewError ? (
-                          <img src={logoUrl} alt="Preview" className="w-10 h-10 object-contain group-hover:scale-110 transition-transform" onError={() => setLogoPreviewError(true)} />
+                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Brand Asset (Logo Upload)</label>
+                    <input
+                      ref={logoInputRef}
+                      id="system_logo_file"
+                      name="system_logo_file"
+                      type="file"
+                      accept="image/png, image/jpeg, image/svg+xml, image/webp"
+                      className="hidden"
+                      onChange={handleLogoUpload}
+                    />
+
+                    <div className="flex gap-4 items-center">
+                      {/* Upload zone */}
+                      <button
+                        type="button"
+                        onClick={() => logoInputRef.current?.click()}
+                        className="flex-1 flex flex-col items-center justify-center gap-2 px-4 py-5 rounded-2xl border-2 border-dashed border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/50 hover:border-brand-500 hover:bg-brand-50/30 dark:hover:bg-brand-900/10 transition-all group cursor-pointer"
+                      >
+                        {logoFileName ? (
+                          <>
+                            <Image className="w-5 h-5 text-brand-500" />
+                            <span className="text-[11px] font-bold text-brand-600 dark:text-brand-400 truncate max-w-[140px]">{logoFileName}</span>
+                            <span className="text-[10px] text-gray-400">Click to change</span>
+                          </>
                         ) : (
-                          <Building2 className="w-6 h-6 text-gray-300" />
+                          <>
+                            <UploadCloud className="w-6 h-6 text-gray-300 group-hover:text-brand-500 transition-colors" />
+                            <span className="text-[11px] font-bold text-gray-400 group-hover:text-brand-500 transition-colors">Click to upload</span>
+                            <span className="text-[10px] text-gray-300">PNG, JPG, SVG · max 2 MB</span>
+                          </>
+                        )}
+                      </button>
+
+                      {/* Preview + clear */}
+                      <div className="relative flex-shrink-0">
+                        <div className="w-16 h-16 rounded-2xl bg-gray-50 dark:bg-slate-950 border border-gray-100 dark:border-slate-800 flex items-center justify-center overflow-hidden shadow-inner">
+                          {logoUrl ? (
+                            <img src={logoUrl} alt="Logo preview" className="w-12 h-12 object-contain" />
+                          ) : (
+                            <Building2 className="w-6 h-6 text-gray-300" />
+                          )}
+                        </div>
+                        {logoUrl && (
+                          <button
+                            type="button"
+                            onClick={handleClearLogo}
+                            className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md hover:bg-red-600 transition-colors"
+                            title="Remove logo"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
                         )}
                       </div>
                     </div>
