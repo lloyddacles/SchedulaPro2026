@@ -157,6 +157,8 @@ export default function SystemSettings() {
                     <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Application Hub Name</label>
                     <input
                       type="text"
+                      id="system_app_name"
+                      name="system_app_name"
                       value={appName}
                       onChange={(e) => setAppName(e.target.value)}
                       className="w-full px-5 py-4 rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white text-sm font-bold focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none"
@@ -167,6 +169,8 @@ export default function SystemSettings() {
                     <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Official Institution Label</label>
                     <input
                       type="text"
+                      id="system_institution_name"
+                      name="system_institution_name"
                       value={institutionName}
                       onChange={(e) => setInstitutionName(e.target.value)}
                       className="w-full px-5 py-4 rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white text-sm font-bold focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none"
@@ -180,6 +184,8 @@ export default function SystemSettings() {
                     <div className="flex gap-4">
                       <input
                         type="url"
+                        id="system_logo_url"
+                        name="system_logo_url"
                         value={logoUrl}
                         onChange={(e) => { setLogoUrl(e.target.value); setLogoPreviewError(false); }}
                         placeholder="https://assets.yourschool.edu/logo.png"
@@ -241,6 +247,8 @@ export default function SystemSettings() {
                   <div className="flex flex-col sm:flex-row gap-4">
                     <input
                       autoFocus
+                      id="newTermName"
+                      name="newTermName"
                       value={newTermName}
                       onChange={(e) => setNewTermName(e.target.value)}
                       placeholder="Academic Term Title (e.g. 1st Semester 2026-2027)"

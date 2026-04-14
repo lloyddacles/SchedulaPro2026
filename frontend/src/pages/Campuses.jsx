@@ -115,6 +115,8 @@ export default function Campuses() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-brand-500 transition-colors" />
             <input 
               type="text"
+              id="campusSearch"
+              name="campusSearch"
               placeholder="Search by name or code..."
               className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition-all font-medium"
               value={searchTerm}
@@ -211,6 +213,8 @@ export default function Campuses() {
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Campus Name</label>
                 <input 
                   type="text"
+                  id="campus_name"
+                  name="campus_name"
                   required
                   placeholder="e.g. Main Campus"
                   className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-4 focus:ring-brand-500/10 transition-all font-bold"
@@ -223,6 +227,8 @@ export default function Campuses() {
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Campus Code</label>
                 <input 
                   type="text"
+                  id="campus_code"
+                  name="campus_code"
                   required
                   placeholder="e.g. MAIN"
                   className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-4 focus:ring-brand-500/10 transition-all font-bold uppercase"

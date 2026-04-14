@@ -1176,6 +1176,8 @@ export default function Schedules() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Teaching Load</label>
                 <select 
+                  id="teaching_load_id"
+                  name="teaching_load_id"
                   className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 bg-gray-50 dark:bg-slate-700" 
                   value={formData.teaching_load_id} 
                   onChange={e => setFormData({...formData, teaching_load_id: e.target.value})} 
@@ -1208,13 +1210,26 @@ export default function Schedules() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Day</label>
-                  <select className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 bg-gray-50 dark:bg-slate-700" value={formData.day_of_week} onChange={e => setFormData({...formData, day_of_week: e.target.value})}>
+                  <select 
+                    id="day_of_week"
+                    name="day_of_week"
+                    className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 bg-gray-50 dark:bg-slate-700" 
+                    value={formData.day_of_week} 
+                    onChange={e => setFormData({...formData, day_of_week: e.target.value})}
+                  >
                     {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Facility</label>
-                  <select className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 bg-gray-50 dark:bg-slate-700 font-bold" value={formData.room} onChange={e => setFormData({...formData, room: e.target.value})} required>
+                  <select 
+                    id="room"
+                    name="room"
+                    className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 bg-gray-50 dark:bg-slate-700 font-bold" 
+                    value={formData.room} 
+                    onChange={e => setFormData({...formData, room: e.target.value})} 
+                    required
+                  >
                     <option value="">-- Select Room --</option>
                     {(() => {
                       const activeLoad = loads.find(l => l.id === Number(formData.teaching_load_id));
@@ -1289,11 +1304,27 @@ export default function Schedules() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Start</label>
-                  <input type="time" className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 bg-gray-50 dark:bg-slate-700" value={formData.start_time} onChange={e => setFormData({...formData, start_time: e.target.value})} required />
+                  <input 
+                    type="time" 
+                    id="start_time"
+                    name="start_time"
+                    className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 bg-gray-50 dark:bg-slate-700" 
+                    value={formData.start_time} 
+                    onChange={e => setFormData({...formData, start_time: e.target.value})} 
+                    required 
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">End</label>
-                  <input type="time" className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 bg-gray-50 dark:bg-slate-700" value={formData.end_time} onChange={e => setFormData({...formData, end_time: e.target.value})} required />
+                  <input 
+                    type="time" 
+                    id="end_time"
+                    name="end_time"
+                    className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 bg-gray-50 dark:bg-slate-700" 
+                    value={formData.end_time} 
+                    onChange={e => setFormData({...formData, end_time: e.target.value})} 
+                    required 
+                  />
                 </div>
               </div>
               <button type="button" onClick={handleAutoSuggest} disabled={isFetchingSuggestions} className="w-full text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-100 transition-colors disabled:opacity-60">

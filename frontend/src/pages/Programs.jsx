@@ -196,6 +196,8 @@ export default function Programs() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-brand-500 transition-colors" />
             <input 
               type="text"
+              id="curriculumSearch"
+              name="curriculumSearch"
               placeholder={`Search ${activeTab}...`}
               className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-sm"
               value={searchTerm}
@@ -574,6 +576,8 @@ export default function Programs() {
                       <div className="space-y-2">
                         <label className="block text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">Matrix Type</label>
                         <select 
+                          id="program_type"
+                          name="program_type"
                           className="w-full border-2 border-gray-50 dark:border-slate-800 rounded-[1.5rem] px-6 py-4 outline-none focus:border-brand-500 bg-gray-50 dark:bg-slate-950 dark:text-white font-bold text-sm shadow-inner transition-all hover:bg-white dark:hover:bg-slate-900"
                           value={programForm.type}
                           onChange={e => setProgramForm({...programForm, type: e.target.value})}
@@ -588,6 +592,8 @@ export default function Programs() {
                         <label className="block text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">Academic Code</label>
                         <input 
                           type="text" 
+                          id="program_code"
+                          name="program_code"
                           placeholder="BSIS, STEM..."
                           className="w-full border-2 border-gray-50 dark:border-slate-800 rounded-[1.5rem] px-6 py-4 outline-none focus:border-brand-500 bg-gray-50 dark:bg-slate-950 dark:text-white font-bold text-sm uppercase shadow-inner"
                           value={programForm.code}
@@ -601,6 +607,8 @@ export default function Programs() {
                       <label className="block text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">Full Degree Nomenclature</label>
                       <input 
                         type="text" 
+                        id="program_name"
+                        name="program_name"
                         placeholder="e.g., Bachelor of Science in Information Systems"
                         className="w-full border-2 border-gray-50 dark:border-slate-800 rounded-[1.5rem] px-6 py-4 outline-none focus:border-brand-500 bg-gray-50 dark:bg-slate-950 dark:text-white font-bold text-sm shadow-inner"
                         value={programForm.name}
@@ -613,6 +621,8 @@ export default function Programs() {
                       <label className="block text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">Collegiate Mapping</label>
                       <div className="relative group">
                         <select 
+                          id="program_dept_id"
+                          name="program_dept_id"
                           className="w-full border-2 border-gray-50 dark:border-slate-800 rounded-[1.5rem] px-6 py-4 outline-none focus:border-brand-500 bg-gray-50 dark:bg-slate-950 dark:text-white font-bold text-sm shadow-inner transition-all"
                           value={programForm.department_id}
                           onChange={e => setProgramForm({...programForm, department_id: e.target.value})}
@@ -632,6 +642,8 @@ export default function Programs() {
                       <label className="block text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">Collegiate Node Code</label>
                       <input 
                         type="text" 
+                        id="dept_code"
+                        name="dept_code"
                         placeholder="e.g., CCS, SBA, CAS"
                         className="w-full border-2 border-gray-50 dark:border-slate-800 rounded-[1.5rem] px-6 py-4 outline-none focus:border-brand-500 bg-gray-50 dark:bg-slate-950 dark:text-white font-bold text-sm shadow-inner uppercase"
                         value={departmentForm.code}
@@ -643,6 +655,8 @@ export default function Programs() {
                       <label className="block text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">Full Collegiate Designation</label>
                       <input 
                         type="text" 
+                        id="dept_name"
+                        name="dept_name"
                         placeholder="e.g., College of Computer Studies"
                         className="w-full border-2 border-gray-50 dark:border-slate-800 rounded-[1.5rem] px-6 py-4 outline-none focus:border-brand-500 bg-gray-50 dark:bg-slate-950 dark:text-white font-bold text-sm shadow-inner"
                         value={departmentForm.name}

@@ -208,6 +208,8 @@ export default function UsersManagement() {
           </div>
           <input
             type="text"
+            id="userSearch"
+            name="userSearch"
             className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-gray-900 dark:text-white font-medium placeholder-gray-400 shadow-sm"
             placeholder="Search username or faculty name..."
             value={searchQuery}
@@ -224,6 +226,8 @@ export default function UsersManagement() {
             <Filter className="h-4 w-4 text-gray-400" />
           </div>
           <select
+            id="userRoleFilter"
+            name="userRoleFilter"
             className="w-full pl-10 pr-10 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none text-gray-700 dark:text-slate-200 font-bold appearance-none shadow-sm cursor-pointer"
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
@@ -399,6 +403,8 @@ export default function UsersManagement() {
                 <input
                   required
                   type="text"
+                  id="admin_username"
+                  name="admin_username"
                   disabled={isEditing}
                   className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 bg-gray-50 dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500 text-sm font-bold disabled:opacity-60 transition-all font-mono"
                   value={formData.username}
@@ -412,6 +418,8 @@ export default function UsersManagement() {
                 <input
                   required
                   type="email"
+                  id="admin_email"
+                  name="admin_email"
                   className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 bg-gray-50 dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500 text-sm font-bold transition-all"
                   value={formData.email}
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
@@ -427,6 +435,8 @@ export default function UsersManagement() {
                 <input
                   required={!isEditing}
                   type="password"
+                  id="admin_password"
+                  name="admin_password"
                   className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 bg-gray-50 dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500 text-sm font-medium transition-all"
                   value={formData.password}
                   onChange={e => setFormData({ ...formData, password: e.target.value })}
@@ -437,6 +447,8 @@ export default function UsersManagement() {
               <div>
                 <label className="block text-xs font-black uppercase tracking-widest text-gray-500 dark:text-slate-400 mb-2">Access Tier</label>
                 <select
+                  id="admin_role"
+                  name="admin_role"
                   disabled={isEditing && formData.role === 'admin'}
                   className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 bg-gray-50 dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500 text-sm font-bold transition-all appearance-none cursor-pointer disabled:opacity-60"
                   value={formData.role}
@@ -459,6 +471,8 @@ export default function UsersManagement() {
                   </label>
                   <select
                     required
+                    id="admin_faculty_id"
+                    name="admin_faculty_id"
                     className="w-full border border-white dark:border-slate-600 rounded-xl px-4 py-3 bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-bold truncate cursor-pointer shadow-sm"
                     value={formData.faculty_id}
                     onChange={e => setFormData({ ...formData, faculty_id: e.target.value })}

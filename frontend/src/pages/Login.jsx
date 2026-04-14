@@ -224,11 +224,14 @@ export default function Login() {
                       </div>
                       <input
                         type="text"
+                        id="username"
+                        name="username"
                         required
                         className="block w-full pl-14 pr-4 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-gray-800 dark:text-white placeholder-gray-300"
                         placeholder="Institutional Username"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
+                        autoComplete="username"
                       />
                     </div>
                   </div>
@@ -250,11 +253,14 @@ export default function Login() {
                       </div>
                       <input
                         type={showPassword ? 'text' : 'password'}
+                        id="password"
+                        name="password"
                         required
                         className="block w-full pl-14 pr-12 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-gray-800 dark:text-white placeholder-gray-300"
                         placeholder="••••••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        autoComplete="current-password"
                       />
                       <button
                         type="button"
@@ -271,6 +277,8 @@ export default function Login() {
                       <div className="relative flex items-center justify-center">
                         <input
                           type="checkbox"
+                          id="rememberMe"
+                          name="rememberMe"
                           className="peer appearance-none w-5 h-5 border-2 border-gray-100 dark:border-slate-800 rounded-lg checked:bg-brand-600 checked:border-brand-600 transition-all duration-300 cursor-pointer"
                           checked={rememberMe}
                           onChange={(e) => setRememberMe(e.target.checked)}
@@ -333,11 +341,14 @@ export default function Login() {
                         <div className="group relative">
                           <input
                             type="email"
+                            id="recoveryEmail"
+                            name="recoveryEmail"
                             required
                             className="block w-full px-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-gray-800 dark:text-white placeholder-gray-300 shadow-sm"
                             placeholder="name@institution.edu"
                             value={recoveryEmail}
                             onChange={(e) => setRecoveryEmail(e.target.value)}
+                            autoComplete="email"
                           />
                         </div>
                       </div>
@@ -362,12 +373,15 @@ export default function Login() {
                         <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">Institutional Matrix Token</label>
                         <input
                           type="text"
+                          id="recoveryOtp"
+                          name="recoveryOtp"
                           required
                           maxLength={6}
                           className="block w-full px-4 py-8 bg-gray-50 dark:bg-slate-900 border-2 border-brand-100 dark:border-brand-900/50 rounded-[2.5rem] focus:ring-8 focus:ring-brand-500/5 focus:border-brand-500 transition-all outline-none font-black text-5xl text-center tracking-[0.5em] text-brand-600 dark:text-brand-400 shadow-inner"
                           placeholder="000000"
                           value={recoveryOtp}
                           onChange={(e) => setRecoveryOtp(e.target.value.replace(/\D/g, ''))}
+                          autoComplete="one-time-code"
                         />
                         <div className="flex flex-col items-center gap-2">
                            <div className="px-3 py-1 bg-brand-50 dark:bg-brand-900/20 rounded-full flex items-center gap-2">
@@ -396,12 +410,15 @@ export default function Login() {
                           <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">New Terminal Secret</label>
                           <input
                             type="password"
+                            id="newPassword"
+                            name="newPassword"
                             required
                             minLength={6}
                             className="block w-full px-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-gray-800 dark:text-white placeholder-gray-300"
                             placeholder="••••••••••••"
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
+                            autoComplete="new-password"
                           />
                         </div>
                       </div>

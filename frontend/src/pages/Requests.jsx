@@ -166,6 +166,8 @@ export default function Requests() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-brand-500 transition-colors" />
           <input 
             type="text" 
+            id="requestSearch"
+            name="requestSearch"
             placeholder="Search by faculty initializer or subject code..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -176,6 +178,8 @@ export default function Requests() {
         <div className="flex items-center gap-3 bg-white dark:bg-slate-800 border-2 border-gray-100 dark:border-slate-700/50 rounded-2xl px-4 py-3 shadow-inner">
           <MapPin className="w-4 h-4 text-gray-400" />
           <select 
+            id="requestCampusScope"
+            name="requestCampusScope"
             value={selectedCampus} 
             onChange={(e) => setSelectedCampus(e.target.value)}
             className="bg-transparent border-none text-sm font-bold text-gray-700 dark:text-white outline-none focus:ring-0 cursor-pointer min-w-[140px]"

@@ -149,6 +149,8 @@ export default function Reports() {
             <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 ml-4 print:hidden">
               <Building2 className="w-4 h-4 text-gray-400" />
               <select 
+                id="reportDeptFilter"
+                name="reportDeptFilter"
                 value={selectedDeptId} 
                 onChange={(e) => setSelectedDeptId(e.target.value)}
                 className="bg-transparent text-xs font-black text-gray-700 dark:text-white outline-none min-w-[180px] uppercase tracking-tighter"

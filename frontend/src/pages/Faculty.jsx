@@ -257,6 +257,8 @@ export default function Faculty() {
           <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 flex-1 sm:flex-none">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider pl-1">Campus:</span>
             <select 
+              id="campusFilter"
+              name="campusFilter"
               value={selectedCampus} 
               onChange={(e) => setSelectedCampus(e.target.value)}
               className="bg-transparent text-xs font-bold text-gray-700 dark:text-white outline-none w-full sm:min-w-[120px]"
@@ -268,6 +270,8 @@ export default function Faculty() {
           <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 flex-1 sm:flex-none">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider pl-1">Contract:</span>
             <select 
+              id="employmentFilter"
+              name="employmentFilter"
               value={selectedEmploymentType} 
               onChange={(e) => setSelectedEmploymentType(e.target.value)}
               className="bg-transparent text-xs font-bold text-gray-700 dark:text-white outline-none w-full sm:min-w-[120px]"
@@ -293,6 +297,8 @@ export default function Faculty() {
           </div>
           <input
             type="text"
+            id="facultySearch"
+            name="facultySearch"
             placeholder="Search by name, program or dept..."
             className="block w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all text-sm font-medium shadow-sm"
             value={search}
@@ -469,12 +475,23 @@ export default function Faculty() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2 pl-1">Full Identity</label>
-                    <input required type="text" className="w-full border border-gray-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 bg-gray-50/50 dark:bg-slate-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none transition-all font-bold" value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} placeholder="e.g. Dr. Jane Pearson" />
+                    <input 
+                      required 
+                      type="text" 
+                      id="full_name"
+                      name="full_name"
+                      className="w-full border border-gray-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 bg-gray-50/50 dark:bg-slate-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none transition-all font-bold" 
+                      value={formData.full_name} 
+                      onChange={e => setFormData({...formData, full_name: e.target.value})} 
+                      placeholder="e.g. Dr. Jane Pearson" 
+                    />
                   </div>
 
                   <div>
                     <label className="block text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2 pl-1">Assign to College / Department</label>
                     <select 
+                      id="department_id"
+                      name="department_id"
                       className="w-full border border-gray-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 bg-gray-50/50 dark:bg-slate-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none transition-all font-bold"
                       value={formData.department_id}
                       onChange={e => setFormData({...formData, department_id: e.target.value})}
@@ -489,14 +506,27 @@ export default function Faculty() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2">Base Program</label>
-                      <select required className="w-full border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3 bg-gray-50 dark:bg-slate-800 text-xs font-bold transition-all h-[52px]" value={formData.program_id} onChange={e => setFormData({...formData, program_id: Number(e.target.value)})}>
+                      <select 
+                        required 
+                        id="program_id"
+                        name="program_id"
+                        className="w-full border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3 bg-gray-50 dark:bg-slate-800 text-xs font-bold transition-all h-[52px]" 
+                        value={formData.program_id} 
+                        onChange={e => setFormData({...formData, program_id: Number(e.target.value)})}
+                      >
                         <option value="1">General Education</option>
                         {programs?.map(p => <option key={p.id} value={p.id}>{p.code} - {p.name}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="block text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2">Contract Nature</label>
-                      <select required className="w-full border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3 bg-gray-50 dark:bg-slate-800 text-xs font-bold transition-all h-[52px]" value={formData.employment_type} onChange={e => {
+                      <select 
+                        required 
+                        id="employment_type"
+                        name="employment_type"
+                        className="w-full border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3 bg-gray-50 dark:bg-slate-800 text-xs font-bold transition-all h-[52px]" 
+                        value={formData.employment_type} 
+                        onChange={e => {
                         const type = e.target.value;
                         setFormData({ ...formData, employment_type: type, max_teaching_hours: EMPLOYMENT_DEFAULTS[type] || formData.max_teaching_hours });
                       }}>
@@ -510,7 +540,14 @@ export default function Faculty() {
 
                   <div>
                     <label className="block text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2 pl-1">Target Campus</label>
-                    <select required className="w-full border border-gray-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 bg-gray-50 dark:bg-slate-800 text-xs font-bold transition-all" value={formData.campus_id} onChange={e => setFormData({...formData, campus_id: e.target.value})}>
+                    <select 
+                      required 
+                      id="campus_id"
+                      name="campus_id"
+                      className="w-full border border-gray-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 bg-gray-50 dark:bg-slate-800 text-xs font-bold transition-all" 
+                      value={formData.campus_id} 
+                      onChange={e => setFormData({...formData, campus_id: e.target.value})}
+                    >
                       <option value="">Choose Operational Location</option>
                       {campuses?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
@@ -518,7 +555,16 @@ export default function Faculty() {
 
                   <div className="p-5 bg-brand-50/30 dark:bg-brand-900/10 rounded-3xl border border-brand-100/50 dark:border-brand-900/30">
                     <label className="block text-[11px] font-bold text-brand-700 dark:text-brand-400 uppercase tracking-widest mb-3">Load Capacity (Weekly Units)</label>
-                    <input required type="number" min="1" className="w-full border border-brand-200 dark:border-brand-900/50 rounded-2xl px-5 py-3 bg-white dark:bg-slate-900 font-black text-lg text-brand-600 outline-none focus:ring-4 focus:ring-brand-500/10 transition-all" value={formData.max_teaching_hours} onChange={e => setFormData({...formData, max_teaching_hours: parseInt(e.target.value)})} />
+                    <input 
+                      required 
+                      type="number" 
+                      id="max_teaching_hours"
+                      name="max_teaching_hours"
+                      min="1" 
+                      className="w-full border border-brand-200 dark:border-brand-900/50 rounded-2xl px-5 py-3 bg-white dark:bg-slate-900 font-black text-lg text-brand-600 outline-none focus:ring-4 focus:ring-brand-500/10 transition-all" 
+                      value={formData.max_teaching_hours} 
+                      onChange={e => setFormData({...formData, max_teaching_hours: parseInt(e.target.value)})} 
+                    />
                   </div>
 
                   <div>

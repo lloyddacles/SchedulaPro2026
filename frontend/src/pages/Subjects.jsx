@@ -234,6 +234,8 @@ export default function Subjects() {
           </div>
           <input
             type="text"
+            id="subjectSearch"
+            name="subjectSearch"
             placeholder="Search subject code or name..."
             className="block w-full pl-11 pr-4 py-3 border border-gray-200 dark:border-slate-600 rounded-xl leading-5 bg-white shadow-sm dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 transition-shadow text-sm font-medium"
             value={search}
@@ -414,28 +416,71 @@ export default function Subjects() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Subject Code</label>
-                    <input required type="text" className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 font-mono uppercase bg-gray-50 dark:bg-slate-900 dark:text-white text-sm" value={formData.subject_code} onChange={e => setFormData({...formData, subject_code: e.target.value})} placeholder="e.g. CS101" />
+                    <input 
+                      required 
+                      type="text" 
+                      id="subject_code"
+                      name="subject_code"
+                      className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 font-mono uppercase bg-gray-50 dark:bg-slate-900 dark:text-white text-sm" 
+                      value={formData.subject_code} 
+                      onChange={e => setFormData({...formData, subject_code: e.target.value})} 
+                      placeholder="e.g. CS101" 
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Required Hrs/Week</label>
-                    <input required type="number" min="1" step="0.5" className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-gray-50 dark:bg-slate-900 dark:text-white text-sm" value={formData.required_hours} onChange={e => setFormData({...formData, required_hours: parseFloat(e.target.value)})} />
+                    <input 
+                      required 
+                      type="number" 
+                      id="required_hours"
+                      name="required_hours"
+                      min="1" 
+                      step="0.5" 
+                      className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-gray-50 dark:bg-slate-900 dark:text-white text-sm" 
+                      value={formData.required_hours} 
+                      onChange={e => setFormData({...formData, required_hours: parseFloat(e.target.value)})} 
+                    />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Subject Name</label>
-                  <input required type="text" className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-gray-50 dark:bg-slate-900 dark:text-white text-sm" value={formData.subject_name} onChange={e => setFormData({...formData, subject_name: e.target.value})} />
+                  <input 
+                    required 
+                    type="text" 
+                    id="subject_name"
+                    name="subject_name"
+                    className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-gray-50 dark:bg-slate-900 dark:text-white text-sm" 
+                    value={formData.subject_name} 
+                    onChange={e => setFormData({...formData, subject_name: e.target.value})} 
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Academic Units</label>
-                  <input required type="number" min="1" className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-gray-50 dark:bg-slate-900 dark:text-white text-sm" value={formData.units} onChange={e => setFormData({...formData, units: parseInt(e.target.value)})} />
+                  <input 
+                    required 
+                    type="number" 
+                    id="subject_units"
+                    name="subject_units"
+                    min="1" 
+                    className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-gray-50 dark:bg-slate-900 dark:text-white text-sm" 
+                    value={formData.units} 
+                    onChange={e => setFormData({...formData, units: parseInt(e.target.value)})} 
+                  />
                 </div>
 
                 <div className="pt-4 border-t border-gray-100 dark:border-slate-700">
                   <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-3">Facility Requirement</p>
                   <div>
-                      <select required className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-white dark:bg-slate-900 dark:text-white text-sm" value={formData.room_type} onChange={e => setFormData({...formData, room_type: e.target.value})}>
+                      <select 
+                        required 
+                        id="room_type_req"
+                        name="room_type_req"
+                        className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-white dark:bg-slate-900 dark:text-white text-sm" 
+                        value={formData.room_type} 
+                        onChange={e => setFormData({...formData, room_type: e.target.value})}
+                      >
                         <option value="Lecture">Lecture / Standard</option>
                         <option value="Computer Lab">Computer Lab</option>
                         <option value="Science Lab">Science Lab</option>
@@ -452,7 +497,13 @@ export default function Subjects() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[11px] font-bold text-gray-600 dark:text-slate-400 mb-1">Target Program</label>
-                      <select className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-brand-500 bg-white dark:bg-slate-900 dark:text-white text-sm" value={formData.program_id} onChange={e => setFormData({...formData, program_id: e.target.value})}>
+                      <select 
+                        id="subject_program_id"
+                        name="subject_program_id"
+                        className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-brand-500 bg-white dark:bg-slate-900 dark:text-white text-sm" 
+                        value={formData.program_id} 
+                        onChange={e => setFormData({...formData, program_id: e.target.value})}
+                      >
                         <option value="1">General (All Programs)</option>
                         {programs.map(p => <option key={p.id} value={p.id}>{p.code}</option>)}
                       </select>
@@ -461,7 +512,17 @@ export default function Subjects() {
                       <label className="block text-[11px] font-bold text-gray-600 dark:text-slate-400 mb-1">
                         {programs.find(p => p.id === Number(formData.program_id))?.type === 'SHS' ? 'Grade Level' : 'Year Level'}
                       </label>
-                      <input type="number" min="1" max="13" className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-brand-500 bg-white dark:bg-slate-900 dark:text-white text-sm" value={formData.year_level} onChange={e => setFormData({...formData, year_level: e.target.value})} placeholder="e.g. 1" />
+                      <input 
+                        type="number" 
+                        id="subject_year_level"
+                        name="subject_year_level"
+                        min="1" 
+                        max="13" 
+                        className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-brand-500 bg-white dark:bg-slate-900 dark:text-white text-sm" 
+                        value={formData.year_level} 
+                        onChange={e => setFormData({...formData, year_level: e.target.value})} 
+                        placeholder="e.g. 1" 
+                      />
                     </div>
                   </div>
                 </div>

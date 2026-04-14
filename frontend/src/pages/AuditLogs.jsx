@@ -193,6 +193,8 @@ export default function AuditLogs() {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-brand-500 transition-colors" />
                   <input
                     type="text"
+                    id="auditSearch"
+                    name="auditSearch"
                     placeholder="Search chronological traces..."
                     className="block w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none font-bold text-sm"
                     value={searchTerm}

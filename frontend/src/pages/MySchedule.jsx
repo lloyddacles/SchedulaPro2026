@@ -317,6 +317,8 @@ export default function MySchedule() {
                 <div className="flex items-center gap-3">
                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Select Section:</span>
                    <select 
+                    id="myAdvisorySelector"
+                    name="myAdvisorySelector"
                     value={selectedAdvisoryId} 
                     onChange={(e) => setSelectedAdvisoryId(Number(e.target.value))}
                     className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 dark:text-white outline-none focus:ring-4 focus:ring-brand-500/10 min-w-[150px]"

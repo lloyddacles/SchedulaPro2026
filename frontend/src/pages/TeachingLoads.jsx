@@ -277,6 +277,8 @@ export default function TeachingLoads() {
             <div className="flex flex-col">
               <span className="text-[10px] uppercase font-bold text-gray-400 dark:text-slate-500 tracking-wider">Campus Scope</span>
               <select
+                id="loadCampusScope"
+                name="loadCampusScope"
                 className="text-sm font-bold bg-transparent text-gray-900 dark:text-white outline-none cursor-pointer"
                 value={selectedCampusId}
                 onChange={(e) => { setSelectedCampusId(e.target.value); }}
@@ -384,6 +386,8 @@ export default function TeachingLoads() {
                           <th className="px-6 py-4 text-left w-10">
                             <input
                               type="checkbox"
+                              id={`loadBulkSelect-${programKey}`}
+                              name={`loadBulkSelect-${programKey}`}
                               checked={progLoads.every(l => selectedIds.includes(l.id))}
                               onChange={() => toggleSelectAll(progLoads)}
                               className="w-4 h-4 text-brand-600 rounded border-gray-300 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800"
@@ -405,6 +409,8 @@ export default function TeachingLoads() {
                               <td className="px-6 py-4">
                                 <input
                                   type="checkbox"
+                                  id={`loadSelect-${load.id}`}
+                                  name={`loadSelect-${load.id}`}
                                   checked={selectedIds.includes(load.id)}
                                   onChange={() => {
                                     setSelectedIds(prev => prev.includes(load.id) ? prev.filter(id => id !== load.id) : [...prev, load.id]);
@@ -603,6 +609,8 @@ export default function TeachingLoads() {
               </p>
               <textarea
                 autoFocus
+                id="loadRejectNote"
+                name="loadRejectNote"
                 rows={4}
                 className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm bg-gray-50 dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-red-500 resize-none"
                 placeholder="e.g. Schedule conflicts with another section, please reassign another time slot..."
@@ -726,6 +734,8 @@ export default function TeachingLoads() {
                 <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">1. Target Student Section</label>
                 <select
                   required
+                  id="load_section_id"
+                  name="load_section_id"
                   className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-brand-50 dark:bg-slate-900 text-brand-900 dark:text-brand-400 border-brand-200 font-bold text-sm"
                   value={formData.section_id}
                   onChange={e => setFormData({ ...formData, section_id: e.target.value })}
@@ -751,6 +761,8 @@ export default function TeachingLoads() {
                 {isEditing ? (
                   <select
                     required
+                    id="load_subject_id"
+                    name="load_subject_id"
                     disabled={!formData.section_id}
                     className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-gray-50 dark:bg-slate-900 dark:text-white text-sm disabled:opacity-50"
                     value={formData.subject_id}
@@ -770,6 +782,8 @@ export default function TeachingLoads() {
                         <label key={s.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 cursor-pointer border border-transparent hover:border-gray-200 dark:hover:border-slate-700 transition-colors">
                           <input
                             type="checkbox"
+                            id={`load_subject-${s.id}`}
+                            name={`load_subject-${s.id}`}
                             checked={formData.subject_ids.includes(s.id.toString())}
                             onChange={(e) => {
                               const newIds = e.target.checked
@@ -799,6 +813,8 @@ export default function TeachingLoads() {
                 <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">3. Primary Instructor</label>
                 <select
                   required
+                  id="load_faculty_id"
+                  name="load_faculty_id"
                   disabled={isEditing ? !formData.subject_id : formData.subject_ids.length === 0}
                   className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-white dark:bg-slate-900 dark:text-white text-sm disabled:opacity-50"
                   value={formData.faculty_id}
@@ -814,6 +830,8 @@ export default function TeachingLoads() {
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wide text-gray-500 dark:text-slate-400 mb-1">Co-Teacher 1 <span className="text-gray-400 font-normal">(Optional)</span></label>
                   <select
+                    id="load_co_faculty_1"
+                    name="load_co_faculty_1"
                     disabled={isEditing ? !formData.subject_id : formData.subject_ids.length === 0}
                     className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-brand-500 bg-white dark:bg-slate-800 dark:text-white text-sm disabled:opacity-50"
                     value={formData.co_faculty_id_1}
@@ -827,6 +845,8 @@ export default function TeachingLoads() {
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wide text-gray-500 dark:text-slate-400 mb-1">Co-Teacher 2 <span className="text-gray-400 font-normal">(Optional)</span></label>
                   <select
+                    id="load_co_faculty_2"
+                    name="load_co_faculty_2"
                     disabled={isEditing ? !formData.subject_id : formData.subject_ids.length === 0}
                     className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-brand-500 bg-white dark:bg-slate-800 dark:text-white text-sm disabled:opacity-50"
                     value={formData.co_faculty_id_2}
@@ -929,6 +949,8 @@ export default function TeachingLoads() {
               </p>
               <textarea
                 autoFocus
+                id="loadBulkRejectNote"
+                name="loadBulkRejectNote"
                 rows={4}
                 className="w-full border border-gray-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-sm bg-gray-50 dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-red-500 resize-none font-medium"
                 placeholder="e.g. Incomplete data, please re-verify faculty availability..."

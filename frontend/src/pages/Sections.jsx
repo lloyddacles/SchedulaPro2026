@@ -223,6 +223,8 @@ export default function Sections() {
           <div className="flex items-center gap-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700/50 rounded-xl px-4 py-1.5 shadow-sm">
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Facility Location</label>
             <select 
+              id="sectionCampusFilter"
+              name="sectionCampusFilter"
               value={selectedCampus} 
               onChange={(e) => setSelectedCampus(e.target.value)}
               className="bg-transparent border-none text-sm font-bold text-gray-700 dark:text-white outline-none focus:ring-0 cursor-pointer min-w-[140px]"
@@ -246,6 +248,8 @@ export default function Sections() {
           </div>
           <input
             type="text"
+            id="sectionSearch"
+            name="sectionSearch"
             placeholder="Search cohort, program, or adviser..."
             className="block w-full pl-11 pr-4 py-3 border border-gray-200 dark:border-slate-600 rounded-xl leading-5 bg-white shadow-sm dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 transition-shadow text-sm font-medium"
             value={search}
@@ -414,6 +418,8 @@ export default function Sections() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Select Program/Strand</label>
                 <select 
+                  id="section_program_id"
+                  name="section_program_id"
                   className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-gray-50 dark:bg-slate-900 dark:text-white"
                   value={formData.program_id}
                   onChange={e => setFormData({...formData, program_id: e.target.value})}
@@ -433,6 +439,8 @@ export default function Sections() {
                   </label>
                   <input 
                     type="number" min="1" max="13"
+                    id="section_year_level"
+                    name="section_year_level"
                     className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-gray-50 dark:bg-slate-900 dark:text-white"
                     value={formData.year_level}
                     onChange={e => setFormData({...formData, year_level: e.target.value})}
@@ -443,6 +451,8 @@ export default function Sections() {
                   <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Section Identifier</label>
                   <input 
                     type="text" 
+                    id="section_name"
+                    name="section_name"
                     placeholder="e.g., A, B, STEM1"
                     className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-gray-50 dark:bg-slate-900 dark:text-white uppercase"
                     value={formData.name}
@@ -456,6 +466,8 @@ export default function Sections() {
                 <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Approx. Student Count (Pax)</label>
                 <input 
                   type="number" 
+                  id="section_student_count"
+                  name="section_student_count"
                   min="1"
                   className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-brand-50 dark:bg-slate-900 text-brand-900 dark:text-brand-400 border-brand-200 font-bold"
                   value={formData.student_count}
@@ -469,6 +481,8 @@ export default function Sections() {
                   <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Campus Location</label>
                   <select 
                     required 
+                    id="section_campus_id"
+                    name="section_campus_id"
                     className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-gray-50 dark:bg-slate-900 dark:text-white font-bold"
                     value={formData.campus_id} 
                     onChange={e => setFormData({...formData, campus_id: e.target.value})}
@@ -482,6 +496,8 @@ export default function Sections() {
                 <div>
                   <label className="block text-xs font-black text-brand-600 dark:text-brand-400 uppercase tracking-widest mb-1 leading-none">Max Days (Compressed Learning)</label>
                   <select 
+                    id="section_max_days"
+                    name="section_max_days"
                     className="w-full border border-brand-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-brand-50 dark:bg-slate-900 text-brand-900 dark:text-white font-bold text-sm"
                     value={formData.max_days_per_week}
                     onChange={e => setFormData({...formData, max_days_per_week: e.target.value})}
@@ -494,6 +510,8 @@ export default function Sections() {
                 <div>
                   <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1 leading-none">Block Adviser (Optional)</label>
                   <select 
+                    id="section_adviser_id"
+                    name="section_adviser_id"
                     className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-gray-50 dark:bg-slate-900 dark:text-white text-sm"
                     value={formData.adviser_id}
                     onChange={e => setFormData({...formData, adviser_id: e.target.value})}

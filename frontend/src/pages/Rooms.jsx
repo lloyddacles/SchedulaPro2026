@@ -225,6 +225,8 @@ export default function Rooms() {
           <div className="flex items-center gap-3">
             <MapPin className="w-5 h-5 text-slate-400" />
             <select 
+              id="roomCampusFilter"
+              name="roomCampusFilter"
               value={selectedCampus} 
               onChange={(e) => setSelectedCampus(e.target.value)}
               className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 dark:text-white outline-none focus:ring-4 focus:ring-brand-500/10 min-w-[220px]"
@@ -392,7 +394,16 @@ export default function Rooms() {
             <form onSubmit={handleSubmit} className="p-8 space-y-6">
               <div>
                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Room Designation</label>
-                <input required type="text" className="w-full border-2 border-slate-100 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 outline-none focus:border-brand-500 bg-slate-50 dark:bg-slate-900 dark:text-white font-black text-lg font-mono uppercase" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="e.g. COMP LAB 1" />
+                <input 
+                  required 
+                  type="text" 
+                  id="room_name"
+                  name="room_name"
+                  className="w-full border-2 border-slate-100 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 outline-none focus:border-brand-500 bg-slate-50 dark:bg-slate-900 dark:text-white font-black text-lg font-mono uppercase" 
+                  value={formData.name} 
+                  onChange={e => setFormData({...formData, name: e.target.value})} 
+                  placeholder="e.g. COMP LAB 1" 
+                />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
@@ -400,6 +411,8 @@ export default function Rooms() {
                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Campus Location</label>
                   <select 
                     required 
+                    id="room_campus_id"
+                    name="room_campus_id"
                     className="w-full border-2 border-slate-100 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 outline-none focus:border-brand-500 bg-white dark:bg-slate-900 dark:text-white font-bold"
                     value={formData.campus_id} 
                     onChange={e => setFormData({...formData, campus_id: e.target.value})}
@@ -413,6 +426,8 @@ export default function Rooms() {
                 <div className="col-span-2">
                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Assign to Department (Optional)</label>
                   <select 
+                    id="room_department_id"
+                    name="room_department_id"
                     className="w-full border-2 border-slate-100 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 outline-none focus:border-brand-500 bg-white dark:bg-slate-900 dark:text-white font-bold"
                     value={formData.department_id} 
                     onChange={e => setFormData({...formData, department_id: e.target.value})}
@@ -426,6 +441,8 @@ export default function Rooms() {
                 <div>
                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Type</label>
                   <select 
+                    id="room_type"
+                    name="room_type"
                     className="w-full border-2 border-slate-100 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 outline-none focus:border-brand-500 bg-white dark:bg-slate-900 dark:text-white font-bold" 
                     value={formData.type} 
                     onChange={e => setFormData({...formData, type: e.target.value})}
@@ -441,7 +458,16 @@ export default function Rooms() {
                 </div>
                 <div>
                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Capacity</label>
-                  <input required type="number" min="1" className="w-full border-2 border-slate-100 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 outline-none focus:border-brand-500 text-center font-black dark:bg-slate-900 dark:text-white" value={formData.capacity} onChange={e => setFormData({...formData, capacity: parseInt(e.target.value)})} />
+                  <input 
+                    required 
+                    type="number" 
+                    id="room_capacity"
+                    name="room_capacity"
+                    min="1" 
+                    className="w-full border-2 border-slate-100 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 outline-none focus:border-brand-500 text-center font-black dark:bg-slate-900 dark:text-white" 
+                    value={formData.capacity} 
+                    onChange={e => setFormData({...formData, capacity: parseInt(e.target.value)})} 
+                  />
                 </div>
               </div>
               
