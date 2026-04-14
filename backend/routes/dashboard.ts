@@ -237,6 +237,23 @@ router.get('/summary', async (req: Request, res: Response) => {
       ? Math.round(((scheduledCount - violatorCount) / scheduledCount) * 100)
       : 100;
 
+    // [INTELLIGENCE]: Fetch Recent Activity Feed
+    const [recentActivities]: any = await pool.query(`
+      SELECT 
+        id, 
+        action, 
+        target_type, 
+        target_id, 
+        performer_name, 
+        created_at 
+      FROM audit_logs 
+      ORDER BY created_at DESC 
+      LIMIT 10
+    `);
+
+    // [INTELLIGENCE]: Calculate Space Hotspots
+    const mostActiveRoom = roomUtilization.length > 0 ? roomUtilization[0] : null;
+
     res.json({
       summary: {
         total_faculty: facultyCount[0].count,
@@ -247,8 +264,10 @@ router.get('/summary', async (req: Request, res: Response) => {
         total_unassigned_subjects: unassignedSubjects.length,
         total_conflicts: facultyConflicts.length + roomConflicts.length,
         pending_approval_count: pendingCount[0].count,
-        wellness_score: wellnessScore
+        wellness_score: wellnessScore,
+        most_active_room: mostActiveRoom ? { name: mostActiveRoom.name, hours: Number(mostActiveRoom.utilized_hours).toFixed(1) } : null
       },
+      recent_activities: recentActivities || [],
       wellness_violations: parsedViolations,
       load_status_breakdown: loadStatusBreakdown,
       employment_breakdown: empBreakdown,

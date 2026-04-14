@@ -13,7 +13,25 @@ import {
   PieChart, Pie, Cell, Legend, RadialBarChart, RadialBar, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip
 } from 'recharts';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import ActivityFeed from '../components/ActivityFeed';
+import DashboardModal from '../components/DashboardModals';
+
+const SkeletonCard = () => (
+  <div className="glass p-6 rounded-[2rem] border border-gray-100 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 animate-pulse">
+    <div className="flex items-start justify-between">
+      <div className="space-y-3 flex-1">
+        <div className="w-12 h-2 bg-gray-200 dark:bg-slate-800 rounded" />
+        <div className="w-16 h-8 bg-gray-300 dark:bg-slate-700 rounded" />
+      </div>
+      <div className="w-12 h-12 bg-gray-200 dark:bg-slate-800 rounded-2xl" />
+    </div>
+  </div>
+);
+
+const SkeletonSection = () => (
+  <div className="glass rounded-[2.5rem] border border-gray-100 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 animate-pulse h-96" />
+);
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -96,16 +114,15 @@ export default function Dashboard() {
     enabled: !!user?.faculty_id
   });
 
+  const [modal, setModal] = React.useState({ isOpen: false, type: '', title: '', data: null });
+
   useEffect(() => {
     if (!socket || !isConnected) return;
-
     const handleUpdate = () => {
       queryClient.invalidateQueries(['dashboardSummary']);
     };
-
     socket.on('schedule_updated', handleUpdate);
     socket.on('load_updated', handleUpdate);
-
     return () => {
       socket.off('schedule_updated', handleUpdate);
       socket.off('load_updated', handleUpdate);
@@ -121,9 +138,20 @@ export default function Dashboard() {
       </div>
     </div>
   );
+
   if (isLoading) return (
-    <div className="flex h-[50vh] items-center justify-center">
-      <div className="w-12 h-12 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin" />
+    <div className="space-y-8 animate-pulse">
+       <div className="flex justify-between items-center mb-12">
+          <div className="space-y-2"><div className="w-64 h-8 bg-gray-200 dark:bg-slate-800 rounded-lg" /><div className="w-48 h-4 bg-gray-100 dark:bg-slate-800/50 rounded" /></div>
+          <div className="w-32 h-12 bg-gray-200 dark:bg-slate-800 rounded-2xl" />
+       </div>
+       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+          {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
+       </div>
+       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+          <div className="xl:col-span-8 space-y-8"><SkeletonSection /></div>
+          <div className="xl:col-span-4 space-y-8"><SkeletonSection /></div>
+       </div>
     </div>
   );
   if (error) return (
@@ -141,7 +169,8 @@ export default function Dashboard() {
     conflicts = { faculty: [], rooms: [] },
     load_status_breakdown = {},
     employment_breakdown = [],
-    wellness_violations = []
+    wellness_violations = [],
+    recent_activities = []
   } = data || {};
 
   const wellnessScore = summary.wellness_score ?? 100;
@@ -551,7 +580,11 @@ export default function Dashboard() {
                   ))}
 
                   {conflicts.faculty?.map((c, i) => (
-                    <div key={`f-${i}`} className="p-4 bg-white/60 dark:bg-slate-900/60 rounded-2xl border border-rose-100 dark:border-rose-900/30">
+                    <div 
+                      key={`f-${i}`} 
+                      onClick={() => setModal({ isOpen: true, type: 'conflict', title: 'Faculty Conflict Detail', data: c })}
+                      className="p-4 bg-white/60 dark:bg-slate-900/60 rounded-2xl border border-rose-100 dark:border-rose-900/30 cursor-pointer hover:scale-[1.02] transition-transform active:scale-95"
+                    >
                       <div className="flex items-center gap-2 mb-2">
                          <UserCheck className="w-3.5 h-3.5 text-rose-500" />
                          <span className="text-[10px] font-black text-rose-500 uppercase">Faculty Collision</span>
@@ -565,7 +598,11 @@ export default function Dashboard() {
                     </div>
                   ))}
                   {conflicts.rooms?.map((c, i) => (
-                    <div key={`r-${i}`} className="p-4 bg-white/60 dark:bg-slate-900/60 rounded-2xl border border-rose-100 dark:border-rose-900/30">
+                    <div 
+                      key={`r-${i}`} 
+                      onClick={() => setModal({ isOpen: true, type: 'conflict', title: 'Room Conflict Detail', data: c })}
+                      className="p-4 bg-white/60 dark:bg-slate-900/60 rounded-2xl border border-rose-100 dark:border-rose-900/30 cursor-pointer hover:scale-[1.02] transition-transform active:scale-95"
+                    >
                       <div className="flex items-center gap-2 mb-2">
                          <Building2 className="w-3.5 h-3.5 text-orange-500" />
                          <span className="text-[10px] font-black text-orange-500 uppercase">Room Double Book</span>
@@ -582,6 +619,11 @@ export default function Dashboard() {
               )}
             </div>
             {totalConflicts > 0 && <div className="p-4 border-t border-rose-100 dark:border-rose-900/20 bg-rose-50/50 dark:bg-rose-900/20 text-center"><span className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-[0.2em] animate-pulse">Action Required Promptly</span></div>}
+          </motion.div>
+
+          {/* Institutional Activity Heartbeat */}
+          <motion.div variants={itemVariants} className="glass rounded-[2.5rem] shadow-xl border border-white/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 p-8">
+            <ActivityFeed activities={recent_activities} />
           </motion.div>
 
           {/* Room Utilization Micro-Panel */}
@@ -641,7 +683,11 @@ export default function Dashboard() {
                   const cfg = STATUS_CONFIG[key];
 
                   return (
-                    <tr key={f.id} className="hover:bg-white/80 dark:hover:bg-slate-700/50 transition-all duration-300 group">
+                    <tr 
+                      key={f.id} 
+                      onClick={() => setModal({ isOpen: true, type: 'faculty', title: f.full_name, data: f })}
+                      className="hover:bg-white/80 dark:hover:bg-slate-700/50 transition-all duration-300 group cursor-pointer"
+                    >
                       <td className="px-8 py-5">
                         <div className="font-black text-gray-900 dark:text-white text-base tracking-tight group-hover:text-brand-500 transition-colors">{f.full_name}</div>
                         <div className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">{f.department || 'Not Categorized'}</div>
@@ -719,6 +765,14 @@ export default function Dashboard() {
            )}
         </motion.div>
       </div>
+
+      <DashboardModal 
+        isOpen={modal.isOpen} 
+        onClose={() => setModal({ ...modal, isOpen: false })}
+        type={modal.type}
+        title={modal.title}
+        data={modal.data}
+      />
 
     </motion.div>
   );
