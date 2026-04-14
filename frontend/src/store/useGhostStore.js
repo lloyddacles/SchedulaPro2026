@@ -11,6 +11,8 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 const useGhostStore = create()(
   persist(
     (set, get) => ({
+      isGhostMode: false,
+      stagedSchedules: [],
       originalSchedules: [], // Snap of the production schedule at the time Ghost Mode was entered
       validationErrors: [], // { id, reason, type }
       
@@ -99,14 +101,16 @@ const useGhostStore = create()(
 
       getDiff: () => {
         const state = get();
+        const staged = state.stagedSchedules || [];
+        const original = state.originalSchedules || [];
         const diff = {
-          updated: state.stagedSchedules.filter(s => {
-            const original = state.originalSchedules.find(o => o.id === s.id);
-            if (!original) return false;
-            return JSON.stringify(s) !== JSON.stringify(original);
+          updated: staged.filter(s => {
+            const orig = original.find(o => o.id === s.id);
+            if (!orig) return false;
+            return JSON.stringify(s) !== JSON.stringify(orig);
           }),
-          created: state.stagedSchedules.filter(s => String(s.id).startsWith('draft-')),
-          deleted: state.stagedSchedules.filter(s => s.isPendingDelete)
+          created: staged.filter(s => String(s.id).startsWith('draft-')),
+          deleted: staged.filter(s => s.isPendingDelete)
         };
         return diff;
       }
