@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import {
   Users, BookOpen, Layers, Activity, BarChart3, AlertTriangle,
   Building2, ShieldAlert, Download, CheckCircle2, Clock, Zap,
-  TrendingUp, UserCheck, AlertCircle, RefreshCw, Calendar
+  TrendingUp, UserCheck, AlertCircle, RefreshCw, Calendar, ShieldCheck
 } from 'lucide-react';
 import {
   PieChart, Pie, Cell, Legend, RadialBarChart, RadialBar, ResponsiveContainer,
@@ -432,15 +432,14 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex flex-col h-full bg-white/50 dark:bg-slate-800/40 p-6 rounded-[2rem] border border-white/40 dark:border-slate-700/30 min-h-0">
-                  <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-4">Faculty Load Distribution</p>
+                  <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-4">Department Distribution</p>
                   <div className="flex-1 h-[160px] relative">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie data={loadStatusData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={8} dataKey="value" stroke="none">
-                          {loadStatusData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                        <Pie data={deptPieData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={8} dataKey="value" stroke="none">
+                          {deptPieData.map((d, index) => <Cell key={`cell-${index}`} fill={getProgramColor(d.name)} />)}
                         </Pie>
                         <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)', fontSize: '11px' }} />
-                        <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '15px' }} />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
@@ -481,27 +480,19 @@ export default function Dashboard() {
             </div>
           </motion.div>
 
-          {/* Department Breakdown - Larger Visual */}
-          <motion.div variants={itemVariants} className="glass rounded-[2.5rem] shadow-2xl border border-white/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 overflow-hidden">
-            <SectionHeader icon={Building2} iconColor="text-indigo-500" title="Departmental Data Distribution" />
-            <div className="p-8 h-[380px]">
+          {/* Detailed Distribution Analysis */}
+          <motion.div variants={itemVariants} className="glass rounded-2xl shadow-xl border border-white/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 overflow-hidden">
+            <SectionHeader icon={BarChart3} iconColor="text-indigo-500" title="Institutional Load Variance" />
+            <div className="p-6 h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie 
-                    data={deptPieData} 
-                    cx="50%" cy="50%" 
-                    innerRadius={80} outerRadius={120} 
-                    paddingAngle={6} 
-                    dataKey="value" 
-                    stroke="none"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                  >
-                    {deptPieData.map((d, i) => <Cell key={i} fill={getProgramColor(d.name)} />)}
-                  </Pie>
-                  <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2)', fontSize: '12px' }} />
-                  <Legend iconType="circle" layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '11px', fontWeight: 'bold', paddingTop: '30px' }} />
-                </PieChart>
+                <BarChart data={loadStatusData} layout="vertical" margin={{ left: 40, right: 30 }}>
+                  <XAxis type="number" hide />
+                  <YAxis dataKey="name" type="category" tick={{ fontSize: 10, fontWeight: 800, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '12px', border: 'none' }} />
+                  <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={24}>
+                    {loadStatusData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </motion.div>
