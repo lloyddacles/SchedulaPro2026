@@ -56,19 +56,19 @@ const STATUS_CONFIG = {
 
 function StatCard({ name, stat, icon: Icon, color, bg, sub }) {
   return (
-    <motion.div variants={itemVariants} className="glass group p-6 rounded-[2rem] shadow-xl border border-white/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 hover:scale-[1.02] transition-all duration-300">
+    <motion.div variants={itemVariants} className="glass group p-4 rounded-2xl shadow-lg border border-white/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 hover:scale-[1.01] transition-all duration-300">
       <div className="flex items-start justify-between">
         <div className="min-w-0">
-          <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-1">{name}</p>
-          <p className={`text-4xl font-black ${color} tracking-tight truncate`}>{stat}</p>
+          <p className="text-[9px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">{name}</p>
+          <p className={`text-2xl font-black ${color} tracking-tighter truncate`}>{stat}</p>
         </div>
-        <div className={`p-4 rounded-2xl ${bg} ${color} transition-transform group-hover:rotate-12`}>
-          <Icon className="w-6 h-6" strokeWidth={2.5} />
+        <div className={`p-2.5 rounded-xl ${bg} ${color} transition-transform group-hover:rotate-6`}>
+          <Icon className="w-4 h-4" strokeWidth={3} />
         </div>
       </div>
       {sub && (
-        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-800/50">
-          <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">{sub}</p>
+        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-800/50">
+          <p className="text-[9px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest truncate">{sub}</p>
         </div>
       )}
     </motion.div>
@@ -77,15 +77,15 @@ function StatCard({ name, stat, icon: Icon, color, bg, sub }) {
 
 function SectionHeader({ icon: Icon, iconColor, title, badge, badgeColor }) {
   return (
-    <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100 dark:border-slate-800/50 bg-white/20 dark:bg-slate-900/20">
-      <div className="flex items-center gap-4">
-        <div className={`p-3 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-gray-100 dark:border-slate-700 ${iconColor}`}>
-          <Icon className="w-5 h-5" strokeWidth={2.5} />
+    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-slate-800/50 bg-white/20 dark:bg-slate-900/20">
+      <div className="flex items-center gap-3">
+        <div className={`p-2 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-gray-100 dark:border-slate-700 ${iconColor}`}>
+          <Icon className="w-4 h-4" strokeWidth={2.5} />
         </div>
-        <h2 className="text-lg font-black text-gray-800 dark:text-white tracking-tight">{title}</h2>
+        <h2 className="text-base font-black text-gray-800 dark:text-white tracking-tight">{title}</h2>
       </div>
       {badge && (
-        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em] ${badgeColor || 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400'}`}>
+        <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${badgeColor || 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400'}`}>
           {badge}
         </span>
       )}
@@ -115,6 +115,7 @@ export default function Dashboard() {
   });
 
   const [modal, setModal] = React.useState({ isOpen: false, type: '', title: '', data: null });
+  const [activeTab, setActiveTab] = React.useState('pulse');
 
   useEffect(() => {
     if (!socket || !isConnected) return;
@@ -191,6 +192,12 @@ export default function Dashboard() {
       Units: Number(f.total_assigned_hours),
     }));
 
+  const sidebarTabs = [
+    { id: 'pulse', label: 'Pulse', icon: Zap },
+    { id: 'alerts', label: 'Alerts', icon: ShieldAlert, count: totalConflicts },
+    { id: 'space', label: 'Space', icon: Building2 },
+  ];
+
   const deptPieData = department_stats.map(d => ({ name: d.department, value: Number(d.value) }));
 
   const loadStatusData = Object.entries(STATUS_CONFIG).map(([key, cfg]) => ({
@@ -204,27 +211,17 @@ export default function Dashboard() {
   // Institutional Color Way Mapping
   const getProgramColor = (programName) => {
     const name = (programName || '').toUpperCase();
-    // Check by college name or code
-    if (name.includes('COMPUTER') || name.includes('BSIS') || name.includes('CCS')) return '#3b82f6'; // Deep Blue
-    if (name.includes('BUSINESS') || name.includes('BSTM') || name.includes('HM') || name.includes('CBM')) return '#8b5cf6'; // Vivid Purple
-    if (name.includes('CRIMINAL') || name.includes('BSCRIM') || name.includes('CCJ')) return '#f59e0b'; // Amber Orange
-    if (name.includes('EDUCATION') || name.includes('BSE') || name.includes('CED')) return '#ef4444'; // Soft Red
-    if (name.includes('ACCOUNTANCY') || name.includes('BSA') || name.includes('BSAIS')) return '#10b981'; // Emerald Green
-    if (name.includes('SHS') || name.includes('SENIOR')) return '#ec4899'; // Pink
+    if (name.includes('COMPUTER') || name.includes('BSIS') || name.includes('CCS')) return '#3b82f6';
+    if (name.includes('BUSINESS') || name.includes('BSTM') || name.includes('HM') || name.includes('CBM')) return '#8b5cf6';
+    if (name.includes('CRIMINAL') || name.includes('BSCRIM') || name.includes('CCJ')) return '#f59e0b';
+    if (name.includes('EDUCATION') || name.includes('BSE') || name.includes('CED')) return '#ef4444';
+    if (name.includes('ACCOUNTANCY') || name.includes('BSA') || name.includes('BSAIS')) return '#10b981';
+    if (name.includes('SHS') || name.includes('SENIOR')) return '#ec4899';
     
-    // Fallback based on specific keywords
-    if (name.includes('BSTM')) return '#7c3aed'; 
-    if (name.includes('BSAIS') || name.includes('BSA')) return '#eab308';
-    if (name.includes('BSIS')) return '#1e3a8a';
-    if (name.includes('BSE')) return '#7f1d1d';
-    if (name.includes('BSCRIM')) return '#f97316';
-    
-    // Generate a color based on string if not matched
     const hash = name.split('').reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
     return `hsl(${Math.abs(hash) % 360}, 65%, 55%)`; 
   };
 
-  // ── Load Status Summary numbers ──────────────────────────────────
   const totalFacultyInTerm = faculty_loads.length;
   const assignedCount = totalFacultyInTerm - (load_status_breakdown.unassigned || 0);
   const assignmentRate = totalFacultyInTerm > 0
@@ -232,12 +229,11 @@ export default function Dashboard() {
     : 0;
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-8 pb-12">
+    <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-5 pb-8">
 
-      {/* ── Page Header: Compact & Actionable ──────────────────────── */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">System Dashboard</h1>
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div className="space-y-0.5">
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">System Dashboard</h1>
           <div className="flex items-center gap-3">
              <div className="flex items-center gap-2 px-2.5 py-1 bg-gray-50 dark:bg-slate-800/80 rounded-full border border-gray-100 dark:border-slate-700/50">
                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : (!realtimeSupported ? 'bg-indigo-400' : 'bg-red-500')}`} />
@@ -300,15 +296,13 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Advisory Quick Access Card */}
       {advisorySections.length > 0 && (
          <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative group overflow-hidden glass p-8 rounded-[3rem] border border-brand-200 shadow-2xl bg-gradient-to-br from-brand-600 to-indigo-700 text-white"
+          className="relative group overflow-hidden glass p-6 rounded-2xl border border-brand-200 shadow-xl bg-gradient-to-br from-brand-600 to-indigo-700 text-white"
          >
-            {/* Abstract Background Design */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-1000" />
+            <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-1000" />
             <div className="absolute bottom-0 left-1/4 w-32 h-32 bg-brand-400/20 rounded-full blur-2xl group-hover:translate-x-20 transition-transform duration-1000" />
             
             <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-8">
@@ -341,8 +335,6 @@ export default function Dashboard() {
          </motion.div>
       )}
 
-      {/* ── Top KPIs: Optimized Grid ─────────────────────────── */}
-      {/* ── Top KPIs: Optimized Grid ─────────────────────────── */}
       <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 ${isHead ? 'lg:grid-cols-8' : 'lg:grid-cols-7'} gap-4`}>
         <StatCard 
           name="Wellness" 
@@ -393,15 +385,12 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
         
-        {/* ── Left Content: Distribution & Detailed Charts (8 cols) ── */}
-        <div className="xl:col-span-8 space-y-8">
+        <div className="xl:col-span-8 space-y-6">
           
-          {/* Institutional Distribution Insights */}
-          <motion.div variants={itemVariants} className="glass rounded-[2.5rem] shadow-2xl border border-white/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 overflow-hidden">
-            <SectionHeader icon={TrendingUp} iconColor="text-brand-500" title="Institutional Metrics & Distribution" />
-            <div className="p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <motion.div variants={itemVariants} className="glass rounded-2xl shadow-xl border border-white/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 overflow-hidden">
+            <SectionHeader icon={TrendingUp} iconColor="text-brand-500" title="Institutional Metrics" />
+            <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
               
-              {/* Assignment Rate Radial */}
               <div className="lg:col-span-4 flex flex-col items-center justify-center p-6 bg-white/50 dark:bg-slate-800/40 rounded-[2rem] border border-white/40 dark:border-slate-700/30">
                 <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-6">Assignment Rate</p>
                 <div className="relative w-40 h-40">
@@ -420,7 +409,6 @@ export default function Dashboard() {
                 <p className="mt-6 text-xs font-bold text-gray-500 dark:text-slate-400">{assignedCount} / {totalFacultyInTerm} Faculty Mapped</p>
               </div>
 
-              {/* Employment Breakdown & Load Status Mix */}
               <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-6 h-full">
                 <div className="flex flex-col h-full bg-white/50 dark:bg-slate-800/40 p-6 rounded-[2rem] border border-white/40 dark:border-slate-700/30 min-h-0">
                   <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-4">Employment Mix</p>
@@ -429,7 +417,7 @@ export default function Dashboard() {
                       <PieChart>
                         <Pie data={empData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={8} dataKey="value" stroke="none">
                           {empData.map((entry, index) => {
-                            let color = '#3b82f6'; // Regular
+                            let color = '#3b82f6';
                             if (entry.name === 'Contractual') color = '#8b5cf6';
                             if (entry.name === 'Probationary') color = '#a78bfa';
                             if (entry.name === 'Part-time') color = '#ec4899';
@@ -460,7 +448,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Top Faculty Load Capacity Bar */}
             <div className="border-t border-gray-100 dark:border-slate-800/50 p-8 pt-6">
               <div className="flex items-center justify-between mb-6">
                 <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">High Capacity Faculty Units</p>
@@ -520,132 +507,108 @@ export default function Dashboard() {
           </motion.div>
         </div>
 
-        {/* ── Right Content: Status Breakdown & Alerts (4 cols) ── */}
-        <div className="xl:col-span-4 space-y-8">
+        {/* ── Right Content: Intelligence Sidebar (4 cols) ── */}
+        <div className="xl:col-span-4 space-y-6">
           
-          {/* Quick Status Breakdown Cards */}
-          <motion.div variants={itemVariants} className="glass rounded-[2.5rem] shadow-xl border border-white/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 p-6">
-            <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-6 px-2">Load Integrity Summary</p>
-            <div className="flex flex-col gap-3">
-              {Object.entries(STATUS_CONFIG).map(([key, cfg]) => {
-                const count = load_status_breakdown[key] || 0;
-                const pct = totalFacultyInTerm > 0 ? Math.round((count / totalFacultyInTerm) * 100) : 0;
-                return (
-                  <div key={key} className={`rounded-[1.5rem] p-5 ${cfg.bg} border border-transparent hover:border-white/40 dark:hover:border-slate-600 transition-all flex items-center justify-between group`}>
-                    <div className="flex items-center gap-4">
-                       <div className={`w-3 h-3 rounded-full ${cfg.text.replace('text', 'bg')}`} />
-                       <div>
-                         <span className="block text-sm font-black text-gray-800 dark:text-slate-100 uppercase tracking-tighter leading-none mb-1">{cfg.label}</span>
-                         <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">{pct}% of Faculty Pool</span>
-                       </div>
-                    </div>
-                    <span className={`text-3xl font-black ${cfg.text} tracking-tighter group-hover:scale-110 transition-transform`}>{count}</span>
-                  </div>
-                );
-              })}
+          {/* Intelligence Tab Switcher */}
+          <motion.div variants={itemVariants} className="glass rounded-2xl shadow-xl border border-white/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 overflow-hidden flex flex-col h-[500px]">
+            <div className="flex items-center p-1.5 bg-gray-100/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800">
+               {sidebarTabs.map((tab) => {
+                 const TabIcon = tab.icon;
+                 const isActive = activeTab === tab.id;
+                 return (
+                   <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex-1 relative flex items-center justify-center gap-2 py-2.5 rounded-xl transition-all ${isActive ? 'bg-white dark:bg-slate-700 shadow-sm text-brand-600 dark:text-brand-400' : 'text-gray-400 hover:text-gray-600 dark:hover:text-slate-200'}`}
+                   >
+                     <TabIcon className="w-3.5 h-3.5" strokeWidth={2.5} />
+                     <span className="text-[10px] font-black uppercase tracking-widest">{tab.label}</span>
+                     {tab.count > 0 && (
+                       <span className="absolute top-1.5 right-1.5 flex h-1.5 w-1.5 rounded-full bg-rose-500" />
+                     )}
+                   </button>
+                 );
+               })}
+            </div>
+
+            <div className="flex-1 overflow-hidden p-5">
+               <AnimatePresence mode="wait">
+                 {activeTab === 'pulse' && (
+                   <motion.div key="pulse" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="h-full">
+                     <ActivityFeed activities={recent_activities} />
+                   </motion.div>
+                 )}
+                 {activeTab === 'alerts' && (
+                   <motion.div key="alerts" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="h-full flex flex-col">
+                      <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
+                         {totalConflicts === 0 && wellness_violations.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-12 gap-3 opacity-30 grayscale">
+                               <ShieldCheck className="w-8 h-8" />
+                               <p className="text-[10px] font-bold uppercase tracking-widest">No Active Alerts</p>
+                            </div>
+                         ) : (
+                           <>
+                             {wellness_violations?.map((v, i) => (
+                               <div key={`w-${i}`} className="p-3 bg-emerald-500/10 dark:bg-emerald-900/10 rounded-xl border border-emerald-200/50 dark:border-emerald-700/30">
+                                  <div className="flex items-center gap-2 mb-1.5">
+                                     <Activity className="w-3 h-3 text-emerald-500" />
+                                     <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Wellness Alert</span>
+                                  </div>
+                                  <p className="text-xs font-black text-gray-800 dark:text-white mb-0.5">{v?.faculty_name || 'Faculty'}</p>
+                                  <p className="text-[9px] font-bold text-gray-500 dark:text-slate-400">Rest Gap: {v?.rest_gap || '0'}h observed</p>
+                               </div>
+                             ))}
+                             {conflicts.faculty?.map((c, i) => (
+                               <div key={`f-${i}`} onClick={() => setModal({ isOpen: true, type: 'conflict', title: 'Faculty Conflict', data: c })} className="p-3 bg-white/60 dark:bg-slate-900/60 rounded-xl border border-rose-100 dark:border-rose-900/30 cursor-pointer hover:bg-white dark:hover:bg-slate-800 transition-all">
+                                  <div className="flex items-center gap-2 mb-1">
+                                     <UserCheck className="w-3 h-3 text-rose-500" />
+                                     <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest">Collision</span>
+                                  </div>
+                                  <p className="text-xs font-black text-gray-800 dark:text-white truncate">{c.faculty_name}</p>
+                                  <p className="text-[9px] font-bold text-gray-400">{c.day_of_week} • {c.start_time}-{c.end_time}</p>
+                               </div>
+                             ))}
+                           </>
+                         )}
+                      </div>
+                   </motion.div>
+                 )}
+                 {activeTab === 'space' && (
+                   <motion.div key="space" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="h-full flex flex-col">
+                      <div className="space-y-3 overflow-y-auto pr-1 custom-scrollbar">
+                         {room_utilization.slice(0, 10).map((r, i) => {
+                            const hrs = Number(r.utilized_hours);
+                            const ratio = Math.min((hrs / 84) * 100, 100);
+                            const barC = ratio > 80 ? 'bg-rose-500' : ratio > 50 ? 'bg-amber-400' : 'bg-emerald-500';
+                            return (
+                               <div key={i} className="space-y-1 p-2 rounded-xl hover:bg-white/60 dark:hover:bg-slate-800/60 transition-all border border-transparent hover:border-white/40">
+                                  <div className="flex items-center justify-between">
+                                     <span className="text-[11px] font-black text-gray-800 dark:text-slate-200">{r.name}</span>
+                                     <span className="text-[9px] font-black text-gray-400">{hrs.toFixed(1)}h</span>
+                                  </div>
+                                  <div className="w-full h-1 bg-gray-200/50 dark:bg-slate-700 rounded-full overflow-hidden">
+                                     <div className={`h-full rounded-full ${barC}`} style={{ width: `${ratio}%` }} />
+                                  </div>
+                               </div>
+                            );
+                         })}
+                      </div>
+                   </motion.div>
+                 )}
+               </AnimatePresence>
             </div>
           </motion.div>
 
-          {/* Conflict Alerts Sidebar */}
-          <motion.div variants={itemVariants} className="glass rounded-[2.5rem] shadow-xl border border-red-100/30 dark:border-rose-900/30 bg-rose-50/20 dark:bg-rose-900/10 overflow-hidden">
-            <SectionHeader
-              icon={ShieldAlert}
-              iconColor={totalConflicts > 0 ? 'text-rose-500' : 'text-emerald-500'}
-              title="Conflict Watch"
-              badge={totalConflicts > 0 ? `${totalConflicts} Active` : 'Secure ✓'}
-              badgeColor={totalConflicts > 0 ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'}
-            />
-            <div className="px-6 py-4 divide-y divide-rose-100 dark:divide-rose-900/20 max-h-[400px] overflow-y-auto">
-              {totalConflicts === 0 && wellness_violations.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 gap-2 text-gray-400 dark:text-slate-500">
-                  <CheckCircle2 className="w-10 h-10 text-emerald-400/50" />
-                  <p className="text-xs font-black uppercase tracking-widest text-emerald-500/60">Institutional Integrity Secured</p>
+          {/* Quick Load Mix Breakdown */}
+          <motion.div variants={itemVariants} className="glass rounded-2xl shadow-xl border border-white/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 p-5">
+            <div className="grid grid-cols-2 gap-3">
+              {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                <div key={key} className={`rounded-xl p-3 ${cfg.bg} border border-transparent flex flex-col gap-1`}>
+                  <span className="text-[9px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest">{cfg.label}</span>
+                  <span className={`text-xl font-black ${cfg.text} tracking-tighter`}>{load_status_breakdown[key] || 0}</span>
                 </div>
-              ) : (
-                <div className="space-y-4 py-2">
-                  {/* Wellness Violations: Forensic Priority */}
-                  {wellness_violations?.map((v, i) => (
-                    <div key={`w-${i}`} className="p-4 bg-emerald-500/10 dark:bg-emerald-900/10 rounded-2xl border border-emerald-200/50 dark:border-emerald-700/30 animate-pulse-slow">
-                       <div className="flex items-center gap-2 mb-2">
-                          <Activity className="w-3.5 h-3.5 text-emerald-500" />
-                          <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Wellness Alert</span>
-                       </div>
-                       <p className="text-sm font-black text-gray-800 dark:text-white mb-1">{v?.faculty_name || 'System Faculty'}</p>
-                       <p className="text-[10px] font-bold text-gray-500 dark:text-slate-400 mb-2">Rest Gap Violation: {v?.rest_gap || '0'}h observed</p>
-                       <div className="flex items-center justify-between text-[9px] font-black text-gray-500 uppercase tracking-widest bg-white/50 dark:bg-slate-800/50 px-2 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/30">
-                        <span>{v?.day_a || 'Day A'} → {v?.day_b || 'Day B'}</span>
-                        <span>Min 10h Required</span>
-                      </div>
-                    </div>
-                  ))}
-
-                  {conflicts.faculty?.map((c, i) => (
-                    <div 
-                      key={`f-${i}`} 
-                      onClick={() => setModal({ isOpen: true, type: 'conflict', title: 'Faculty Conflict Detail', data: c })}
-                      className="p-4 bg-white/60 dark:bg-slate-900/60 rounded-2xl border border-rose-100 dark:border-rose-900/30 cursor-pointer hover:scale-[1.02] transition-transform active:scale-95"
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                         <UserCheck className="w-3.5 h-3.5 text-rose-500" />
-                         <span className="text-[10px] font-black text-rose-500 uppercase">Faculty Collision</span>
-                      </div>
-                      <p className="text-sm font-black text-gray-800 dark:text-white mb-1">{c.faculty_name}</p>
-                      <p className="text-[10px] font-bold text-gray-400 mb-2">{c.subject_a} ↔ {c.subject_b}</p>
-                      <div className="flex items-center justify-between text-[9px] font-black text-gray-500 uppercase tracking-widest bg-gray-50 dark:bg-slate-800/50 px-2 py-1 rounded-full">
-                        <span>{c.day_of_week}</span>
-                        <span>{c.start_time}-{c.end_time}</span>
-                      </div>
-                    </div>
-                  ))}
-                  {conflicts.rooms?.map((c, i) => (
-                    <div 
-                      key={`r-${i}`} 
-                      onClick={() => setModal({ isOpen: true, type: 'conflict', title: 'Room Conflict Detail', data: c })}
-                      className="p-4 bg-white/60 dark:bg-slate-900/60 rounded-2xl border border-rose-100 dark:border-rose-900/30 cursor-pointer hover:scale-[1.02] transition-transform active:scale-95"
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                         <Building2 className="w-3.5 h-3.5 text-orange-500" />
-                         <span className="text-[10px] font-black text-orange-500 uppercase">Room Double Book</span>
-                      </div>
-                      <p className="text-sm font-black text-gray-800 dark:text-white mb-1">{c.room}</p>
-                      <p className="text-[10px] font-bold text-gray-400 mb-2">{c.subject_a} ↔ {c.subject_b}</p>
-                      <div className="flex items-center justify-between text-[9px] font-black text-gray-500 uppercase tracking-widest bg-gray-50 dark:bg-slate-800/50 px-2 py-1 rounded-full">
-                        <span>{c.day_of_week}</span>
-                        <span>{c.start_time}-{c.end_time}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            {totalConflicts > 0 && <div className="p-4 border-t border-rose-100 dark:border-rose-900/20 bg-rose-50/50 dark:bg-rose-900/20 text-center"><span className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-[0.2em] animate-pulse">Action Required Promptly</span></div>}
-          </motion.div>
-
-          {/* Institutional Activity Heartbeat */}
-          <motion.div variants={itemVariants} className="glass rounded-[2.5rem] shadow-xl border border-white/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 p-8">
-            <ActivityFeed activities={recent_activities} />
-          </motion.div>
-
-          {/* Room Utilization Micro-Panel */}
-          <motion.div variants={itemVariants} className="glass rounded-[2.5rem] shadow-xl border border-white/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 overflow-hidden">
-            <SectionHeader icon={Building2} iconColor="text-amber-500" title="Space Efficiency" />
-            <div className="px-6 py-4 space-y-3 max-h-[300px] overflow-y-auto">
-              {room_utilization.map((r, i) => {
-                const hrs = Number(r.utilized_hours);
-                const ratio = Math.min((hrs / 84) * 100, 100);
-                const barC = ratio > 80 ? 'bg-rose-500' : ratio > 50 ? 'bg-amber-400' : 'bg-emerald-500';
-                return (
-                  <div key={i} className="space-y-1.5 p-3 rounded-2xl hover:bg-white/60 dark:hover:bg-slate-800/60 transition-all border border-transparent hover:border-white/40">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-gray-800 dark:text-slate-200">{r.name}</span>
-                      <span className="text-[10px] font-black text-gray-400 uppercase">{hrs.toFixed(1)}h</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-gray-200/50 dark:bg-slate-700 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${barC} shadow-[0_0_8px] ${barC.replace('bg-', 'shadow-')}/20`} style={{ width: `${ratio}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
+              ))}
             </div>
           </motion.div>
         </div>
@@ -655,18 +618,18 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
         
         {/* Detail Load Table: Large Span */}
-        <motion.div variants={itemVariants} className="xl:col-span-3 glass rounded-[3rem] shadow-2xl border border-white/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 overflow-hidden">
-          <SectionHeader icon={BarChart3} iconColor="text-brand-500" title="Detailed Faculty Load Matrix"
+        <motion.div variants={itemVariants} className="xl:col-span-3 glass rounded-2xl shadow-xl border border-white/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 overflow-hidden">
+          <SectionHeader icon={BarChart3} iconColor="text-brand-500" title="Faculty Load Matrix"
             badge={`${faculty_loads.length} Members`}
-            badgeColor="bg-brand-500 text-white font-black uppercase text-[9px] tracking-widest shadow-lg shadow-brand-500/20" />
+            badgeColor="bg-brand-500 text-white font-black uppercase text-[8px] tracking-widest shadow-lg shadow-brand-500/20" />
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-100/50 dark:divide-slate-700/50">
               <thead className="bg-gray-50/60 dark:bg-slate-900/60">
                 <tr>
-                  <th className="px-8 py-5 text-left text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">Faculty Name</th>
-                  <th className="px-8 py-5 text-left text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] hidden sm:table-cell text-center">Load Mix</th>
-                  <th className="px-8 py-5 text-left text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">Unit Thresholds</th>
-                  <th className="px-8 py-5 text-center text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">Status</th>
+                  <th className="px-6 py-3.5 text-left text-[9px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">Faculty Name</th>
+                  <th className="px-6 py-3.5 text-left text-[9px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest hidden sm:table-cell text-center">Mix</th>
+                  <th className="px-6 py-3.5 text-left text-[9px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">Thresholds</th>
+                  <th className="px-6 py-3.5 text-center text-[9px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50/50 dark:divide-slate-700/30">
@@ -688,29 +651,29 @@ export default function Dashboard() {
                       onClick={() => setModal({ isOpen: true, type: 'faculty', title: f.full_name, data: f })}
                       className="hover:bg-white/80 dark:hover:bg-slate-700/50 transition-all duration-300 group cursor-pointer"
                     >
-                      <td className="px-8 py-5">
-                        <div className="font-black text-gray-900 dark:text-white text-base tracking-tight group-hover:text-brand-500 transition-colors">{f.full_name}</div>
-                        <div className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">{f.department || 'Not Categorized'}</div>
+                      <td className="px-6 py-3.5">
+                        <div className="font-black text-gray-900 dark:text-white text-sm tracking-tight group-hover:text-brand-500 transition-colors">{f.full_name}</div>
+                        <div className="text-[9px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">{f.department || 'Not Categorized'}</div>
                       </td>
-                      <td className="px-8 py-5 hidden sm:table-cell text-center">
-                        <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-slate-800/80 rounded-2xl border border-gray-100 dark:border-slate-700/50">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                          <span className="text-xs font-black text-gray-700 dark:text-slate-200">{f.subjects_count} Subjects</span>
+                      <td className="px-6 py-3.5 hidden sm:table-cell text-center">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 dark:bg-slate-800/80 rounded-xl border border-gray-100 dark:border-slate-700/50">
+                          <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
+                          <span className="text-[11px] font-black text-gray-700 dark:text-slate-200">{f.subjects_count}</span>
                         </span>
                       </td>
-                      <td className="px-8 py-5">
-                        <div className="flex flex-col gap-2">
-                          <div className="flex items-center justify-between px-1">
-                            <span className="text-xs font-black text-gray-800 dark:text-slate-200">{assigned}<span className="text-gray-400 font-bold"> units</span></span>
-                            <span className="text-[10px] font-black text-gray-400 uppercase">{Math.round(pct)}% Filled</span>
+                      <td className="px-6 py-3.5">
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between px-0.5">
+                            <span className="text-[11px] font-black text-gray-800 dark:text-slate-200">{assigned}<span className="text-gray-400 font-bold"> units</span></span>
+                            <span className="text-[9px] font-black text-gray-400 uppercase">{Math.round(pct)}%</span>
                           </div>
-                          <div className="w-full h-2.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden shadow-inner">
-                            <div className="h-full rounded-full transition-all duration-1000 group-hover:brightness-110" style={{ width: `${pct}%`, backgroundColor: barColor }} />
+                          <div className="w-full h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: barColor }} />
                           </div>
                         </div>
                       </td>
-                      <td className="px-8 py-5 text-center">
-                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${cfg.bg} ${cfg.text} border border-transparent group-hover:border-current transition-all`}>
+                      <td className="px-6 py-3.5 text-center">
+                        <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${cfg.bg} ${cfg.text}`}>
                           {cfg.label}
                         </span>
                       </td>
@@ -723,46 +686,38 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Unassigned Subjects Sidebar */}
-        <motion.div variants={itemVariants} className="glass rounded-[3rem] shadow-2xl border border-rose-100/30 dark:border-rose-900/30 bg-rose-50/20 dark:bg-rose-900/10 overflow-hidden flex flex-col">
+        <motion.div variants={itemVariants} className="glass rounded-2xl shadow-xl border border-rose-100/30 dark:border-rose-900/30 bg-rose-50/20 dark:bg-rose-900/10 overflow-hidden flex flex-col">
           <SectionHeader
             icon={AlertCircle}
             iconColor={unassigned_subjects.length > 0 ? 'text-rose-500' : 'text-emerald-500'}
             title="Assignment Delta"
           />
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 min-h-[400px]">
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-[300px]">
             {unassigned_subjects.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center gap-4 text-gray-400 dark:text-slate-500 p-8 text-center">
-                <div className="p-6 bg-emerald-50 dark:bg-emerald-900/20 rounded-[2rem] text-emerald-500">
-                  <CheckCircle2 className="w-12 h-12" />
+              <div className="h-full flex flex-col items-center justify-center gap-3 text-gray-400 dark:text-slate-500 p-6 text-center">
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl text-emerald-500">
+                  <CheckCircle2 className="w-10 h-10" />
                 </div>
-                <p className="text-sm font-black uppercase tracking-widest">Full Convergence Achieved</p>
-                <p className="text-[10px] font-bold opacity-60">All subjects have faculty mandates</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500/60">Institutional Convergence</p>
               </div>
             ) : (
               unassigned_subjects.map((sub, i) => (
-                <div key={i} className="p-5 bg-white/70 dark:bg-slate-900/70 rounded-[2rem] border border-rose-100 dark:border-rose-900/30 hover:scale-[1.02] transition-transform shadow-sm group">
-                  <div className="flex flex-col gap-3">
+                <div key={i} className="p-3 bg-white/70 dark:bg-slate-900/70 rounded-xl border border-rose-100 dark:border-rose-900/30 hover:scale-[1.01] transition-transform">
+                  <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-[9px] font-black text-rose-500 uppercase tracking-[0.2em] bg-rose-50 dark:bg-rose-900/30 px-2 py-0.5 rounded-lg">Pending Mapping</span>
-                      <span className="text-xs font-black text-gray-900 dark:text-white uppercase group-hover:text-rose-500 transition-colors">{sub.subject_code}</span>
+                      <span className="text-[8px] font-black text-rose-500 uppercase tracking-widest">Pending</span>
+                      <span className="text-[10px] font-black text-gray-900 dark:text-white uppercase truncate ml-2">{sub.subject_code}</span>
                     </div>
-                    <p className="text-xs font-bold text-gray-500 dark:text-slate-400 line-clamp-2">{sub.subject_name}</p>
-                    <div className="flex items-center justify-between text-[10px] font-black text-gray-400 uppercase tracking-widest pt-2 border-t border-gray-100/50 dark:border-slate-800/50">
-                       <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {sub.required_hours}h</span>
-                       <span className="flex items-center gap-1"><Layers className="w-3 h-3" /> {sub.program_code} Y{sub.year_level}</span>
+                    <p className="text-[10px] font-bold text-gray-500 dark:text-slate-400 line-clamp-1">{sub.subject_name}</p>
+                    <div className="flex items-center justify-between text-[8px] font-black text-gray-400 uppercase tracking-widest pt-1 border-t border-gray-100/50 dark:border-slate-800/50">
+                       <span>{sub.required_hours}h</span>
+                       <span>{sub.program_code} Y{sub.year_level}</span>
                     </div>
                   </div>
                 </div>
               ))
             )}
           </div>
-          {unassigned_subjects.length > 0 && (
-             <div className="p-6 bg-white/40 dark:bg-slate-900/40 border-t border-rose-100 dark:border-rose-900/20">
-               <button className="w-full py-3 bg-rose-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-rose-600/20 hover:bg-rose-700 transition-all flex items-center justify-center gap-2">
-                 <Zap className="w-3.5 h-3.5" /> Automate Final Mapping
-               </button>
-              </div>
-           )}
         </motion.div>
       </div>
 
