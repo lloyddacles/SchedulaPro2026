@@ -96,7 +96,9 @@ app.use(cors({
   origin: FRONTEND_URL,
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ limit: '5mb', extended: true }));
+
 app.use(cookieParser());
 
 // Global Rate Limiter: 100 requests per 15 minutes

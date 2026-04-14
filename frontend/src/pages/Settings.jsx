@@ -52,7 +52,21 @@ export default function SystemSettings() {
     }
     setLogoFileName(file.name);
     const reader = new FileReader();
-    reader.onload = (ev) => setLogoUrl(ev.target.result);
+    reader.onload = (ev) => {
+      const img = new window.Image();
+      img.onload = () => {
+        // Resize to max 512x512 to keep the Base64 payload small
+        const MAX = 512;
+        const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+        const canvas = document.createElement('canvas');
+        canvas.width  = Math.round(img.width  * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        setLogoUrl(canvas.toDataURL('image/png', 0.9));
+      };
+      img.src = ev.target.result;
+    };
     reader.readAsDataURL(file);
   };
 
