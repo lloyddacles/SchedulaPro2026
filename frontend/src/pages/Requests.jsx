@@ -36,7 +36,7 @@ export default function Requests() {
     queryFn: async () => (await api.get('/campuses')).data 
   });
 
-  const { data: requests = [], isLoading, refetch, isRefetching } = useQuery({
+  const { data: requests = [], isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['requests', selectedCampus],
     queryFn: async () => {
       let url = '/requests';
@@ -203,7 +203,27 @@ export default function Requests() {
 
       {/* Cards Grid */}
       <div className="relative min-h-[400px]">
-        {filteredRequests.length === 0 ? (
+        {error ? (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center justify-center p-20 text-center"
+          >
+            <div className="w-24 h-24 bg-red-50 dark:bg-red-900/20 rounded-[2.5rem] flex items-center justify-center mb-6 shadow-inner border-2 border-red-100 dark:border-red-800/30">
+              <AlertCircle className="w-10 h-10 text-red-500" />
+            </div>
+            <h3 className="text-xl font-black text-gray-800 dark:text-slate-200 uppercase tracking-tight">Institutional Link Failure</h3>
+            <p className="text-sm text-gray-400 dark:text-slate-500 font-bold max-w-md mt-2 leading-relaxed">
+              {error.response?.data?.error || "A fatal exception was caught in the Academic Request Matrix. Orphaned schedule references or schema mismatches may be responsible."}
+            </p>
+            <button 
+              onClick={() => refetch()}
+              className="mt-8 px-8 py-3 bg-brand-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-brand-500/30 hover:-translate-y-1 active:scale-95 transition-all"
+            >
+              Re-Synch Infrastructure
+            </button>
+          </motion.div>
+        ) : filteredRequests.length === 0 ? (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

@@ -48,24 +48,33 @@ router.get('/sync-institutional-schema', authorizeRoles('admin'), async (req: Re
 router.get('/', async (req: Request, res: Response) => {
   try {
     const [rows] = await pool.query(`
-      SELECT sr.*, f.full_name as faculty_name, s.day_of_week, s.start_time, s.end_time, s.room, sub.subject_code
+      SELECT 
+        sr.*, 
+        COALESCE(f.full_name, 'System Faculty') as faculty_name,
+        COALESCE(f.department, 'Academic Division') as department,
+        s.day_of_week, 
+        s.start_time, 
+        s.end_time, 
+        s.room, 
+        sub.subject_code
       FROM schedule_requests sr
-      JOIN faculty f ON sr.faculty_id = f.id
-      JOIN schedules s ON sr.schedule_id = s.id
-      JOIN teaching_loads tl ON s.teaching_load_id = tl.id
-      JOIN subjects sub ON tl.subject_id = sub.id
+      LEFT JOIN faculty f ON sr.faculty_id = f.id
+      LEFT JOIN schedules s ON sr.schedule_id = s.id
+      LEFT JOIN teaching_loads tl ON s.teaching_load_id = tl.id
+      LEFT JOIN subjects sub ON tl.subject_id = sub.id
       ORDER BY sr.created_at DESC
     `);
     
     // Standardize the field name for the frontend
     const enrichedRows = (rows as any[]).map(r => ({
       ...r,
-      reason_text: r.reason_text || r.reason
+      reason_text: r.reason_text || r.reason || 'No justification provided.'
     }));
 
     res.json(enrichedRows);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(" [REQUESTS FETCH ERROR]:", error);
+    res.status(500).json({ error: "Failed to load academic requests. Institutional schema mismatch or orphaned record detected.", details: error.message });
   }
 });
 
@@ -109,6 +118,22 @@ router.post('/', validate(scheduleRequestSchema), async (req: any, res: Response
     await pool.query(query, params);
     res.status(201).json({ message: 'Recovery matrix request submitted for endorsement.' });
   } catch (error: any) {
+    // Self-Healing Logic: If the DB is missing the 'MAKEUP' enum value, patch it and retry
+    if (error.code === 'ER_TRUNCATED_WRONG_VALUE_FOR_FIELD' || error.message.includes('request_type')) {
+      console.log(" [SELF-HEAL]: Detected request_type mismatch. Aligning institutional schema...");
+      try {
+        await pool.query(`
+          ALTER TABLE schedule_requests 
+          MODIFY COLUMN request_type ENUM('DROP', 'SWAP', 'CHANGE_ROOM', 'CHANGE_TIME', 'OTHER', 'MAKEUP') NOT NULL
+        `);
+        // Retry the insert exactly once
+        await pool.query(query, params);
+        return res.status(201).json({ message: 'Recovery matrix request submitted (Auto-Healed Schema).' });
+      } catch (retryError: any) {
+        return res.status(500).json({ message: 'Critical schema mismatch. Self-healing failed.', error: retryError.message });
+      }
+    }
+
     if (error.code === 'ER_BAD_FIELD_ERROR') {
       res.status(500).json({ 
         message: 'Institutional schema mismatch detected. Missing recovery columns.', 

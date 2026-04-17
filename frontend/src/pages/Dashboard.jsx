@@ -410,10 +410,10 @@ export default function Dashboard() {
               </div>
 
               <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-6 h-full">
-                <div className="flex flex-col h-full bg-white/50 dark:bg-slate-800/40 p-6 rounded-[2rem] border border-white/40 dark:border-slate-700/30 min-h-0">
+                <div className="flex flex-col h-full bg-white/50 dark:bg-slate-800/40 p-6 rounded-[2rem] border border-white/40 dark:border-slate-700/30 min-h-[250px]">
                   <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-4">Employment Mix</p>
                   <div className="flex-1 h-[160px] relative">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={160}>
                       <PieChart>
                         <Pie data={empData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={8} dataKey="value" stroke="none">
                           {empData.map((entry, index) => {
@@ -431,10 +431,10 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="flex flex-col h-full bg-white/50 dark:bg-slate-800/40 p-6 rounded-[2rem] border border-white/40 dark:border-slate-700/30 min-h-0">
+                <div className="flex flex-col h-full bg-white/50 dark:bg-slate-800/40 p-6 rounded-[2rem] border border-white/40 dark:border-slate-700/30 min-h-[250px]">
                   <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-4">Department Distribution</p>
                   <div className="flex-1 h-[160px] relative">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={160}>
                       <PieChart>
                         <Pie data={deptPieData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={8} dataKey="value" stroke="none">
                           {deptPieData.map((d, index) => <Cell key={`cell-${index}`} fill={getProgramColor(d.name)} />)}
@@ -452,8 +452,8 @@ export default function Dashboard() {
                 <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">High Capacity Faculty Units</p>
                 <span className="text-[10px] font-black text-gray-400 px-3 py-1 bg-gray-50 dark:bg-slate-800 rounded-full border border-gray-100 dark:border-slate-700/50 uppercase">Top 12 Performers</span>
               </div>
-              <div className="h-[200px]">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-[200px] min-h-[200px]">
+                <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                   <BarChart data={barData} margin={{ top: 0, right: 0, left: -30, bottom: 0 }}>
                     <defs>
                       <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
@@ -483,8 +483,8 @@ export default function Dashboard() {
           {/* Detailed Distribution Analysis */}
           <motion.div variants={itemVariants} className="glass rounded-2xl shadow-xl border border-white/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 overflow-hidden">
             <SectionHeader icon={BarChart3} iconColor="text-indigo-500" title="Institutional Load Variance" />
-            <div className="p-6 h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="p-6 h-[300px] min-h-[300px]">
+              <ResponsiveContainer width="100%" height="100%" minHeight={300}>
                 <BarChart data={loadStatusData} layout="vertical" margin={{ left: 40, right: 30 }}>
                   <XAxis type="number" hide />
                   <YAxis dataKey="name" type="category" tick={{ fontSize: 10, fontWeight: 800, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
