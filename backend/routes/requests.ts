@@ -74,7 +74,11 @@ router.get('/', async (req: Request, res: Response) => {
     res.json(enrichedRows);
   } catch (error: any) {
     console.error(" [REQUESTS FETCH ERROR]:", error);
-    res.status(500).json({ error: "Failed to load academic requests. Institutional schema mismatch or orphaned record detected.", details: error.message });
+    res.status(500).json({ 
+      error: `Diagnostic Trace: ${error.message}`, 
+      details: error.message,
+      suggestion: "If this mentions a missing column, please try the institutional sync route."
+    });
   }
 });
 
