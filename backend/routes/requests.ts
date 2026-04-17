@@ -51,7 +51,7 @@ router.get('/', async (req: Request, res: Response) => {
       SELECT 
         sr.*, 
         COALESCE(f.full_name, 'System Faculty') as faculty_name,
-        COALESCE(f.department, 'Academic Division') as department,
+        COALESCE(d.name, 'Academic Division') as department,
         s.day_of_week, 
         s.start_time, 
         s.end_time, 
@@ -59,6 +59,7 @@ router.get('/', async (req: Request, res: Response) => {
         sub.subject_code
       FROM schedule_requests sr
       LEFT JOIN faculty f ON sr.faculty_id = f.id
+      LEFT JOIN departments d ON f.department_id = d.id
       LEFT JOIN schedules s ON sr.schedule_id = s.id
       LEFT JOIN teaching_loads tl ON s.teaching_load_id = tl.id
       LEFT JOIN subjects sub ON tl.subject_id = sub.id
@@ -75,9 +76,9 @@ router.get('/', async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error(" [REQUESTS FETCH ERROR]:", error);
     res.status(500).json({ 
-      error: `Diagnostic Trace: ${error.message}`, 
+      error: "Failed to load academic requests. Institutional schema mismatch or orphaned record detected.", 
       details: error.message,
-      suggestion: "If this mentions a missing column, please try the institutional sync route."
+      suggestion: "Please verify that the faculty and department tables are synchronized."
     });
   }
 });
