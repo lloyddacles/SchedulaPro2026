@@ -5,7 +5,7 @@ import pool from '../config/db.js';
 import { logAudit } from '../utils/auditLogger.js';
 import { authenticateToken, authorizeRoles } from '../utils/auth.js';
 import { validate, userSchema } from '../middleware/validator.js';
-import { sendOTPEmail } from '../utils/mailer.js';
+import { sendOTPEmail, sendTemporaryPasswordEmail } from '../utils/mailer.js';
 
 const router = express.Router();
 
@@ -85,14 +85,22 @@ router.post('/:id/send-reset', async (req: any, res: Response) => {
     const user = rows[0];
     if (!user.email) return res.status(400).json({ error: 'User does not have an institutional email registered' });
 
-    const otp = crypto.randomInt(100000, 999999).toString();
-    const expiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+    // Generate a secure random temporary password (8 characters)
+    const tempPassword = crypto.randomBytes(4).toString('hex');
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(tempPassword, salt);
 
-    await pool.query('UPDATE users SET reset_otp = ?, reset_expires = ? WHERE id = ?', [otp, expiry, req.params.id]);
-    await sendOTPEmail(user.email, otp);
+    // Update user password immediately and clear any old OTPs
+    await pool.query(
+      'UPDATE users SET password_hash = ?, reset_otp = NULL, reset_expires = NULL WHERE id = ?', 
+      [hash, req.params.id]
+    );
+
+    // Send the new credentials to the user
+    await sendTemporaryPasswordEmail(user.email, tempPassword);
     
-    await logAudit('SEND_RESET', 'User', req.params.id, { username: user.username, email: user.email }, req.user.username);
-    res.json({ message: `Identity recovery Matrix Code dispatched to ${user.email}` });
+    await logAudit('ADMIN_RESET', 'User', req.params.id, { username: user.username, email: user.email }, req.user.username);
+    res.json({ message: `Administrative Identity Reset complete. New credentials dispatched to ${user.email}` });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
