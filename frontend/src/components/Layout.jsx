@@ -133,6 +133,11 @@ export default function Layout() {
     navItems.unshift({ path: '/my-schedule', label: 'My Workload', icon: Calendar });
   }
 
+  // Add Security to Nav for everyone to make it obvious
+  if (!navItems.find(i => i.label === 'Account Security')) {
+    navItems.push({ path: '#', label: 'Account Security', icon: Key, onClick: () => setIsPasswordModalOpen(true) });
+  }
+
   const roleBadge = ROLE_BADGES[user?.role] || ROLE_BADGES.viewer;
 
   const handleLogout = () => { logout(); navigate('/login'); };
@@ -181,21 +186,32 @@ export default function Layout() {
         {/* Nav */}
         <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
           {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              onClick={closeSidebar}
-              className={({ isActive }) =>
-                `flex items-center px-3 py-2.5 rounded-xl transition-colors text-sm ${
-                  isActive
-                    ? 'bg-brand-600 text-white shadow-md'
-                    : 'text-brand-100 hover:bg-brand-800/70 hover:text-white'
-                }`
-              }
-            >
-              <item.icon className="w-4 h-4 mr-3 flex-shrink-0" />
-              <span className="font-medium truncate">{item.label}</span>
-            </NavLink>
+            item.onClick ? (
+              <button
+                key={item.label}
+                onClick={() => { item.onClick(); closeSidebar(); }}
+                className="w-full flex items-center px-3 py-2.5 rounded-xl transition-colors text-sm text-brand-100 hover:bg-brand-800/70 hover:text-white"
+              >
+                <item.icon className="w-4 h-4 mr-3 flex-shrink-0" />
+                <span className="font-medium truncate">{item.label}</span>
+              </button>
+            ) : (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={closeSidebar}
+                className={({ isActive }) =>
+                  `flex items-center px-3 py-2.5 rounded-xl transition-colors text-sm ${
+                    isActive
+                      ? 'bg-brand-600 text-white shadow-md'
+                      : 'text-brand-100 hover:bg-brand-800/70 hover:text-white'
+                  }`
+                }
+              >
+                <item.icon className="w-4 h-4 mr-3 flex-shrink-0" />
+                <span className="font-medium truncate">{item.label}</span>
+              </NavLink>
+            )
           ))}
         </nav>
 
@@ -218,7 +234,7 @@ export default function Layout() {
             onClick={() => { setIsPasswordModalOpen(true); closeSidebar(); }}
             className="w-full flex items-center px-3 py-2.5 text-sm font-semibold rounded-xl transition-all text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800"
           >
-            <Key className="w-4 h-4 mr-3 flex-shrink-0" /> Security Keys
+            <Key className="w-4 h-4 mr-3 flex-shrink-0" /> Account Security
           </button>
           <button
             onClick={handleLogout}
@@ -398,18 +414,63 @@ export default function Layout() {
               )}
             </div>
 
-            {/* Avatar + username */}
-            <div className="flex items-center gap-2">
-              <div className="text-sm text-right hidden md:block">
-                <p className="font-bold text-gray-700 dark:text-slate-200 leading-tight">{user?.username || 'User'}</p>
-                <p className={`text-[10px] font-bold uppercase tracking-wider ${ROLE_BADGES[user?.role]?.color?.split(' ')[1] || 'text-gray-400'}`}>
-                  {ROLE_BADGES[user?.role]?.label || user?.role}
-                </p>
-              </div>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-500 to-indigo-600 text-white flex items-center justify-center font-bold shadow-md uppercase text-sm border-2 border-white dark:border-slate-800 flex-shrink-0">
-                {user?.username?.charAt(0) || 'U'}
-              </div>
-            </div>
+            {/* Avatar + User Dropdown */}
+            <HMenu as="div" className="relative inline-block text-left">
+              <HMenu.Button className="flex items-center gap-2 group p-1 rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-800 transition-all">
+                <div className="text-sm text-right hidden md:block px-2">
+                  <p className="font-bold text-gray-700 dark:text-slate-200 leading-tight group-hover:text-brand-600 transition-colors">{user?.username || 'User'}</p>
+                  <p className={`text-[10px] font-bold uppercase tracking-wider ${ROLE_BADGES[user?.role]?.color?.split(' ')[1] || 'text-gray-400'}`}>
+                    {ROLE_BADGES[user?.role]?.label || user?.role}
+                  </p>
+                </div>
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-indigo-600 text-white flex items-center justify-center font-black shadow-lg uppercase text-sm border-2 border-white dark:border-slate-800 flex-shrink-0 transition-transform group-hover:scale-105 group-active:scale-95">
+                  {user?.username?.charAt(0) || 'U'}
+                </div>
+              </HMenu.Button>
+
+              <Transition
+                as={React.Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+              >
+                <HMenu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 dark:divide-slate-700 rounded-2xl bg-white dark:bg-slate-800 shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none z-50 overflow-hidden border border-gray-100 dark:border-slate-700">
+                  <div className="px-1 py-1">
+                    <HMenu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={() => setIsPasswordModalOpen(true)}
+                          className={`${
+                            active ? 'bg-brand-500 text-white' : 'text-gray-700 dark:text-slate-300'
+                          } group flex w-full items-center rounded-xl px-3 py-2.5 text-xs font-bold transition-all gap-3`}
+                        >
+                          <Key className="w-4 h-4" />
+                          Change Password
+                        </button>
+                      )}
+                    </HMenu.Item>
+                  </div>
+                  <div className="px-1 py-1">
+                    <HMenu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={handleLogout}
+                          className={`${
+                            active ? 'bg-rose-500 text-white' : 'text-rose-500'
+                          } group flex w-full items-center rounded-xl px-3 py-2.5 text-xs font-bold transition-all gap-3`}
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Sign Out
+                        </button>
+                      )}
+                    </HMenu.Item>
+                  </div>
+                </HMenu.Items>
+              </Transition>
+            </HMenu>
           </div>
         </header>
 
