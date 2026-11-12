@@ -40,7 +40,24 @@ import { setIo } from './utils/socketStore.js';
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
+const allowedOrigins = [
+  FRONTEND_URL,
+  "http://localhost:5173",
+  "http://127.0.0.1:5173"
+].filter(Boolean);
+
+const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+  // Allow server-to-server/CLI requests with no Origin header
+  if (!origin) return callback(null, true);
+  if (allowedOrigins.includes(origin)) return callback(null, true);
+  // Allow Vercel preview/production deployments
+  if (/\.vercel\.app$/.test(origin)) return callback(null, true);
+  return callback(null, false);
+};
+
 const app = express();
+// Needed on Vercel/proxies so secure cookies and protocol detection work correctly
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 
 let io: any;
@@ -55,7 +72,7 @@ if (process.env.VERCEL) {
 } else {
   io = new Server(server, {
     cors: {
-      origin: FRONTEND_URL,
+      origin: corsOrigin,
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
       credentials: true
     }
@@ -93,7 +110,7 @@ app.use(helmet({
 }));
 app.use(compression());
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: corsOrigin,
   credentials: true
 }));
 app.use(express.json({ limit: '5mb' }));
