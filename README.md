@@ -72,25 +72,40 @@ SchedulaPro 2026 is built on a modern, reactive, and highly scalable monorepo ar
 ## ⚙️ Installation & Deployment
 
 ### Environment Configuration
-The system requires a `.env` file in the `backend/` directory with the following parameters:
+Use the root `.env.example` as a template. For local development, create a `.env` file in the `backend/` directory (and/or set the same values in Vercel for production):
+
 ```env
+NODE_ENV=development
 PORT=5001
-DB_HOST=your_host
-DB_USER=your_user
-DB_PASSWORD=your_password
-DB_NAME=scheduling_system
+
+# External MySQL-compatible database (e.g. TiDB Cloud Serverless, Railway, Aiven)
+DB_HOST=your-database-host
+DB_PORT=3306
+DB_USER=your_db_username
+DB_PASSWORD=your_db_password
+DB_NAME=faculty_scheduling_db
+DB_SSL=true
+
 JWT_SECRET=your_super_secret_key
 FRONTEND_URL=http://localhost:5173
 ```
 
+Notes:
+- This project currently uses **MySQL (`mysql2`)**; for the least-effort deploy, use a **MySQL-compatible** provider (no app/SQL rewrite required). Switching to Postgres/Turso requires significant code and migration changes.
+- Set `DB_SSL=true` when your cloud database requires TLS.
+- On Vercel, configure the same variables in Project Settings → Environment Variables. `vercel.json` routes `/api/*` to `api/index.ts` and serves the frontend from `frontend/dist`.
+
 ### Local Setup
 1. Clone the repository and navigate to the root directory.
-2. Install all dependencies: `npm run install-all`
-3. Initialize the database: `npm run seed`
-4. Launch Development Environment: `npm run dev`
+2. Install dependencies: `npm run install-all`
+3. Create/configure your database and set env vars, then initialize schema/data: `npm run seed`
+4. (If needed) Run additional migrations in `backend/migrate*.js` / `backend/migrations/` or `npm run migrate:live` for your environment.
+5. Launch the development environment: `npm run dev` (or run backend/frontend per project scripts)
 
-### Production Context
-The system is optimized for **Vercel** deployment (Hobby/Pro), utilizing a monolithic backend entry point strategy to stay within serverless function limits while maintaining full API responsiveness.
+### Production (Vercel)
+1. Provision a MySQL-compatible database and collect connection details.
+2. In Vercel, set `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_SSL`, `JWT_SECRET`, `FRONTEND_URL` (and email vars if used).
+3. Seed/migrate the target database, then deploy. Verify `/api` connectivity and core flows (auth, scheduling, realtime behavior as supported in serverless).
 
 ---
 
