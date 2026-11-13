@@ -62,50 +62,43 @@ SchedulaPro 2026 is built on a modern, reactive, and highly scalable monorepo ar
 
 ### Backend Layer
 - **Environment:** `Node.js` + `Express.js` (TypeScript)
-- **Real-Time Sync:** `Socket.io` (Instant institutional updates)
-- **Database:** `MySQL` (Atomicity and relational integrity)
+- **Real-Time Sync:** `Socket.io` (mocked/limited on Vercel serverless)
+- **Data:** **Static demo data** bundled in the app (no external database required)
 - **Validation:** `Zod` (Schema-level data hardening)
 - **Performance:** `Compression` + `HTTP/2` Readiness
 
 ---
 
-## ⚙️ Installation & Deployment
+## ⚙️ Installation & Deployment (Static Demo Mode)
+
+This version runs on **bundled static/demo data** (see `backend/data/demoData.js`, `backend/config/db.ts`) so it can be deployed to Vercel without provisioning a database.
+- **No persistence:** logins beyond demo accounts, edits, and created records are **not** saved across reloads, redeploys, or serverless cold starts.
+- **Demo logins:** `admin` / `admin123`, `programhead` / `admin123`, `faculty` / `admin123`
 
 ### Environment Configuration
-Use the root `.env.example` as a template. For local development, create a `.env` file in the `backend/` directory (and/or set the same values in Vercel for production):
+Use the root `.env.example` or `import.env` as a template. For local development create `backend/.env` (and set the same values in Vercel for production):
 
 ```env
 NODE_ENV=development
 PORT=5001
-
-# External MySQL-compatible database (e.g. TiDB Cloud Serverless, Railway, Aiven)
-DB_HOST=your-database-host
-DB_PORT=3306
-DB_USER=your_db_username
-DB_PASSWORD=your_db_password
-DB_NAME=faculty_scheduling_db
-DB_SSL=true
 
 JWT_SECRET=your_super_secret_key
 FRONTEND_URL=http://localhost:5173
 ```
 
 Notes:
-- This project currently uses **MySQL (`mysql2`)**; for the least-effort deploy, use a **MySQL-compatible** provider (no app/SQL rewrite required). Switching to Postgres/Turso requires significant code and migration changes.
-- Set `DB_SSL=true` when your cloud database requires TLS.
-- On Vercel, configure the same variables in Project Settings → Environment Variables. `vercel.json` routes `/api/*` to `api/index.ts` and serves the frontend from `frontend/dist`.
+- **No database env vars required** (`DB_*` not used in static demo mode).
+- On Vercel, set at least `JWT_SECRET` and `FRONTEND_URL` (and `NODE_ENV=production`, `VERCEL=1`). See `VERCEL_DEPLOYMENT.md`.
 
 ### Local Setup
 1. Clone the repository and navigate to the root directory.
 2. Install dependencies: `npm run install-all`
-3. Create/configure your database and set env vars, then initialize schema/data: `npm run seed`
-4. (If needed) Run additional migrations in `backend/migrate*.js` / `backend/migrations/` or `npm run migrate:live` for your environment.
-5. Launch the development environment: `npm run dev` (or run backend/frontend per project scripts)
+3. Launch the development environment: `npm run dev` (or run backend/frontend per project scripts)
 
 ### Production (Vercel)
-1. Provision a MySQL-compatible database and collect connection details.
-2. In Vercel, set `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_SSL`, `JWT_SECRET`, `FRONTEND_URL` (and email vars if used).
-3. Seed/migrate the target database, then deploy. Verify `/api` connectivity and core flows (auth, scheduling, realtime behavior as supported in serverless).
+1. Import/connect this repo in Vercel (configured as a multi-service project in `vercel.json`: `backend` Express + `frontend` Vite, with `/api/*` routed to backend).
+2. Set env vars: `NODE_ENV`, `JWT_SECRET`, `FRONTEND_URL` (e.g. `https://<your-project>.vercel.app`), and optionally `VERCEL=1`.
+3. Deploy and verify login and core pages load with demo data. No database provisioning or seeding is required.
 
 ---
 
